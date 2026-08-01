@@ -3,7 +3,7 @@
  * Requires library build: `pnpm --filter json-tree-editor build`
  * (or root `pnpm build` / `pnpm build:lib`).
  */
-import 'json-tree-editor/element';
+import 'json-tree-editor/web-component';
 
 const SAMPLE = `{
   "id": "wc_demo",

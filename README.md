@@ -66,8 +66,7 @@ const validity = () => parseJsonSource(source());
 
 ```html
 <script type="module">
-  import 'json-tree-editor/element';
-  // alias: 'json-tree-editor/web-component'
+  import 'json-tree-editor/web-component';
 
   const el = document.querySelector('json-tree-editor');
   el.value = '{"hello":"world"}';
@@ -103,7 +102,7 @@ override with inline/`style` attributes or a stylesheet targeting the host.
 
 ```js
 // After build, CDN-style local path example:
-// import from './node_modules/json-tree-editor/dist/element.js'
+// import from './node_modules/json-tree-editor/dist/web-component.js'
 ```
 
 ## Theming
@@ -177,7 +176,7 @@ classes as needed.
   `collectContainerPathKeys`, `collectVisiblePaths`, `pathDomId`,
   `defaultExpandedPaths`, `ROOT_PATH_KEY`, …
 - **Styles:** `json-tree-editor/styles.css`
-- **Web component:** `json-tree-editor/element` (or `./web-component`)
+- **Web component:** `json-tree-editor/web-component`
 
 ### Keyboard navigation (ARIA tree-style)
 
@@ -207,9 +206,9 @@ use `-1`. Expand state is the same `expanded` set used by chevrons / expand-all.
     "solid": "./src/index.ts",
     "import": "./dist/index.js"
   },
-  "./element": {
-    "types": "./dist/element.d.ts",
-    "import": "./dist/element.js"
+  "./web-component": {
+    "types": "./dist/web-component.d.ts",
+    "import": "./dist/web-component.js"
   },
   "./styles.css": "./src/styles.css"
 }
@@ -220,9 +219,9 @@ use `-1`. Expand state is the same `expanded` set used by chevrons / expand-all.
 | Entry | `solid-js` | Use when |
 | --- | --- | --- |
 | `.` | **External** (peer) | Solid applications |
-| `./element` | **Bundled** | React / Vue / Svelte / vanilla / CDN |
+| `./web-component` | **Bundled** | React / Vue / Svelte / vanilla / CDN |
 
-Build: `pnpm --filter json-tree-editor build` → `dist/index.js`, `dist/element.js`,
+Build: `pnpm --filter json-tree-editor build` → `dist/index.js`, `dist/web-component.js`,
 `dist/styles.css`, and `.d.ts` files.
 
 ## Architecture
@@ -232,7 +231,7 @@ json-tree-editor/
   packages/json-tree-editor/   # library
     src/
       index.ts                 # Solid exports
-      element.tsx              # <json-tree-editor> custom element
+      web-component.tsx        # <json-tree-editor> custom element
       components/primitives/   # JsonTreeView + editors
       lib/                     # json-path, parseJsonSource
       styles.css               # CSS variables + classes

@@ -6,8 +6,8 @@
   "license": "MIT",
   "sideEffects": [
     "*.css",
-    "./dist/element.js",
-    "./src/element.tsx"
+    "./dist/web-component.js",
+    "./src/web-component.tsx"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -19,15 +19,10 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./element": {
-      "types": "./dist/element.d.ts",
-      "import": "./dist/element.js",
-      "default": "./dist/element.js"
-    },
     "./web-component": {
-      "types": "./dist/element.d.ts",
-      "import": "./dist/element.js",
-      "default": "./dist/element.js"
+      "types": "./dist/web-component.d.ts",
+      "import": "./dist/web-component.js",
+      "default": "./dist/web-component.js"
     },
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
@@ -37,7 +32,7 @@
     "src"
   ],
   "scripts": {
-    "build": "vite build && vite build --mode element && node ./scripts/copy-styles.mjs",
+    "build": "vite build && vite build --mode web-component && node ./scripts/copy-styles.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm run build"
   },

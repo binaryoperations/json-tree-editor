@@ -4,7 +4,7 @@
  * Solid is bundled into this build so React / Svelte / Vue / vanilla hosts do
  * not need solid-js. Import once:
  *
- *   import 'json-tree-editor/element';
+ *   import 'json-tree-editor/web-component';
  *
  * API:
  *   - property `value` (string) — preferred source of truth (esp. large JSON)

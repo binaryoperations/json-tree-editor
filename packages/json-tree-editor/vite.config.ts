@@ -18,16 +18,16 @@ const solidExternals = [
 /**
  * Dual library builds:
  * - default (`vite build`): Solid package entry — solid-js external
- * - `--mode element`: web component — solid-js bundled inside
+ * - `--mode web-component`: web component — solid-js bundled inside
  */
 export default defineConfig(({ mode }): UserConfig => {
-  const isElement = mode === 'element';
+  const isWebComponent = mode === 'web-component';
 
   return {
     plugins: [
       solid(),
-      // Emit types once with the Solid entry (includes element.tsx declarations).
-      !isElement &&
+      // Emit types once with the Solid entry (includes web-component.tsx declarations).
+      !isWebComponent &&
         dts({
           include: ['src/**/*.ts', 'src/**/*.tsx'],
           exclude: ['src/**/*.css'],
@@ -36,24 +36,24 @@ export default defineConfig(({ mode }): UserConfig => {
           rollupTypes: false,
           insertTypesEntry: false,
           copyDtsFiles: true,
-          // element is not an input of this build; still emit its .d.ts from source.
+          // web-component is not an input of this build; still emit its .d.ts from source.
           staticImport: true,
         }),
     ].filter(Boolean),
     build: {
-      emptyOutDir: !isElement,
+      emptyOutDir: !isWebComponent,
       sourcemap: true,
-      minify: isElement ? 'esbuild' : false,
+      minify: isWebComponent ? 'esbuild' : false,
       lib: {
         entry: resolve(
           root,
-          isElement ? 'src/element.tsx' : 'src/index.ts',
+          isWebComponent ? 'src/web-component.tsx' : 'src/index.ts',
         ),
         formats: ['es'],
-        fileName: () => (isElement ? 'element.js' : 'index.js'),
+        fileName: () => (isWebComponent ? 'web-component.js' : 'index.js'),
       },
       rollupOptions: {
-        external: isElement
+        external: isWebComponent
           ? []
           : (id) =>
               solidExternals.some(
@@ -63,7 +63,7 @@ export default defineConfig(({ mode }): UserConfig => {
           assetFileNames: 'assets/[name][extname]',
         },
       },
-      // Keep CSS as a separate file for the Solid entry; element inlines via ?inline.
+      // Keep CSS as a separate file for the Solid entry; WC inlines via ?inline.
       cssCodeSplit: true,
     },
   };
