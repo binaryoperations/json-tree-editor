@@ -280,14 +280,34 @@ json-tree-editor/              # monorepo root
 
 ## Publishing
 
-Publish only the library package (builds the web component first via `prepublishOnly`):
+Bump **only** `@binaryoperations/json-tree-editor` (not the monorepo root or demo), then publish:
 
 ```bash
-# from monorepo root (scoped packages require --access public)
+# from monorepo root — bump the library package version
+pnpm version:patch       # 0.1.0 → 0.1.1
+pnpm version:minor       # 0.1.0 → 0.2.0
+pnpm version:major       # 0.1.0 → 1.0.0
+pnpm version:prerelease  # 0.1.0 → 0.1.1-0 (optional preid via npm --preid)
+
+# publish (builds the web component first via prepublishOnly)
 pnpm publish:json-tree-editor
 
 # or from the package directory
 cd json-tree-editor && pnpm publish --access public
+```
+
+Version scripts use `npm version … --no-git-tag-version` so they only update `json-tree-editor/package.json` without creating a git commit or tag. Commit and tag yourself if you want, for example:
+
+```bash
+git add json-tree-editor/package.json
+git commit -m "chore: release v0.1.1"
+git tag v0.1.1
+```
+
+To bump **and** let npm create a commit + tag in one step, run from the package directory without the monorepo scripts:
+
+```bash
+cd json-tree-editor && pnpm version patch   # commits + tags by default
 ```
 
 Do not publish the monorepo root or the demo package (`private: true`).

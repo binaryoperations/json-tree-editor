@@ -19,6 +19,10 @@
     "build:lib": "pnpm --filter @binaryoperations/json-tree-editor build",
     "typecheck": "pnpm --filter @binaryoperations/json-tree-editor typecheck",
     "preview": "pnpm --filter @json-tree-editor/demo preview",
+    "version:patch": "npm version patch --no-git-tag-version --prefix json-tree-editor",
+    "version:minor": "npm version minor --no-git-tag-version --prefix json-tree-editor",
+    "version:major": "npm version major --no-git-tag-version --prefix json-tree-editor",
+    "version:prerelease": "npm version prerelease --no-git-tag-version --prefix json-tree-editor",
     "publish:json-tree-editor": "pnpm --filter @binaryoperations/json-tree-editor build && pnpm --filter @binaryoperations/json-tree-editor publish --access public"
   },
   "engines": {
