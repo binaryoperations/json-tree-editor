@@ -1,0 +1,47 @@
+{
+  "name": "json-tree-editor",
+  "version": "0.1.0",
+  "description": "SolidJS interactive JSON tree editor",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./styles.css": "./src/styles.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.8.0"
+  },
+  "devDependencies": {
+    "solid-js": "^1.8.0",
+    "typescript": "~5.6.2"
+  },
+  "keywords": [
+    "json",
+    "tree",
+    "editor",
+    "solid",
+    "solidjs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/example/json-tree-editor.git",
+    "directory": "packages/json-tree-editor"
+  }
+}

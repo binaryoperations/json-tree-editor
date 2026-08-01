@@ -1,0 +1,16 @@
+{
+  "name": "json-tree-editor-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "SolidJS JSON tree editor monorepo",
+  "scripts": {
+    "dev": "pnpm --filter @json-tree-editor/demo dev",
+    "build": "pnpm --filter @json-tree-editor/demo build",
+    "preview": "pnpm --filter @json-tree-editor/demo preview"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

@@ -1,0 +1,399 @@
+/* JSON tree editor styles (library) */
+
+.json-tree {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #0c0e12;
+  display: flex;
+  flex-direction: column;
+}
+
+.json-tree__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.5rem 0.55rem 1.25rem;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Liberation Mono',
+    'Courier New',
+    monospace;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.json-tree__disabled {
+  margin: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #7f1d1d;
+  background: #1c0f0f;
+  color: #fecaca;
+}
+
+.json-tree__disabled strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fca5a5;
+}
+
+.json-tree__disabled p {
+  margin: 0 0 0.4rem;
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #fca5a5;
+  word-break: break-word;
+}
+
+.json-tree__hint {
+  margin-top: 0.55rem !important;
+  color: #9aa3b2 !important;
+  font-family: inherit !important;
+  font-size: 0.78rem !important;
+}
+
+.json-tree-node {
+  min-width: 0;
+}
+
+.json-tree-node--root > .json-tree-row {
+  padding-left: 0.15rem;
+}
+
+.json-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.7rem;
+  padding: 0.12rem 0.35rem;
+  border-radius: 5px;
+  min-width: 0;
+}
+
+.json-tree-row:hover {
+  background: #151922;
+}
+
+.json-tree-row:hover .json-tree-actions {
+  opacity: 1;
+}
+
+.json-tree-chevron {
+  appearance: none;
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: #7d8696;
+  font-size: 0.55rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(0deg);
+  transition: transform 0.12s ease;
+  border-radius: 3px;
+}
+
+.json-tree-chevron:hover {
+  color: #e6e8ec;
+  background: #232833;
+}
+
+.json-tree-chevron--open {
+  transform: rotate(90deg);
+}
+
+.json-tree-chevron--leaf {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.json-tree-key {
+  flex-shrink: 0;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.json-tree-key--root {
+  color: #c4b5fd;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+
+.json-tree-key--index {
+  color: #a5b4c8;
+  font-variant-numeric: tabular-nums;
+}
+
+.json-tree-key--editable {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0.05rem 0.25rem;
+  margin: 0;
+  border-radius: 4px;
+  font: inherit;
+  color: #93c5fd;
+  font-weight: 500;
+  cursor: text;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.json-tree-key--editable:hover {
+  border-color: #3a4254;
+  background: #1a1f2a;
+}
+
+.json-tree-key--editable:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 1px;
+}
+
+.json-tree-key-input {
+  flex-shrink: 0;
+  width: 7.5rem;
+  max-width: 12rem;
+  font: inherit;
+  font-size: 12.5px;
+  color: #e6e8ec;
+  background: #1a1f2a;
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  padding: 0.12rem 0.3rem;
+}
+
+.json-tree-key-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+}
+
+.json-tree-type {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  line-height: 1.2;
+}
+
+.json-tree-type--string {
+  color: #86efac;
+  background: #14532d55;
+  border-color: #16653488;
+}
+
+.json-tree-type--number {
+  color: #fcd34d;
+  background: #713f1255;
+  border-color: #a1620788;
+}
+
+.json-tree-type--boolean {
+  color: #c4b5fd;
+  background: #4c1d9555;
+  border-color: #6d28d988;
+}
+
+.json-tree-type--null {
+  color: #9ca3af;
+  background: #37415155;
+  border-color: #4b556388;
+}
+
+.json-tree-type--object {
+  color: #7dd3fc;
+  background: #0c4a6e55;
+  border-color: #0369a188;
+}
+
+.json-tree-type--array {
+  color: #f9a8d4;
+  background: #83184355;
+  border-color: #be185d88;
+}
+
+.json-tree-summary {
+  flex-shrink: 0;
+  color: #5c6575;
+  font-size: 0.72rem;
+}
+
+.json-tree-value {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.json-tree-input {
+  width: 100%;
+  min-width: 4rem;
+  max-width: 100%;
+  font: inherit;
+  font-size: 12.5px;
+  color: #e6e8ec;
+  background: #12151c;
+  border: 1px solid #2a2f3a;
+  border-radius: 4px;
+  padding: 0.15rem 0.4rem;
+}
+
+.json-tree-input:hover {
+  border-color: #3a4254;
+}
+
+.json-tree-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.json-tree-input--string {
+  color: #86efac;
+}
+
+.json-tree-input--number {
+  color: #fcd34d;
+  font-variant-numeric: tabular-nums;
+  max-width: 10rem;
+}
+
+.json-tree-input--boolean {
+  color: #c4b5fd;
+  width: auto;
+  max-width: 6rem;
+  cursor: pointer;
+}
+
+.json-tree-null {
+  color: #9ca3af;
+  font-style: italic;
+  padding: 0 0.25rem;
+}
+
+.json-tree-type-select {
+  flex-shrink: 0;
+  appearance: none;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #8b93a3;
+  background: #161a22;
+  border: 1px solid #2a2f3a;
+  border-radius: 4px;
+  padding: 0.12rem 0.35rem;
+  cursor: pointer;
+  max-width: 5.2rem;
+}
+
+.json-tree-type-select:hover {
+  border-color: #3a4254;
+  color: #c8d0dc;
+}
+
+.json-tree-type-select:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 1px;
+}
+
+.json-tree-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+  margin-left: auto;
+  opacity: 0.35;
+  transition: opacity 0.1s ease;
+}
+
+.json-tree-row:focus-within .json-tree-actions {
+  opacity: 1;
+}
+
+.json-tree-action {
+  appearance: none;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #9aa3b2;
+  background: #1a1f2a;
+  border: 1px solid #2a2f3a;
+  border-radius: 4px;
+  padding: 0.12rem 0.35rem;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.json-tree-action:hover {
+  color: #e6e8ec;
+  border-color: #4b5568;
+  background: #232833;
+}
+
+.json-tree-action:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 1px;
+}
+
+.json-tree-action--danger {
+  color: #fca5a5;
+  min-width: 1.4rem;
+  padding-left: 0.3rem;
+  padding-right: 0.3rem;
+}
+
+.json-tree-action--danger:hover {
+  color: #fecaca;
+  border-color: #991b1b;
+  background: #7f1d1d55;
+}
+
+.json-tree-children {
+  margin-left: 0.55rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid #232833;
+}
+
+.json-tree-empty {
+  color: #5c6575;
+  font-size: 0.72rem;
+  font-style: italic;
+  padding: 0.25rem 0.5rem;
+}
