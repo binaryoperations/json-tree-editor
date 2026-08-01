@@ -15,11 +15,11 @@
   },
   "scripts": {
     "dev": "pnpm --filter @json-tree-editor/demo dev",
-    "build": "pnpm --filter json-tree-editor build && pnpm --filter @json-tree-editor/demo build",
-    "build:lib": "pnpm --filter json-tree-editor build",
-    "typecheck": "pnpm --filter json-tree-editor typecheck",
+    "build": "pnpm --filter @binaryoperations/json-tree-editor build && pnpm --filter @json-tree-editor/demo build",
+    "build:lib": "pnpm --filter @binaryoperations/json-tree-editor build",
+    "typecheck": "pnpm --filter @binaryoperations/json-tree-editor typecheck",
     "preview": "pnpm --filter @json-tree-editor/demo preview",
-    "publish:json-tree-editor": "pnpm --filter json-tree-editor build && pnpm --filter json-tree-editor publish --access public"
+    "publish:json-tree-editor": "pnpm --filter @binaryoperations/json-tree-editor build && pnpm --filter @binaryoperations/json-tree-editor publish --access public"
   },
   "engines": {
     "node": ">=18",

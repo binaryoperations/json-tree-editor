@@ -1,5 +1,5 @@
 {
-  "name": "json-tree-editor",
+  "name": "@binaryoperations/json-tree-editor",
   "version": "0.1.0",
   "description": "Interactive JSON tree editor — Solid components + framework-agnostic web component",
   "type": "module",

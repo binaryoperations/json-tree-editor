@@ -10,13 +10,13 @@ while keeping a free-form source string as the single source of truth.
 
 | Package | Path | Description |
 | --- | --- | --- |
-| `json-tree-editor` | `json-tree-editor` | Publishable library: Solid **source** + prebuilt `<json-tree-editor>` WC |
+| `@binaryoperations/json-tree-editor` | `json-tree-editor` | Publishable library: Solid **source** + prebuilt `<json-tree-editor>` WC |
 | `@json-tree-editor/demo` | `demo` | Vite demos: Solid 3-pane, large tree, vanilla web component |
 
 ## Install
 
 ```bash
-pnpm add json-tree-editor
+pnpm add @binaryoperations/json-tree-editor
 # Solid apps also need:
 pnpm add solid-js
 ```
@@ -40,7 +40,7 @@ pnpm dev              # all pages on one Vite server
 pnpm dev:large        # opens /large.html
 pnpm dev:wc           # opens /wc.html (build WC first: pnpm build:lib)
 pnpm build            # WC package then demo multi-page build
-pnpm build:lib        # json-tree-editor WC only
+pnpm build:lib        # @binaryoperations/json-tree-editor WC only
 pnpm publish:json-tree-editor  # build + publish library only
 pnpm typecheck
 ```
@@ -54,8 +54,8 @@ with a Solid toolchain (`vite-plugin-solid`, etc.). No library JS build is
 required for this path.
 
 ```tsx
-import { JsonTreeView, parseJsonSource } from 'json-tree-editor';
-import 'json-tree-editor/styles.css';
+import { JsonTreeView, parseJsonSource } from '@binaryoperations/json-tree-editor';
+import '@binaryoperations/json-tree-editor/styles.css';
 
 const validity = () => parseJsonSource(source());
 
@@ -73,7 +73,7 @@ app’s `solid-js` instance.
 
 ```html
 <script type="module">
-  import 'json-tree-editor/web-component';
+  import '@binaryoperations/json-tree-editor/web-component';
 
   const el = document.querySelector('json-tree-editor');
   el.value = '{"hello":"world"}';
@@ -109,7 +109,7 @@ override with inline/`style` attributes or a stylesheet targeting the host.
 
 ```js
 // After build, CDN-style local path example:
-// import from './node_modules/json-tree-editor/dist/web-component.js'
+// import from './node_modules/@binaryoperations/json-tree-editor/dist/web-component.js'
 ```
 
 ## Theming
@@ -168,7 +168,7 @@ Also: `scroll`, `summary`, `type-select`, `action`, `null`.
 ### Solid light DOM
 
 The Solid path still uses BEM-ish classes (`.json-tree-row`, …) plus the same
-CSS variables. Import `json-tree-editor/styles.css` and override variables or
+CSS variables. Import `@binaryoperations/json-tree-editor/styles.css` and override variables or
 classes as needed.
 
 ## Public API (Solid entry)
@@ -182,8 +182,8 @@ classes as needed.
   `parseCompleteNumber`, `convertJsonType`, `jsonTypeOf`,
   `collectContainerPathKeys`, `collectVisiblePaths`, `pathDomId`,
   `defaultExpandedPaths`, `ROOT_PATH_KEY`, …
-- **Styles:** `json-tree-editor/styles.css`
-- **Web component:** `json-tree-editor/web-component`
+- **Styles:** `@binaryoperations/json-tree-editor/styles.css`
+- **Web component:** `@binaryoperations/json-tree-editor/web-component`
 
 ### Keyboard navigation (ARIA tree-style)
 
@@ -234,7 +234,7 @@ use `-1`. Expand state is the same `expanded` set used by chevrons / expand-all.
 Only the **web component** is built:
 
 ```bash
-pnpm --filter json-tree-editor build
+pnpm --filter @binaryoperations/json-tree-editor build
 # or: pnpm build:lib
 ```
 
@@ -283,11 +283,11 @@ json-tree-editor/              # monorepo root
 Publish only the library package (builds the web component first via `prepublishOnly`):
 
 ```bash
-# from monorepo root
+# from monorepo root (scoped packages require --access public)
 pnpm publish:json-tree-editor
 
 # or from the package directory
-cd json-tree-editor && pnpm publish
+cd json-tree-editor && pnpm publish --access public
 ```
 
 Do not publish the monorepo root or the demo package (`private: true`).

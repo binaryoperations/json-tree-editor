@@ -1,9 +1,9 @@
 /**
  * Vanilla web component demo — no Solid host app.
- * Requires WC build: `pnpm --filter json-tree-editor build`
+ * Requires WC build: `pnpm --filter @binaryoperations/json-tree-editor build`
  * (or root `pnpm build:lib` / demo `prebuild`).
  */
-import 'json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component';
 
 import { mountDemoHeader } from './shell/header';
 

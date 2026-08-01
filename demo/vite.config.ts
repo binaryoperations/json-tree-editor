@@ -26,6 +26,6 @@ export default defineConfig({
   },
   // Ensure Solid JSX from the workspace library is compiled by vite-plugin-solid.
   optimizeDeps: {
-    exclude: ['json-tree-editor'],
+    exclude: ['@binaryoperations/json-tree-editor'],
   },
 });

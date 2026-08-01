@@ -10,6 +10,9 @@ importers:
 
   demo:
     dependencies:
+      '@binaryoperations/json-tree-editor':
+        specifier: workspace:*
+        version: link:../json-tree-editor
       '@codemirror/commands':
         specifier: ^6.8.1
         version: 6.10.4
@@ -31,9 +34,6 @@ importers:
       codemirror:
         specifier: ^6.0.2
         version: 6.0.2
-      json-tree-editor:
-        specifier: workspace:*
-        version: link:../json-tree-editor
       solid-js:
         specifier: ^1.8.0
         version: 1.9.14

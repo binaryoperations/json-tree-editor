@@ -7,11 +7,12 @@
     "dev": "vite dev",
     "dev:large": "vite dev --open /large.html",
     "dev:wc": "vite dev --open /wc.html",
-    "prebuild": "pnpm --filter json-tree-editor build",
+    "prebuild": "pnpm --filter @binaryoperations/json-tree-editor build",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@binaryoperations/json-tree-editor": "workspace:*",
     "@codemirror/commands": "^6.8.1",
     "@codemirror/lang-json": "^6.0.1",
     "@codemirror/language": "^6.11.2",
@@ -19,7 +20,6 @@
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.1",
     "codemirror": "^6.0.2",
-    "json-tree-editor": "workspace:*",
     "solid-js": "^1.8.0"
   },
   "devDependencies": {
