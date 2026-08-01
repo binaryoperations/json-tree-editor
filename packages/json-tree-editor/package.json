@@ -1,43 +1,69 @@
 {
   "name": "json-tree-editor",
   "version": "0.1.0",
-  "description": "SolidJS interactive JSON tree editor",
+  "description": "Interactive JSON tree editor — Solid components + framework-agnostic web component",
   "type": "module",
   "license": "MIT",
   "sideEffects": [
-    "*.css"
+    "*.css",
+    "./dist/element.js",
+    "./src/element.tsx"
   ],
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "solid": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./element": {
+      "types": "./dist/element.d.ts",
+      "import": "./dist/element.js",
+      "default": "./dist/element.js"
+    },
+    "./web-component": {
+      "types": "./dist/element.d.ts",
+      "import": "./dist/element.js",
+      "default": "./dist/element.js"
     },
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
   "files": [
+    "dist",
     "src"
   ],
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "build": "vite build && vite build --mode element && node ./scripts/copy-styles.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "pnpm run build"
   },
   "peerDependencies": {
     "solid-js": "^1.8.0"
   },
+  "peerDependenciesMeta": {
+    "solid-js": {
+      "optional": false
+    }
+  },
   "devDependencies": {
     "solid-js": "^1.8.0",
-    "typescript": "~5.6.2"
+    "typescript": "~5.6.2",
+    "vite": "^6.0.5",
+    "vite-plugin-dts": "^4.0.0",
+    "vite-plugin-solid": "^2.10.2"
   },
   "keywords": [
     "json",
     "tree",
     "editor",
     "solid",
-    "solidjs"
+    "solidjs",
+    "web-component",
+    "custom-element"
   ],
   "repository": {
     "type": "git",

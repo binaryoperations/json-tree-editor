@@ -13,7 +13,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
   const kind = () => jsonTypeOf(props.value);
 
   return (
-    <span class="json-tree-value">
+    <span class="json-tree-value" part="value">
       <Show when={kind() === 'string'}>
         <StringEditor value={props.value as string} onCommit={props.onCommit} />
       </Show>
@@ -25,6 +25,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
       <Show when={kind() === 'boolean'}>
         <select
           class="json-tree-input json-tree-input--boolean"
+          part="input"
           value={String(props.value)}
           aria-label="Boolean value"
           onChange={(e) => props.onCommit(e.currentTarget.value === 'true')}
@@ -35,7 +36,9 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
       </Show>
 
       <Show when={kind() === 'null'}>
-        <span class="json-tree-null">null</span>
+        <span class="json-tree-null" part="null">
+          null
+        </span>
       </Show>
     </span>
   );

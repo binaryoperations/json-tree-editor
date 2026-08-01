@@ -9,6 +9,7 @@ export type TypeBadgeProps = {
 export const TypeBadge: Component<TypeBadgeProps> = (props) => (
   <span
     class="json-tree-type"
+    part="type"
     classList={{ [`json-tree-type--${props.type}`]: true }}
   >
     {props.type}

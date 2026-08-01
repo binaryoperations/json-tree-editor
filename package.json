@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "pnpm --filter @json-tree-editor/demo dev",
     "dev:large": "pnpm --filter @json-tree-editor/demo dev:large",
-    "build": "pnpm --filter @json-tree-editor/demo build",
+    "dev:wc": "pnpm --filter @json-tree-editor/demo dev:wc",
+    "build": "pnpm --filter json-tree-editor build && pnpm --filter @json-tree-editor/demo build",
+    "build:lib": "pnpm --filter json-tree-editor build",
+    "typecheck": "pnpm --filter json-tree-editor typecheck",
     "preview": "pnpm --filter @json-tree-editor/demo preview"
   },
   "engines": {

@@ -53,6 +53,9 @@ export const App: Component = () => {
           <a class="nav-link" href="/large.html">
             large tree →
           </a>
+          <a class="nav-link" href="/wc.html">
+            web component →
+          </a>
         </div>
         <div class="app-header__right">
           <ValidityBadge validity={validity()} />

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>json-tree-editor — Web Component demo</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background: #0f1115;
+        color: #e6e8ec;
+      }
+      .app {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 0.65rem 1rem;
+        border-bottom: 1px solid #2a2f3a;
+        background: #161a22;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+      }
+      .badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #93c5fd;
+        background: #1e3a5f;
+        border: 1px solid #2563eb88;
+        border-radius: 999px;
+        padding: 0.15rem 0.5rem;
+      }
+      .nav a {
+        color: #93c5fd;
+        text-decoration: none;
+        font-size: 0.85rem;
+        margin-right: 0.75rem;
+      }
+      .nav a:hover {
+        text-decoration: underline;
+      }
+      .toolbar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      button {
+        appearance: none;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #e6e8ec;
+        background: #1a1f2a;
+        border: 1px solid #2a2f3a;
+        border-radius: 6px;
+        padding: 0.35rem 0.65rem;
+        cursor: pointer;
+      }
+      button:hover {
+        border-color: #4b5568;
+        background: #232833;
+      }
+      .panes {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+      }
+      @media (max-width: 800px) {
+        .panes {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 1fr;
+        }
+      }
+      .pane {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        border-right: 1px solid #2a2f3a;
+      }
+      .pane:last-child {
+        border-right: none;
+      }
+      .pane-header {
+        flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.75rem;
+        color: #9aa3b2;
+        border-bottom: 1px solid #2a2f3a;
+        background: #12151c;
+      }
+      .pane-body {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+      }
+      textarea {
+        width: 100%;
+        height: 100%;
+        resize: none;
+        border: none;
+        outline: none;
+        padding: 0.75rem;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12.5px;
+        line-height: 1.45;
+        background: #0c0e12;
+        color: #e6e8ec;
+      }
+      json-tree-editor {
+        display: block;
+        height: 100%;
+        width: 100%;
+      }
+      /* Example: host-level CSS variables (open shadow inherits on :host) */
+      json-tree-editor.light {
+        --jte-bg: #f8fafc;
+        --jte-fg: #0f172a;
+        --jte-muted: #64748b;
+        --jte-muted-2: #475569;
+        --jte-border: #e2e8f0;
+        --jte-border-strong: #cbd5e1;
+        --jte-border-hover: #94a3b8;
+        --jte-row-hover: #f1f5f9;
+        --jte-row-focus-bg: #e2e8f0;
+        --jte-surface: #ffffff;
+        --jte-surface-2: #f1f5f9;
+        --jte-surface-3: #e2e8f0;
+        --jte-surface-4: #cbd5e1;
+        --jte-key: #1d4ed8;
+        --jte-key-root: #6d28d9;
+        --jte-string: #15803d;
+        --jte-number: #b45309;
+        --jte-boolean: #6d28d9;
+        --jte-null: #64748b;
+        color-scheme: light;
+      }
+      .meta {
+        font-size: 0.75rem;
+        color: #7d8696;
+      }
+      #status {
+        font-size: 0.75rem;
+        color: #86efac;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div style="display: flex; align-items: center; gap: 0.6rem">
+          <h1>json-tree-editor</h1>
+          <span class="badge">Web Component</span>
+          <nav class="nav">
+            <a href="/">Solid demo</a>
+            <a href="/large.html">Large tree</a>
+          </nav>
+        </div>
+        <div class="toolbar">
+          <span id="status">idle</span>
+          <button type="button" id="btn-sample">Load sample</button>
+          <button type="button" id="btn-theme">Toggle light theme</button>
+          <button type="button" id="btn-disabled">Toggle disabled</button>
+          <span class="meta">vanilla · no Solid host required</span>
+        </div>
+      </header>
+      <div class="panes">
+        <section class="pane" aria-label="JSON source">
+          <div class="pane-header">
+            <span>Source (host textarea)</span>
+            <span>sets <code>.value</code></span>
+          </div>
+          <div class="pane-body">
+            <textarea id="source" spellcheck="false"></textarea>
+          </div>
+        </section>
+        <section class="pane" aria-label="JSON tree web component">
+          <div class="pane-header">
+            <span>&lt;json-tree-editor&gt;</span>
+            <span>change / json-change events</span>
+          </div>
+          <div class="pane-body">
+            <json-tree-editor id="tree"></json-tree-editor>
+          </div>
+        </section>
+      </div>
+    </div>
+    <script type="module" src="/src/wc-main.ts"></script>
+  </body>
+</html>

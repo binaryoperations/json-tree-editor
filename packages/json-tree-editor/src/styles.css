@@ -1,12 +1,111 @@
-/* JSON tree editor styles (library) */
+/* JSON tree editor styles (library)
+ *
+ * Theme via CSS custom properties on `.json-tree` (Solid) or `:host` (web component).
+ *
+ *   .json-tree { --jte-bg: #fff; --jte-fg: #111; }
+ *   <json-tree-editor style="--jte-bg: #fff; --jte-fg: #111;"></json-tree-editor>
+ *
+ * Shadow DOM consumers can also style via ::part(tree|row|key|value|…).
+ *
+ * Defaults live on `:host` (WC) and as `var(--token, fallback)` so light-DOM
+ * Solid usage works without a host, and host-level overrides inherit correctly.
+ */
+
+:host {
+  display: block;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  color-scheme: dark;
+
+  /* Surfaces */
+  --jte-bg: #0c0e12;
+  --jte-fg: #e6e8ec;
+  --jte-muted: #5c6575;
+  --jte-muted-2: #7d8696;
+  --jte-border: #232833;
+  --jte-border-strong: #2a2f3a;
+  --jte-border-hover: #3a4254;
+  --jte-row-hover: #151922;
+  --jte-row-focus-bg: #151a24;
+  --jte-surface: #12151c;
+  --jte-surface-2: #1a1f2a;
+  --jte-surface-3: #161a22;
+  --jte-surface-4: #232833;
+
+  /* Syntax / tokens */
+  --jte-key: #93c5fd;
+  --jte-key-root: #c4b5fd;
+  --jte-key-index: #a5b4c8;
+  --jte-string: #86efac;
+  --jte-number: #fcd34d;
+  --jte-boolean: #c4b5fd;
+  --jte-null: #9ca3af;
+
+  /* Type badge colors + translucent backgrounds */
+  --jte-type-string: #86efac;
+  --jte-type-string-bg: #14532d55;
+  --jte-type-string-border: #16653488;
+  --jte-type-number: #fcd34d;
+  --jte-type-number-bg: #713f1255;
+  --jte-type-number-border: #a1620788;
+  --jte-type-boolean: #c4b5fd;
+  --jte-type-boolean-bg: #4c1d9555;
+  --jte-type-boolean-border: #6d28d988;
+  --jte-type-null: #9ca3af;
+  --jte-type-null-bg: #37415155;
+  --jte-type-null-border: #4b556388;
+  --jte-type-object: #7dd3fc;
+  --jte-type-object-bg: #0c4a6e55;
+  --jte-type-object-border: #0369a188;
+  --jte-type-array: #f9a8d4;
+  --jte-type-array-bg: #83184355;
+  --jte-type-array-border: #be185d88;
+
+  /* Controls */
+  --jte-focus-ring: #60a5fa;
+  --jte-focus-border: #3b82f6;
+  --jte-focus-glow: rgba(59, 130, 246, 0.35);
+  --jte-focus-glow-soft: rgba(59, 130, 246, 0.25);
+  --jte-danger: #fca5a5;
+  --jte-danger-strong: #fecaca;
+  --jte-danger-border: #991b1b;
+  --jte-danger-bg: #7f1d1d55;
+  --jte-error-border: #7f1d1d;
+  --jte-error-bg: #1c0f0f;
+  --jte-error-fg: #fecaca;
+  --jte-error-title: #fca5a5;
+  --jte-error-body: #fca5a5;
+  --jte-hint: #9aa3b2;
+  --jte-action-fg: #9aa3b2;
+  --jte-select-fg: #8b93a3;
+  --jte-select-fg-hover: #c8d0dc;
+
+  /* Typography */
+  --jte-font: inherit;
+  --jte-font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  --jte-font-size: 12.5px;
+  --jte-line-height: 1.45;
+}
+
+:host([disabled]) {
+  opacity: 0.6;
+  pointer-events: none;
+}
 
 .json-tree {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: #0c0e12;
+  background: var(--jte-bg, #0c0e12);
+  color: var(--jte-fg, #e6e8ec);
   display: flex;
   flex-direction: column;
+  font-family: var(--jte-font, inherit);
+  box-sizing: border-box;
+  color-scheme: dark;
 }
 
 .json-tree__scroll {
@@ -14,7 +113,8 @@
   min-height: 0;
   overflow: auto;
   padding: 0.5rem 0.55rem 1.25rem;
-  font-family:
+  font-family: var(
+    --jte-font-mono,
     ui-monospace,
     SFMono-Regular,
     Menlo,
@@ -22,18 +122,20 @@
     Consolas,
     'Liberation Mono',
     'Courier New',
-    monospace;
-  font-size: 12.5px;
-  line-height: 1.45;
+    monospace
+  );
+  font-size: var(--jte-font-size, 12.5px);
+  line-height: var(--jte-line-height, 1.45);
+  color: var(--jte-fg, #e6e8ec);
 }
 
 .json-tree__disabled {
   margin: 1rem;
   padding: 0.85rem 1rem;
   border-radius: 8px;
-  border: 1px solid #7f1d1d;
-  background: #1c0f0f;
-  color: #fecaca;
+  border: 1px solid var(--jte-error-border, #7f1d1d);
+  background: var(--jte-error-bg, #1c0f0f);
+  color: var(--jte-error-fg, #fecaca);
 }
 
 .json-tree__disabled strong {
@@ -42,27 +144,29 @@
   font-size: 0.8rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #fca5a5;
+  color: var(--jte-error-title, #fca5a5);
 }
 
 .json-tree__disabled p {
   margin: 0 0 0.4rem;
-  font-family:
+  font-family: var(
+    --jte-font-mono,
     ui-monospace,
     SFMono-Regular,
     Menlo,
     Monaco,
     Consolas,
-    monospace;
+    monospace
+  );
   font-size: 0.8rem;
   line-height: 1.45;
-  color: #fca5a5;
+  color: var(--jte-error-body, #fca5a5);
   word-break: break-word;
 }
 
 .json-tree__hint {
   margin-top: 0.55rem !important;
-  color: #9aa3b2 !important;
+  color: var(--jte-hint, #9aa3b2) !important;
   font-family: inherit !important;
   font-size: 0.78rem !important;
 }
@@ -77,8 +181,8 @@
 
 /* Roving tabindex row focus (keyboard arrow navigation). */
 .json-tree-node:focus-visible > .json-tree-row {
-  background: #151a24;
-  box-shadow: inset 0 0 0 1px #3b82f6;
+  background: var(--jte-row-focus-bg, #151a24);
+  box-shadow: inset 0 0 0 1px var(--jte-focus-border, #3b82f6);
 }
 
 .json-tree-node--root > .json-tree-row {
@@ -96,7 +200,7 @@
 }
 
 .json-tree-row:hover {
-  background: #151922;
+  background: var(--jte-row-hover, #151922);
 }
 
 .json-tree-row:hover .json-tree-actions {
@@ -112,7 +216,7 @@
   margin: 0;
   border: none;
   background: transparent;
-  color: #7d8696;
+  color: var(--jte-muted-2, #7d8696);
   font-size: 0.55rem;
   line-height: 1;
   cursor: pointer;
@@ -125,8 +229,8 @@
 }
 
 .json-tree-chevron:hover {
-  color: #e6e8ec;
-  background: #232833;
+  color: var(--jte-fg, #e6e8ec);
+  background: var(--jte-surface-4, #232833);
 }
 
 .json-tree-chevron--open {
@@ -144,12 +248,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #93c5fd;
+  color: var(--jte-key, #93c5fd);
   font-weight: 500;
 }
 
 .json-tree-key--root {
-  color: #c4b5fd;
+  color: var(--jte-key-root, #c4b5fd);
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.68rem;
@@ -157,7 +261,7 @@
 }
 
 .json-tree-key--index {
-  color: #a5b4c8;
+  color: var(--jte-key-index, #a5b4c8);
   font-variant-numeric: tabular-nums;
 }
 
@@ -169,7 +273,7 @@
   margin: 0;
   border-radius: 4px;
   font: inherit;
-  color: #93c5fd;
+  color: var(--jte-key, #93c5fd);
   font-weight: 500;
   cursor: text;
   max-width: 12rem;
@@ -180,12 +284,12 @@
 }
 
 .json-tree-key--editable:hover {
-  border-color: #3a4254;
-  background: #1a1f2a;
+  border-color: var(--jte-border-hover, #3a4254);
+  background: var(--jte-surface-2, #1a1f2a);
 }
 
 .json-tree-key--editable:focus-visible {
-  outline: 2px solid #60a5fa;
+  outline: 2px solid var(--jte-focus-ring, #60a5fa);
   outline-offset: 1px;
 }
 
@@ -194,17 +298,17 @@
   width: 7.5rem;
   max-width: 12rem;
   font: inherit;
-  font-size: 12.5px;
-  color: #e6e8ec;
-  background: #1a1f2a;
-  border: 1px solid #3b82f6;
+  font-size: var(--jte-font-size, 12.5px);
+  color: var(--jte-fg, #e6e8ec);
+  background: var(--jte-surface-2, #1a1f2a);
+  border: 1px solid var(--jte-focus-border, #3b82f6);
   border-radius: 4px;
   padding: 0.12rem 0.3rem;
 }
 
 .json-tree-key-input:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 0 2px var(--jte-focus-glow, rgba(59, 130, 246, 0.35));
 }
 
 .json-tree-type {
@@ -220,44 +324,44 @@
 }
 
 .json-tree-type--string {
-  color: #86efac;
-  background: #14532d55;
-  border-color: #16653488;
+  color: var(--jte-type-string, #86efac);
+  background: var(--jte-type-string-bg, #14532d55);
+  border-color: var(--jte-type-string-border, #16653488);
 }
 
 .json-tree-type--number {
-  color: #fcd34d;
-  background: #713f1255;
-  border-color: #a1620788;
+  color: var(--jte-type-number, #fcd34d);
+  background: var(--jte-type-number-bg, #713f1255);
+  border-color: var(--jte-type-number-border, #a1620788);
 }
 
 .json-tree-type--boolean {
-  color: #c4b5fd;
-  background: #4c1d9555;
-  border-color: #6d28d988;
+  color: var(--jte-type-boolean, #c4b5fd);
+  background: var(--jte-type-boolean-bg, #4c1d9555);
+  border-color: var(--jte-type-boolean-border, #6d28d988);
 }
 
 .json-tree-type--null {
-  color: #9ca3af;
-  background: #37415155;
-  border-color: #4b556388;
+  color: var(--jte-type-null, #9ca3af);
+  background: var(--jte-type-null-bg, #37415155);
+  border-color: var(--jte-type-null-border, #4b556388);
 }
 
 .json-tree-type--object {
-  color: #7dd3fc;
-  background: #0c4a6e55;
-  border-color: #0369a188;
+  color: var(--jte-type-object, #7dd3fc);
+  background: var(--jte-type-object-bg, #0c4a6e55);
+  border-color: var(--jte-type-object-border, #0369a188);
 }
 
 .json-tree-type--array {
-  color: #f9a8d4;
-  background: #83184355;
-  border-color: #be185d88;
+  color: var(--jte-type-array, #f9a8d4);
+  background: var(--jte-type-array-bg, #83184355);
+  border-color: var(--jte-type-array-border, #be185d88);
 }
 
 .json-tree-summary {
   flex-shrink: 0;
-  color: #5c6575;
+  color: var(--jte-muted, #5c6575);
   font-size: 0.72rem;
 }
 
@@ -273,43 +377,43 @@
   min-width: 4rem;
   max-width: 100%;
   font: inherit;
-  font-size: 12.5px;
-  color: #e6e8ec;
-  background: #12151c;
-  border: 1px solid #2a2f3a;
+  font-size: var(--jte-font-size, 12.5px);
+  color: var(--jte-fg, #e6e8ec);
+  background: var(--jte-surface, #12151c);
+  border: 1px solid var(--jte-border-strong, #2a2f3a);
   border-radius: 4px;
   padding: 0.15rem 0.4rem;
 }
 
 .json-tree-input:hover {
-  border-color: #3a4254;
+  border-color: var(--jte-border-hover, #3a4254);
 }
 
 .json-tree-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  border-color: var(--jte-focus-border, #3b82f6);
+  box-shadow: 0 0 0 2px var(--jte-focus-glow-soft, rgba(59, 130, 246, 0.25));
 }
 
 .json-tree-input--string {
-  color: #86efac;
+  color: var(--jte-string, #86efac);
 }
 
 .json-tree-input--number {
-  color: #fcd34d;
+  color: var(--jte-number, #fcd34d);
   font-variant-numeric: tabular-nums;
   max-width: 10rem;
 }
 
 .json-tree-input--boolean {
-  color: #c4b5fd;
+  color: var(--jte-boolean, #c4b5fd);
   width: auto;
   max-width: 6rem;
   cursor: pointer;
 }
 
 .json-tree-null {
-  color: #9ca3af;
+  color: var(--jte-null, #9ca3af);
   font-style: italic;
   padding: 0 0.25rem;
 }
@@ -322,9 +426,9 @@
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: #8b93a3;
-  background: #161a22;
-  border: 1px solid #2a2f3a;
+  color: var(--jte-select-fg, #8b93a3);
+  background: var(--jte-surface-3, #161a22);
+  border: 1px solid var(--jte-border-strong, #2a2f3a);
   border-radius: 4px;
   padding: 0.12rem 0.35rem;
   cursor: pointer;
@@ -332,12 +436,12 @@
 }
 
 .json-tree-type-select:hover {
-  border-color: #3a4254;
-  color: #c8d0dc;
+  border-color: var(--jte-border-hover, #3a4254);
+  color: var(--jte-select-fg-hover, #c8d0dc);
 }
 
 .json-tree-type-select:focus-visible {
-  outline: 2px solid #60a5fa;
+  outline: 2px solid var(--jte-focus-ring, #60a5fa);
   outline-offset: 1px;
 }
 
@@ -361,9 +465,9 @@
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #9aa3b2;
-  background: #1a1f2a;
-  border: 1px solid #2a2f3a;
+  color: var(--jte-action-fg, #9aa3b2);
+  background: var(--jte-surface-2, #1a1f2a);
+  border: 1px solid var(--jte-border-strong, #2a2f3a);
   border-radius: 4px;
   padding: 0.12rem 0.35rem;
   cursor: pointer;
@@ -372,37 +476,37 @@
 }
 
 .json-tree-action:hover {
-  color: #e6e8ec;
+  color: var(--jte-fg, #e6e8ec);
   border-color: #4b5568;
-  background: #232833;
+  background: var(--jte-surface-4, #232833);
 }
 
 .json-tree-action:focus-visible {
-  outline: 2px solid #60a5fa;
+  outline: 2px solid var(--jte-focus-ring, #60a5fa);
   outline-offset: 1px;
 }
 
 .json-tree-action--danger {
-  color: #fca5a5;
+  color: var(--jte-danger, #fca5a5);
   min-width: 1.4rem;
   padding-left: 0.3rem;
   padding-right: 0.3rem;
 }
 
 .json-tree-action--danger:hover {
-  color: #fecaca;
-  border-color: #991b1b;
-  background: #7f1d1d55;
+  color: var(--jte-danger-strong, #fecaca);
+  border-color: var(--jte-danger-border, #991b1b);
+  background: var(--jte-danger-bg, #7f1d1d55);
 }
 
 .json-tree-children {
   margin-left: 0.55rem;
   padding-left: 0.55rem;
-  border-left: 1px solid #232833;
+  border-left: 1px solid var(--jte-border, #232833);
 }
 
 .json-tree-empty {
-  color: #5c6575;
+  color: var(--jte-muted, #5c6575);
   font-size: 0.72rem;
   font-style: italic;
   padding: 0.25rem 0.5rem;

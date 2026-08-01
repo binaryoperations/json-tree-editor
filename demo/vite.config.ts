@@ -12,10 +12,11 @@ export default defineConfig({
   build: {
     sourcemap: true,
     rollupOptions: {
-      // Multi-page: main demo + large-tree stress demo
+      // Multi-page: Solid demo + large-tree + vanilla web component
       input: {
         main: resolve(__dirname, 'index.html'),
         large: resolve(__dirname, 'large.html'),
+        wc: resolve(__dirname, 'wc.html'),
       },
     },
   },

@@ -52,6 +52,7 @@ export const NumberEditor: Component<NumberEditorProps> = (props) => {
   return (
     <input
       class="json-tree-input json-tree-input--number"
+      part="input"
       type="text"
       inputMode="decimal"
       value={draft()}

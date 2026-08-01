@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "dev:large": "vite dev --open /large.html",
+    "dev:wc": "vite dev --open /wc.html",
     "build": "vite build",
     "preview": "vite preview"
   },

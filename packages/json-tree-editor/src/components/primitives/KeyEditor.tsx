@@ -30,6 +30,7 @@ export const KeyEditor: Component<KeyEditorProps> = (props) => {
         <button
           type="button"
           class="json-tree-key json-tree-key--editable"
+          part="key"
           title="Click to rename key"
           onClick={() => {
             setDraft(props.label);
@@ -42,6 +43,7 @@ export const KeyEditor: Component<KeyEditorProps> = (props) => {
     >
       <input
         class="json-tree-key-input"
+        part="input"
         type="text"
         value={draft()}
         aria-label="Property key"

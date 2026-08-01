@@ -1,55 +1,52 @@
 # json-tree-editor
 
-SolidJS **interactive JSON tree editor** extracted as an open-source monorepo.
+Interactive **JSON tree editor** for Solid apps **and** any framework via a
+bundled **web component**.
 
-Edit structured JSON via a collapsible tree (types, keys, primitives, add/remove)
+Edit structured JSON in a collapsible tree (types, keys, primitives, add/remove)
 while keeping a free-form source string as the single source of truth.
 
 ## Packages
 
 | Package | Path | Description |
 | --- | --- | --- |
-| `json-tree-editor` | `packages/json-tree-editor` | Publishable library: tree view, path utils, parse helpers, styles |
-| `@json-tree-editor/demo` | `demo` | Vite demo: CodeMirror source · tree · formatted preview |
+| `json-tree-editor` | `packages/json-tree-editor` | Publishable library: Solid components + `<json-tree-editor>` WC |
+| `@json-tree-editor/demo` | `demo` | Vite demos: Solid 3-pane, large tree, vanilla web component |
 
-## Quick start
+## Install
+
+```bash
+pnpm add json-tree-editor
+# Solid apps also need:
+pnpm add solid-js
+```
+
+## Quick start (monorepo)
 
 ```bash
 pnpm install
+pnpm build:lib   # library dist/ (required for WC demo)
 pnpm dev
 ```
 
 | Demo | URL | Description |
 | --- | --- | --- |
-| Main (3-pane) | **http://localhost:5176/** | Source (CM6) · Tree · Formatted |
+| Main (Solid) | **http://localhost:5176/** | Source (CM6) · Tree · Formatted |
 | Large tree | **http://localhost:5176/large.html** | ~5000-node stress test |
+| Web component | **http://localhost:5176/wc.html** | Vanilla host, no Solid app |
 
 ```bash
-pnpm dev              # both pages on one Vite server
-pnpm dev:large        # same server, opens /large.html
-pnpm build            # multi-page build (index + large)
-# or: pnpm -C demo build
+pnpm dev              # all pages on one Vite server
+pnpm dev:large        # opens /large.html
+pnpm dev:wc           # opens /wc.html (build lib first)
+pnpm build            # library then demo multi-page build
+pnpm build:lib        # packages/json-tree-editor only
+pnpm typecheck
 ```
 
-### Large tree stress demo
+## Library surfaces
 
-Runtime generator (`demo/src/lib/generate-large-json.ts`) builds a deterministic
-document (seed `42`) with **~5000 nodes**.
-
-**Node count:** every JSON value is one node — objects, arrays, and primitives.
-Nested values sum under their parent (same model as tree rows).
-
-**UI:** Tree + stats / formatted preview by default. CodeMirror is **opt-in**
-(“Load source editor”) because mounting CM on a full pretty-print of ~5k nodes
-can be slow.
-
-**Expand all / Collapse all:** toolbar buttons on the large demo. Expand all
-collects every object/array path (`collectContainerPathKeys`) and opens them in
-`requestAnimationFrame` chunks so the UI stays responsive (may take 1–3s).
-Collapse all resets to root only. The library supports controlled expand via
-`expanded` + `onExpandedChange` on `JsonTreeView`.
-
-## Library usage
+### 1. Solid components (peer `solid-js`)
 
 ```tsx
 import { JsonTreeView, parseJsonSource } from 'json-tree-editor';
@@ -63,7 +60,112 @@ const validity = () => parseJsonSource(source());
 />
 ```
 
-### Public API (main)
+`solid-js` is a **peer dependency** and is **not** bundled into the Solid entry.
+
+### 2. Web component (Solid bundled — no Solid host required)
+
+```html
+<script type="module">
+  import 'json-tree-editor/element';
+  // alias: 'json-tree-editor/web-component'
+
+  const el = document.querySelector('json-tree-editor');
+  el.value = '{"hello":"world"}';
+
+  el.addEventListener('change', (e) => {
+    console.log(e.detail.value); // pretty JSON string
+  });
+  // also: 'json-change' (same detail)
+</script>
+
+<json-tree-editor></json-tree-editor>
+```
+
+Or set the attribute for small documents:
+
+```html
+<json-tree-editor value='{"a":1}'></json-tree-editor>
+```
+
+**API**
+
+| Surface | Notes |
+| --- | --- |
+| Property `value` (string) | Preferred source of truth (especially large JSON) |
+| Attribute `value` | Optional; reflected only when length ≤ ~8KB |
+| Property / attribute `disabled` | Disables pointer interaction |
+| Event `change` | `detail: { value: string }` pretty JSON |
+| Event `json-change` | Same payload as `change` (extra alias) |
+| Expanded state | Internal by default |
+
+Open **shadow DOM** isolates styles. Theme tokens are set on `:host` so you can
+override with inline/`style` attributes or a stylesheet targeting the host.
+
+```js
+// After build, CDN-style local path example:
+// import from './node_modules/json-tree-editor/dist/element.js'
+```
+
+## Theming
+
+### CSS custom properties
+
+Defaults match the existing dark UI. Override on the host (WC) or `.json-tree` (Solid):
+
+```css
+json-tree-editor,
+.json-tree {
+  --jte-bg: #0c0e12;
+  --jte-fg: #e6e8ec;
+  --jte-border: #232833;
+  --jte-key: #93c5fd;
+  --jte-string: #86efac;
+  --jte-number: #fcd34d;
+  --jte-boolean: #c4b5fd;
+  --jte-null: #9ca3af;
+  --jte-row-hover: #151922;
+  --jte-focus-ring: #60a5fa;
+  --jte-font-mono: ui-monospace, Menlo, Consolas, monospace;
+  --jte-font-size: 12.5px;
+}
+```
+
+| Variable | Role |
+| --- | --- |
+| `--jte-bg` / `--jte-fg` | Tree surface + default text |
+| `--jte-border` / `--jte-border-strong` | Nesting line / control borders |
+| `--jte-row-hover` / `--jte-row-focus-bg` | Row chrome |
+| `--jte-key` / `--jte-key-root` / `--jte-key-index` | Property keys |
+| `--jte-string` / `--jte-number` / `--jte-boolean` / `--jte-null` | Primitive colors |
+| `--jte-type-*` / `--jte-type-*-bg` | Type badge colors |
+| `--jte-focus-ring` / `--jte-focus-border` | Focus outlines |
+| `--jte-font` / `--jte-font-mono` / `--jte-font-size` | Typography |
+
+### `::part` (web component)
+
+Major pieces expose `part` for styling from outside the shadow tree:
+
+```css
+json-tree-editor::part(tree) { /* .json-tree root */ }
+json-tree-editor::part(row) { /* one tree row */ }
+json-tree-editor::part(key) { }
+json-tree-editor::part(value) { }
+json-tree-editor::part(type) { }
+json-tree-editor::part(chevron) { }
+json-tree-editor::part(actions) { }
+json-tree-editor::part(input) { }
+json-tree-editor::part(disabled) { /* invalid-JSON state panel */ }
+```
+
+Also: `scroll`, `summary`, `type-select`, `action`, `null`.
+
+### Solid light DOM
+
+The Solid path still uses BEM-ish classes (`.json-tree-row`, …) plus the same
+CSS variables. Import `json-tree-editor/styles.css` and override variables or
+classes as needed.
+
+## Public API (Solid entry)
 
 - **Components:** `JsonTreeView` (+ primitives under `components/primitives`)
   - Controlled expand: `expanded`, `onExpandedChange`, `defaultExpanded`
@@ -75,6 +177,7 @@ const validity = () => parseJsonSource(source());
   `collectContainerPathKeys`, `collectVisiblePaths`, `pathDomId`,
   `defaultExpandedPaths`, `ROOT_PATH_KEY`, …
 - **Styles:** `json-tree-editor/styles.css`
+- **Web component:** `json-tree-editor/element` (or `./web-component`)
 
 ### Keyboard navigation (ARIA tree-style)
 
@@ -95,37 +198,62 @@ and type controls keep their normal Left/Right (and select Up/Down) behavior.
 Roving `tabindex` marks one visible `role="treeitem"` as `tabIndex={0}`; others
 use `-1`. Expand state is the same `expanded` set used by chevrons / expand-all.
 
+## Package exports
+
+```json
+{
+  ".": {
+    "types": "./dist/index.d.ts",
+    "solid": "./src/index.ts",
+    "import": "./dist/index.js"
+  },
+  "./element": {
+    "types": "./dist/element.d.ts",
+    "import": "./dist/element.js"
+  },
+  "./styles.css": "./src/styles.css"
+}
+
+(`dist/styles.css` is also produced by `build` for standalone dist drops.)
+```
+
+| Entry | `solid-js` | Use when |
+| --- | --- | --- |
+| `.` | **External** (peer) | Solid applications |
+| `./element` | **Bundled** | React / Vue / Svelte / vanilla / CDN |
+
+Build: `pnpm --filter json-tree-editor build` → `dist/index.js`, `dist/element.js`,
+`dist/styles.css`, and `.d.ts` files.
+
 ## Architecture
 
 ```
 json-tree-editor/
   packages/json-tree-editor/   # library
     src/
-      index.ts
-      components/primitives/   # JsonTreeView split into small pieces
+      index.ts                 # Solid exports
+      element.tsx              # <json-tree-editor> custom element
+      components/primitives/   # JsonTreeView + editors
       lib/                     # json-path, parseJsonSource
-      styles.css
-  demo/                        # multi-page Vite app
-    index.html                 # main three-pane demo
+      styles.css               # CSS variables + classes
+    dist/                      # published build
+  demo/
+    index.html                 # Solid three-pane demo
     large.html                 # ~5k-node stress demo
-    src/
-      App.tsx
-      LargeApp.tsx
-      lib/generate-large-json.ts
-      components/              # JsonEditor (CM6), JsonFormatted
+    wc.html                    # vanilla web component demo
 ```
 
 **Sync rules**
 
 1. Source string is sole document truth.
 2. Valid parse → tree renders from `validity.value`.
-3. Tree edit → immutable path update → pretty `JSON.stringify` → `onChange`.
+3. Tree edit → immutable path update → pretty `JSON.stringify` → `onChange` / WC events.
 4. Invalid source → tree shows error state.
 
 ## Stack
 
 - SolidJS 1.8 + TypeScript
-- Vite 6 (demo)
+- Vite 6 library mode (`vite-plugin-solid`)
 - CodeMirror 6 (demo source pane only)
 - pnpm workspaces
 

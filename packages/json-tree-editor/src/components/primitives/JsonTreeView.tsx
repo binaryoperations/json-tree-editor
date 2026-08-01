@@ -249,11 +249,11 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   return (
-    <div class="json-tree">
+    <div class="json-tree" part="tree">
       <Show
         when={props.validity.ok}
         fallback={
-          <div class="json-tree__disabled" role="status">
+          <div class="json-tree__disabled" part="disabled" role="status">
             <strong>Tree unavailable</strong>
             <p>{props.validity.ok ? '' : props.validity.error}</p>
             <p class="json-tree__hint">
@@ -264,6 +264,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       >
         <div
           class="json-tree__scroll"
+          part="scroll"
           role="tree"
           aria-label="JSON tree"
           ref={(el) => {

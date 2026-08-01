@@ -155,14 +155,20 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
       tabIndex={tabIndex()}
       onFocusIn={onTreeItemFocusIn}
     >
-      <div class="json-tree-row" onMouseDown={onRowMouseDown}>
+      <div class="json-tree-row" part="row" onMouseDown={onRowMouseDown}>
         <Show
           when={isContainer()}
-          fallback={<span class="json-tree-chevron json-tree-chevron--leaf" />}
+          fallback={
+            <span
+              class="json-tree-chevron json-tree-chevron--leaf"
+              part="chevron"
+            />
+          }
         >
           <button
             type="button"
             class="json-tree-chevron"
+            part="chevron"
             classList={{ 'json-tree-chevron--open': open() }}
             aria-label={open() ? 'Collapse' : 'Expand'}
             onClick={() => props.onToggle(props.path)}
@@ -176,6 +182,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           fallback={
             <span
               class="json-tree-key"
+              part="key"
               classList={{
                 'json-tree-key--root': !!props.isRoot,
                 'json-tree-key--index': isArrayIndex(),
@@ -191,7 +198,9 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
         <TypeBadge type={typeName()} />
 
         <Show when={isContainer()}>
-          <span class="json-tree-summary">{summary()}</span>
+          <span class="json-tree-summary" part="summary">
+            {summary()}
+          </span>
         </Show>
 
         <Show when={!isContainer()}>
@@ -200,11 +209,12 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
 
         <TypeSelect type={typeName()} onChange={changeType} />
 
-        <div class="json-tree-actions">
+        <div class="json-tree-actions" part="actions">
           <Show when={typeName() === 'object'}>
             <button
               type="button"
               class="json-tree-action"
+              part="action"
               title="Add property"
               onClick={addProperty}
             >
@@ -215,6 +225,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
             <button
               type="button"
               class="json-tree-action"
+              part="action"
               title="Add item"
               onClick={addItem}
             >
@@ -225,6 +236,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
             <button
               type="button"
               class="json-tree-action json-tree-action--danger"
+              part="action"
               title="Delete"
               onClick={remove}
             >

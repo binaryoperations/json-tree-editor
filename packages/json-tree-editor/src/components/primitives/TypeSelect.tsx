@@ -10,6 +10,7 @@ export type TypeSelectProps = {
 export const TypeSelect: Component<TypeSelectProps> = (props) => (
   <select
     class="json-tree-type-select"
+    part="type-select"
     title="Change type"
     value={props.type}
     onChange={(e) => {

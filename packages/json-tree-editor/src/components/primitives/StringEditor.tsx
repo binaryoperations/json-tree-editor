@@ -18,6 +18,7 @@ export const StringEditor: Component<StringEditorProps> = (props) => {
   return (
     <input
       class="json-tree-input json-tree-input--string"
+      part="input"
       type="text"
       value={draft()}
       aria-label="String value"
