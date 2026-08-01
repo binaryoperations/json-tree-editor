@@ -5,6 +5,8 @@
  */
 import 'json-tree-editor/web-component';
 
+import { mountDemoHeader } from './shell/header';
+
 const SAMPLE = `{
   "id": "wc_demo",
   "name": "Web Component host",
@@ -17,6 +19,19 @@ const SAMPLE = `{
   }
 }
 `;
+
+// Shared chrome (header + left Popover drawer)
+const headerMount = document.querySelector<HTMLElement>('#demo-header');
+const actionsTpl = document.querySelector<HTMLTemplateElement>('#wc-header-actions');
+if (!headerMount || !actionsTpl) {
+  throw new Error('Missing #demo-header or #wc-header-actions');
+}
+const actions = actionsTpl.content.firstElementChild?.cloneNode(true) as HTMLElement;
+mountDemoHeader({
+  target: headerMount,
+  page: 'wc',
+  actions,
+});
 
 const source = document.querySelector<HTMLTextAreaElement>('#source')!;
 const tree = document.querySelector<

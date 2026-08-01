@@ -7,6 +7,7 @@ import {
 } from 'json-tree-editor';
 import { type Component, createMemo, createSignal, onCleanup, Show } from 'solid-js';
 
+import { DemoHeader } from './components/DemoHeader';
 import { JsonEditor } from './components/JsonEditor';
 import { JsonFormatted } from './components/JsonFormatted';
 import {
@@ -149,76 +150,67 @@ export const LargeApp: Component = () => {
 
   return (
     <div class="app">
-      <header class="app-header">
-        <div class="app-header__left">
-          <h1>json-tree-editor</h1>
-          <span class="badge">large tree</span>
-          <a class="nav-link" href="/">
-            ← main demo
-          </a>
-        </div>
-        <div class="app-header__right">
-          <span
-            class="stat-pill"
-            title="Nodes = every JSON value (containers + leaves)"
-          >
-            {liveNodeCount() ?? '—'} nodes
-          </span>
-          <span class="stat-pill stat-pill--muted">
-            gen {genInfo().generationMs} ms · seed {genInfo().seed}
-          </span>
-          <span class="stat-pill stat-pill--muted">
-            target {genInfo().targetNodes}
-          </span>
-          <Show when={expandProgress()}>
-            {(p) => (
-              <span
-                class="stat-pill stat-pill--busy"
-                role="status"
-                aria-live="polite"
-              >
-                expand {p().done}/{p().total}
-              </span>
-            )}
-          </Show>
-          <ValidityBadge validity={validity()} />
-          <button
-            type="button"
-            class="btn"
-            onClick={expandAll}
-            disabled={!validity().ok || expanding()}
-            title="Open every object/array (chunked; may take 1–3s on ~5k nodes)"
-          >
-            {expandLabel()}
-          </button>
-          <button
-            type="button"
-            class="btn"
-            onClick={collapseAll}
-            disabled={!validity().ok}
-            title="Collapse to root only"
-          >
-            Collapse all
-          </button>
-          <button
-            type="button"
-            class="btn"
-            onClick={regenerate}
-            title="Regenerate the same seeded document"
-          >
-            Regenerate
-          </button>
-          <button
-            type="button"
-            class="btn"
-            classList={{ 'btn--active': showSourceEditor() }}
-            onClick={() => setShowSourceEditor((v) => !v)}
-            title="CodeMirror on a ~5k-node pretty document can be slow to mount"
-          >
-            {showSourceEditor() ? 'Hide source editor' : 'Load source editor'}
-          </button>
-        </div>
-      </header>
+      <DemoHeader page="large">
+        <span
+          class="stat-pill"
+          title="Nodes = every JSON value (containers + leaves)"
+        >
+          {liveNodeCount() ?? '—'} nodes
+        </span>
+        <span class="stat-pill stat-pill--muted">
+          gen {genInfo().generationMs} ms · seed {genInfo().seed}
+        </span>
+        <span class="stat-pill stat-pill--muted">
+          target {genInfo().targetNodes}
+        </span>
+        <Show when={expandProgress()}>
+          {(p) => (
+            <span
+              class="stat-pill stat-pill--busy"
+              role="status"
+              aria-live="polite"
+            >
+              expand {p().done}/{p().total}
+            </span>
+          )}
+        </Show>
+        <ValidityBadge validity={validity()} />
+        <button
+          type="button"
+          class="btn"
+          onClick={expandAll}
+          disabled={!validity().ok || expanding()}
+          title="Open every object/array (chunked; may take 1–3s on ~5k nodes)"
+        >
+          {expandLabel()}
+        </button>
+        <button
+          type="button"
+          class="btn"
+          onClick={collapseAll}
+          disabled={!validity().ok}
+          title="Collapse to root only"
+        >
+          Collapse all
+        </button>
+        <button
+          type="button"
+          class="btn"
+          onClick={regenerate}
+          title="Regenerate the same seeded document"
+        >
+          Regenerate
+        </button>
+        <button
+          type="button"
+          class="btn"
+          classList={{ 'btn--active': showSourceEditor() }}
+          onClick={() => setShowSourceEditor((v) => !v)}
+          title="CodeMirror on a ~5k-node pretty document can be slow to mount"
+        >
+          {showSourceEditor() ? 'Hide source editor' : 'Load source editor'}
+        </button>
+      </DemoHeader>
 
       <div
         class="panes"

@@ -33,48 +33,13 @@
         flex-direction: column;
         height: 100%;
       }
-      header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        flex-wrap: wrap;
-        padding: 0.65rem 1rem;
-        border-bottom: 1px solid #2a2f3a;
-        background: #161a22;
-      }
-      header h1 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-      }
-      .badge {
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: #93c5fd;
-        background: #1e3a5f;
-        border: 1px solid #2563eb88;
-        border-radius: 999px;
-        padding: 0.15rem 0.5rem;
-      }
-      .nav a {
-        color: #93c5fd;
-        text-decoration: none;
-        font-size: 0.85rem;
-        margin-right: 0.75rem;
-      }
-      .nav a:hover {
-        text-decoration: underline;
-      }
       .toolbar {
         display: flex;
         gap: 0.5rem;
         align-items: center;
         flex-wrap: wrap;
       }
-      button {
+      .toolbar button {
         appearance: none;
         font: inherit;
         font-size: 0.8rem;
@@ -86,9 +51,13 @@
         padding: 0.35rem 0.65rem;
         cursor: pointer;
       }
-      button:hover {
+      .toolbar button:hover {
         border-color: #4b5568;
         background: #232833;
+      }
+      .toolbar button:focus-visible {
+        outline: 2px solid #60a5fa;
+        outline-offset: 2px;
       }
       .panes {
         flex: 1;
@@ -181,23 +150,7 @@
   </head>
   <body>
     <div class="app">
-      <header>
-        <div style="display: flex; align-items: center; gap: 0.6rem">
-          <h1>json-tree-editor</h1>
-          <span class="badge">Web Component</span>
-          <nav class="nav">
-            <a href="/">Solid demo</a>
-            <a href="/large.html">Large tree</a>
-          </nav>
-        </div>
-        <div class="toolbar">
-          <span id="status">idle</span>
-          <button type="button" id="btn-sample">Load sample</button>
-          <button type="button" id="btn-theme">Toggle light theme</button>
-          <button type="button" id="btn-disabled">Toggle disabled</button>
-          <span class="meta">vanilla · no Solid host required</span>
-        </div>
-      </header>
+      <div id="demo-header"></div>
       <div class="panes">
         <section class="pane" aria-label="JSON source">
           <div class="pane-header">
@@ -219,6 +172,16 @@
         </section>
       </div>
     </div>
+    <!-- Toolbar actions moved into shared header by wc-main.ts -->
+    <template id="wc-header-actions">
+      <div class="toolbar">
+        <span id="status">idle</span>
+        <button type="button" id="btn-sample">Load sample</button>
+        <button type="button" id="btn-theme">Toggle light theme</button>
+        <button type="button" id="btn-disabled">Toggle disabled</button>
+        <span class="meta">vanilla · no Solid host required</span>
+      </div>
+    </template>
     <script type="module" src="/src/wc-main.ts"></script>
   </body>
 </html>

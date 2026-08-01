@@ -75,7 +75,9 @@ body {
   white-space: nowrap;
 }
 
-.app-header .meta {
+.app-header .meta,
+.demo-header .meta,
+.meta {
   font-size: 0.75rem;
   color: #7d8696;
   white-space: nowrap;

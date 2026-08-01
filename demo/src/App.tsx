@@ -5,6 +5,7 @@ import {
 } from 'json-tree-editor';
 import { type Component, createMemo, createSignal } from 'solid-js';
 
+import { DemoHeader } from './components/DemoHeader';
 import { JsonEditor } from './components/JsonEditor';
 import { JsonFormatted } from './components/JsonFormatted';
 
@@ -46,35 +47,23 @@ export const App: Component = () => {
 
   return (
     <div class="app">
-      <header class="app-header">
-        <div class="app-header__left">
-          <h1>json-tree-editor</h1>
-          <span class="badge">Solid · demo</span>
-          <a class="nav-link" href="/large.html">
-            large tree →
-          </a>
-          <a class="nav-link" href="/wc.html">
-            web component →
-          </a>
-        </div>
-        <div class="app-header__right">
-          <ValidityBadge validity={validity()} />
-          <button
-            type="button"
-            class="btn"
-            onClick={prettyPrint}
-            disabled={!validity().ok}
-            title={
-              validity().ok
-                ? 'Replace source with pretty-printed JSON'
-                : 'Fix JSON errors before formatting'
-            }
-          >
-            Pretty-print
-          </button>
-          <span class="meta">@json-tree-editor/demo · port 5176</span>
-        </div>
-      </header>
+      <DemoHeader page="main">
+        <ValidityBadge validity={validity()} />
+        <button
+          type="button"
+          class="btn"
+          onClick={prettyPrint}
+          disabled={!validity().ok}
+          title={
+            validity().ok
+              ? 'Replace source with pretty-printed JSON'
+              : 'Fix JSON errors before formatting'
+          }
+        >
+          Pretty-print
+        </button>
+        <span class="meta">@json-tree-editor/demo · port 5176</span>
+      </DemoHeader>
 
       <div class="panes panes--three">
         <section class="pane" aria-label="JSON source editor">
