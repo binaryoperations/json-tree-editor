@@ -10,7 +10,7 @@ while keeping a free-form source string as the single source of truth.
 
 | Package | Path | Description |
 | --- | --- | --- |
-| `json-tree-editor` | `packages/json-tree-editor` | Publishable library: Solid components + `<json-tree-editor>` WC |
+| `json-tree-editor` | `packages/json-tree-editor` | Publishable library: Solid **source** + prebuilt `<json-tree-editor>` WC |
 | `@json-tree-editor/demo` | `demo` | Vite demos: Solid 3-pane, large tree, vanilla web component |
 
 ## Install
@@ -25,7 +25,7 @@ pnpm add solid-js
 
 ```bash
 pnpm install
-pnpm build:lib   # library dist/ (required for WC demo)
+pnpm build:lib   # builds WC dist/ only (needed for WC demo)
 pnpm dev
 ```
 
@@ -38,15 +38,19 @@ pnpm dev
 ```bash
 pnpm dev              # all pages on one Vite server
 pnpm dev:large        # opens /large.html
-pnpm dev:wc           # opens /wc.html (build lib first)
-pnpm build            # library then demo multi-page build
-pnpm build:lib        # packages/json-tree-editor only
+pnpm dev:wc           # opens /wc.html (build WC first: pnpm build:lib)
+pnpm build            # WC package then demo multi-page build
+pnpm build:lib        # packages/json-tree-editor WC only
 pnpm typecheck
 ```
 
 ## Library surfaces
 
-### 1. Solid components (peer `solid-js`)
+### 1. Solid components (TypeScript source — peer `solid-js`)
+
+Solid consumers import **TypeScript source** directly. Your app must compile it
+with a Solid toolchain (`vite-plugin-solid`, etc.). No library JS build is
+required for this path.
 
 ```tsx
 import { JsonTreeView, parseJsonSource } from 'json-tree-editor';
@@ -60,9 +64,11 @@ const validity = () => parseJsonSource(source());
 />
 ```
 
-`solid-js` is a **peer dependency** and is **not** bundled into the Solid entry.
+`solid-js` is a **peer dependency**. The package points `exports["."]` at
+`./src/index.ts` so Vite (or another bundler) compiles the Solid JSX with your
+app’s `solid-js` instance.
 
-### 2. Web component (Solid bundled — no Solid host required)
+### 2. Web component (prebuilt — Solid bundled, no Solid host required)
 
 ```html
 <script type="module">
@@ -202,27 +208,42 @@ use `-1`. Expand state is the same `expanded` set used by chevrons / expand-all.
 ```json
 {
   ".": {
-    "types": "./dist/index.d.ts",
+    "types": "./src/index.ts",
     "solid": "./src/index.ts",
-    "import": "./dist/index.js"
+    "import": "./src/index.ts",
+    "default": "./src/index.ts"
   },
   "./web-component": {
     "types": "./dist/web-component.d.ts",
-    "import": "./dist/web-component.js"
+    "import": "./dist/web-component.js",
+    "default": "./dist/web-component.js"
   },
-  "./styles.css": "./src/styles.css"
+  "./styles.css": "./src/styles.css",
+  "./package.json": "./package.json"
 }
-
-(`dist/styles.css` is also produced by `build` for standalone dist drops.)
 ```
 
 | Entry | `solid-js` | Use when |
 | --- | --- | --- |
-| `.` | **External** (peer) | Solid applications |
-| `./web-component` | **Bundled** | React / Vue / Svelte / vanilla / CDN |
+| `.` | **External** (peer); TS source | Solid applications with a Solid toolchain |
+| `./web-component` | **Bundled** in prebuilt JS | React / Vue / Svelte / vanilla / CDN |
 
-Build: `pnpm --filter json-tree-editor build` → `dist/index.js`, `dist/web-component.js`,
-`dist/styles.css`, and `.d.ts` files.
+### Build
+
+Only the **web component** is built:
+
+```bash
+pnpm --filter json-tree-editor build
+# or: pnpm build:lib
+```
+
+Produces:
+
+- `dist/web-component.js` (+ sourcemap) — Solid bundled
+- `dist/web-component.d.ts` — WC public types
+
+There is **no** `dist/index.js`. Solid apps never need a library JS build; build
+is only required for WC packaging and the vanilla WC demo page.
 
 ## Architecture
 
@@ -230,12 +251,12 @@ Build: `pnpm --filter json-tree-editor build` → `dist/index.js`, `dist/web-com
 json-tree-editor/
   packages/json-tree-editor/   # library
     src/
-      index.ts                 # Solid exports
+      index.ts                 # Solid exports (consumed as source)
       web-component.tsx        # <json-tree-editor> custom element
       components/primitives/   # JsonTreeView + editors
       lib/                     # json-path, parseJsonSource
       styles.css               # CSS variables + classes
-    dist/                      # published build
+    dist/                      # WC artifact only (web-component.js + .d.ts)
   demo/
     index.html                 # Solid three-pane demo
     large.html                 # ~5k-node stress demo
@@ -252,7 +273,7 @@ json-tree-editor/
 ## Stack
 
 - SolidJS 1.8 + TypeScript
-- Vite 6 library mode (`vite-plugin-solid`)
+- Vite 6 library mode (`vite-plugin-solid`) — WC only
 - CodeMirror 6 (demo source pane only)
 - pnpm workspaces
 

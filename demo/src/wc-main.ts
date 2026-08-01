@@ -1,7 +1,7 @@
 /**
  * Vanilla web component demo — no Solid host app.
- * Requires library build: `pnpm --filter json-tree-editor build`
- * (or root `pnpm build` / `pnpm build:lib`).
+ * Requires WC build: `pnpm --filter json-tree-editor build`
+ * (or root `pnpm build:lib` / demo `prebuild`).
  */
 import 'json-tree-editor/web-component';
 

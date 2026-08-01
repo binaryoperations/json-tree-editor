@@ -9,15 +9,15 @@
     "./dist/web-component.js",
     "./src/web-component.tsx"
   ],
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "solid": "./src/index.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
     },
     "./web-component": {
       "types": "./dist/web-component.d.ts",
@@ -32,7 +32,7 @@
     "src"
   ],
   "scripts": {
-    "build": "vite build && vite build --mode web-component && node ./scripts/copy-styles.mjs",
+    "build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prepublishOnly": "pnpm run build"
   },

@@ -7,6 +7,7 @@
     "dev": "vite dev",
     "dev:large": "vite dev --open /large.html",
     "dev:wc": "vite dev --open /wc.html",
+    "prebuild": "pnpm --filter json-tree-editor build",
     "build": "vite build",
     "preview": "vite preview"
   },

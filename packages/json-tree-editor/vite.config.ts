@@ -7,63 +7,46 @@ import solid from 'vite-plugin-solid';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 
-const solidExternals = [
-  'solid-js',
-  'solid-js/web',
-  'solid-js/store',
-  'solid-js/html',
-  'solid-js/h',
-];
-
 /**
- * Dual library builds:
- * - default (`vite build`): Solid package entry — solid-js external
- * - `--mode web-component`: web component — solid-js bundled inside
+ * Web-component-only library build.
+ *
+ * Solid consumers import TypeScript source via package exports (no dist/index.js).
+ * This build bundles solid-js into dist/web-component.js for framework-agnostic hosts.
  */
-export default defineConfig(({ mode }): UserConfig => {
-  const isWebComponent = mode === 'web-component';
-
+export default defineConfig((): UserConfig => {
   return {
     plugins: [
       solid(),
-      // Emit types once with the Solid entry (includes web-component.tsx declarations).
-      !isWebComponent &&
-        dts({
-          include: ['src/**/*.ts', 'src/**/*.tsx'],
-          exclude: ['src/**/*.css'],
-          entryRoot: 'src',
-          outDir: 'dist',
-          rollupTypes: false,
-          insertTypesEntry: false,
-          copyDtsFiles: true,
-          // web-component is not an input of this build; still emit its .d.ts from source.
-          staticImport: true,
-        }),
-    ].filter(Boolean),
+      dts({
+        // Only emit types for the WC public surface (not the Solid source entry).
+        include: ['src/web-component.tsx', 'src/vite-env.d.ts'],
+        exclude: ['src/**/*.css'],
+        entryRoot: 'src',
+        outDir: 'dist',
+        // rollupTypes conflicts with package.json "types" pointing at source.
+        rollupTypes: false,
+        insertTypesEntry: false,
+        copyDtsFiles: false,
+        staticImport: true,
+      }),
+    ],
     build: {
-      emptyOutDir: !isWebComponent,
+      emptyOutDir: true,
       sourcemap: true,
-      minify: isWebComponent ? 'esbuild' : false,
+      minify: 'esbuild',
       lib: {
-        entry: resolve(
-          root,
-          isWebComponent ? 'src/web-component.tsx' : 'src/index.ts',
-        ),
+        entry: resolve(root, 'src/web-component.tsx'),
         formats: ['es'],
-        fileName: () => (isWebComponent ? 'web-component.js' : 'index.js'),
+        fileName: () => 'web-component.js',
       },
       rollupOptions: {
-        external: isWebComponent
-          ? []
-          : (id) =>
-              solidExternals.some(
-                (pkg) => id === pkg || id.startsWith(`${pkg}/`),
-              ),
+        // Bundle solid-js (and everything else) into the WC artifact.
+        external: [],
         output: {
           assetFileNames: 'assets/[name][extname]',
         },
       },
-      // Keep CSS as a separate file for the Solid entry; WC inlines via ?inline.
+      // CSS is imported with ?inline in the WC entry — no separate asset needed.
       cssCodeSplit: true,
     },
   };
