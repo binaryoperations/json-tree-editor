@@ -3,12 +3,23 @@
   "private": true,
   "version": "0.1.0",
   "description": "SolidJS JSON tree editor monorepo",
+  "license": "MIT",
+  "author": "Shashank (https://github.com/shashank1010)",
+  "homepage": "https://github.com/binaryoperations/json-tree-editor",
+  "bugs": {
+    "url": "https://github.com/binaryoperations/json-tree-editor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/binaryoperations/json-tree-editor.git"
+  },
   "scripts": {
     "dev": "pnpm --filter @json-tree-editor/demo dev",
     "build": "pnpm --filter json-tree-editor build && pnpm --filter @json-tree-editor/demo build",
     "build:lib": "pnpm --filter json-tree-editor build",
     "typecheck": "pnpm --filter json-tree-editor typecheck",
-    "preview": "pnpm --filter @json-tree-editor/demo preview"
+    "preview": "pnpm --filter @json-tree-editor/demo preview",
+    "publish:json-tree-editor": "pnpm --filter json-tree-editor build && pnpm --filter json-tree-editor publish --access public"
   },
   "engines": {
     "node": ">=18",

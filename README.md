@@ -10,7 +10,7 @@ while keeping a free-form source string as the single source of truth.
 
 | Package | Path | Description |
 | --- | --- | --- |
-| `json-tree-editor` | `packages/json-tree-editor` | Publishable library: Solid **source** + prebuilt `<json-tree-editor>` WC |
+| `json-tree-editor` | `json-tree-editor` | Publishable library: Solid **source** + prebuilt `<json-tree-editor>` WC |
 | `@json-tree-editor/demo` | `demo` | Vite demos: Solid 3-pane, large tree, vanilla web component |
 
 ## Install
@@ -40,7 +40,8 @@ pnpm dev              # all pages on one Vite server
 pnpm dev:large        # opens /large.html
 pnpm dev:wc           # opens /wc.html (build WC first: pnpm build:lib)
 pnpm build            # WC package then demo multi-page build
-pnpm build:lib        # packages/json-tree-editor WC only
+pnpm build:lib        # json-tree-editor WC only
+pnpm publish:json-tree-editor  # build + publish library only
 pnpm typecheck
 ```
 
@@ -248,8 +249,8 @@ is only required for WC packaging and the vanilla WC demo page.
 ## Architecture
 
 ```
-json-tree-editor/
-  packages/json-tree-editor/   # library
+json-tree-editor/              # monorepo root
+  json-tree-editor/            # library package
     src/
       index.ts                 # Solid exports (consumed as source)
       web-component.tsx        # <json-tree-editor> custom element
@@ -277,6 +278,20 @@ json-tree-editor/
 - CodeMirror 6 (demo source pane only)
 - pnpm workspaces
 
+## Publishing
+
+Publish only the library package (builds the web component first via `prepublishOnly`):
+
+```bash
+# from monorepo root
+pnpm publish:json-tree-editor
+
+# or from the package directory
+cd json-tree-editor && pnpm publish
+```
+
+Do not publish the monorepo root or the demo package (`private: true`).
+
 ## License
 
-MIT
+[MIT](./LICENSE) © 2026 Shashank

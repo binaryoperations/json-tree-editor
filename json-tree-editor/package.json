@@ -4,6 +4,16 @@
   "description": "Interactive JSON tree editor — Solid components + framework-agnostic web component",
   "type": "module",
   "license": "MIT",
+  "author": "Shashank (https://github.com/shashank1010)",
+  "homepage": "https://github.com/binaryoperations/json-tree-editor",
+  "bugs": {
+    "url": "https://github.com/binaryoperations/json-tree-editor/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/binaryoperations/json-tree-editor.git",
+    "directory": "json-tree-editor"
+  },
   "sideEffects": [
     "*.css",
     "./dist/web-component.js",
@@ -59,10 +69,5 @@
     "solidjs",
     "web-component",
     "custom-element"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/example/json-tree-editor.git",
-    "directory": "packages/json-tree-editor"
-  }
+  ]
 }
