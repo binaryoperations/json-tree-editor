@@ -28,7 +28,10 @@ export {
 export {
   type JsonPath,
   type JsonTypeName,
+  ROOT_PATH_KEY,
   pathKey,
+  collectContainerPathKeys,
+  defaultExpandedPaths,
   getAtPath,
   setAtPath,
   deleteAtPath,

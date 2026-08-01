@@ -383,6 +383,17 @@ body {
   color: #9aa3b2;
 }
 
+.stat-pill--busy {
+  color: #fcd34d;
+  border-color: #a16207;
+  background: #422006;
+}
+
+.pane-body--busy {
+  pointer-events: none;
+  opacity: 0.92;
+}
+
 .btn--active {
   background: #1e3a5f;
   border-color: #3b82f6;

@@ -41,7 +41,13 @@ Nested values sum under their parent (same model as tree rows).
 
 **UI:** Tree + stats / formatted preview by default. CodeMirror is **opt-in**
 (“Load source editor”) because mounting CM on a full pretty-print of ~5k nodes
-can be slow. Expand-all is omitted intentionally (can freeze the UI).
+can be slow.
+
+**Expand all / Collapse all:** toolbar buttons on the large demo. Expand all
+collects every object/array path (`collectContainerPathKeys`) and opens them in
+`requestAnimationFrame` chunks so the UI stays responsive (may take 1–3s).
+Collapse all resets to root only. The library supports controlled expand via
+`expanded` + `onExpandedChange` on `JsonTreeView`.
 
 ## Library usage
 
@@ -60,10 +66,12 @@ const validity = () => parseJsonSource(source());
 ### Public API (main)
 
 - **Components:** `JsonTreeView` (+ primitives under `components/primitives`)
+  - Controlled expand: `expanded`, `onExpandedChange`, `defaultExpanded`
 - **Parse:** `parseJsonSource`, `JsonValidity`
 - **Path ops:** `getAtPath`, `setAtPath`, `deleteAtPath`, `renameKeyAtPath`,
   `addPropertyAtPath`, `addItemAtPath`, `addShapedItemAtPath`, `cloneJsonShape`,
-  `parseCompleteNumber`, `convertJsonType`, `jsonTypeOf`, …
+  `parseCompleteNumber`, `convertJsonType`, `jsonTypeOf`,
+  `collectContainerPathKeys`, `defaultExpandedPaths`, `ROOT_PATH_KEY`, …
 - **Styles:** `json-tree-editor/styles.css`
 
 ## Architecture

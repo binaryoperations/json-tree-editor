@@ -1,9 +1,46 @@
 /** Path segments into a JSON value (object keys or array indices). */
 export type JsonPath = (string | number)[];
 
+/**
+ * Path-key for the document root. Include this in expanded sets so the root
+ * container starts open (see {@link pathKey} with an empty path).
+ */
+export const ROOT_PATH_KEY = '';
+
 /** Stable string key for expand/collapse sets. */
 export function pathKey(path: JsonPath): string {
-  return path.length === 0 ? '' : path.map(String).join('\0');
+  return path.length === 0 ? ROOT_PATH_KEY : path.map(String).join('\0');
+}
+
+/**
+ * Collect path keys for every object/array (container) in document order (DFS).
+ * Used by expand-all. Primitives are omitted — only containers need expand state.
+ */
+export function collectContainerPathKeys(value: unknown): string[] {
+  const keys: string[] = [];
+
+  const walk = (v: unknown, path: JsonPath): void => {
+    if (v === null || typeof v !== 'object') return;
+    keys.push(pathKey(path));
+    if (Array.isArray(v)) {
+      for (let i = 0; i < v.length; i += 1) {
+        walk(v[i], [...path, i]);
+      }
+      return;
+    }
+    const obj = v as Record<string, unknown>;
+    for (const k of Object.keys(obj)) {
+      walk(obj[k], [...path, k]);
+    }
+  };
+
+  walk(value, []);
+  return keys;
+}
+
+/** Default expanded set: only the root container is open. */
+export function defaultExpandedPaths(): Set<string> {
+  return new Set([ROOT_PATH_KEY]);
 }
 
 /** Read value at path; returns undefined if path is invalid. */
