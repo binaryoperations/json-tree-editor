@@ -33,7 +33,7 @@ importers:
         version: 6.0.2
       json-tree-editor:
         specifier: workspace:*
-        version: link:../packages/json-tree-editor
+        version: link:../json-tree-editor
       solid-js:
         specifier: ^1.8.0
         version: 1.9.14
@@ -51,7 +51,7 @@ importers:
         specifier: ^2.10.2
         version: 2.11.14(solid-js@1.9.14)(vite@6.4.3(@types/node@22.20.1))
 
-  packages/json-tree-editor:
+  json-tree-editor:
     devDependencies:
       solid-js:
         specifier: ^1.8.0

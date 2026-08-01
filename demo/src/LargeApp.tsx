@@ -4,7 +4,7 @@ import {
   JsonTreeView,
   parseJsonSource,
   type JsonValidity,
-} from 'json-tree-editor';
+} from '../../json-tree-editor/src';
 import { type Component, createMemo, createSignal, onCleanup, Show } from 'solid-js';
 
 import { DemoHeader } from './components/DemoHeader';
