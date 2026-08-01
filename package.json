@@ -19,11 +19,15 @@
     "build:lib": "pnpm --filter @binaryoperations/json-tree-editor build",
     "typecheck": "pnpm --filter @binaryoperations/json-tree-editor typecheck",
     "preview": "pnpm --filter @json-tree-editor/demo preview",
-    "version:patch": "npm version patch --no-git-tag-version --prefix json-tree-editor",
-    "version:minor": "npm version minor --no-git-tag-version --prefix json-tree-editor",
-    "version:major": "npm version major --no-git-tag-version --prefix json-tree-editor",
-    "version:prerelease": "npm version prerelease --no-git-tag-version --prefix json-tree-editor",
-    "publish:json-tree-editor": "pnpm --filter @binaryoperations/json-tree-editor build && pnpm --filter @binaryoperations/json-tree-editor publish --access public"
+    "version:patch": "npm version patch --prefix json-tree-editor",
+    "version:minor": "npm version minor --prefix json-tree-editor",
+    "version:major": "npm version major --prefix json-tree-editor",
+    "version:prerelease": "npm version prerelease --prefix json-tree-editor",
+    "publish:json-tree-editor": "pnpm --filter @binaryoperations/json-tree-editor build && pnpm --filter @binaryoperations/json-tree-editor publish --access public",
+    "release:patch": "pnpm version:patch && pnpm publish:json-tree-editor && echo '\\nRemember: git push && git push --tags'",
+    "release:minor": "pnpm version:minor && pnpm publish:json-tree-editor && echo '\\nRemember: git push && git push --tags'",
+    "release:major": "pnpm version:major && pnpm publish:json-tree-editor && echo '\\nRemember: git push && git push --tags'",
+    "release:prerelease": "pnpm version:prerelease && pnpm publish:json-tree-editor && echo '\\nRemember: git push && git push --tags'"
   },
   "engines": {
     "node": ">=18",
