@@ -71,6 +71,16 @@
   min-width: 0;
 }
 
+.json-tree-node:focus {
+  outline: none;
+}
+
+/* Roving tabindex row focus (keyboard arrow navigation). */
+.json-tree-node:focus-visible > .json-tree-row {
+  background: #151a24;
+  box-shadow: inset 0 0 0 1px #3b82f6;
+}
+
 .json-tree-node--root > .json-tree-row {
   padding-left: 0.15rem;
 }

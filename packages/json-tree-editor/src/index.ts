@@ -31,6 +31,8 @@ export {
   ROOT_PATH_KEY,
   pathKey,
   collectContainerPathKeys,
+  collectVisiblePaths,
+  pathDomId,
   defaultExpandedPaths,
   getAtPath,
   setAtPath,

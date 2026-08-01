@@ -67,12 +67,33 @@ const validity = () => parseJsonSource(source());
 
 - **Components:** `JsonTreeView` (+ primitives under `components/primitives`)
   - Controlled expand: `expanded`, `onExpandedChange`, `defaultExpanded`
+  - Keyboard navigation works out of the box (see below)
 - **Parse:** `parseJsonSource`, `JsonValidity`
 - **Path ops:** `getAtPath`, `setAtPath`, `deleteAtPath`, `renameKeyAtPath`,
   `addPropertyAtPath`, `addItemAtPath`, `addShapedItemAtPath`, `cloneJsonShape`,
   `parseCompleteNumber`, `convertJsonType`, `jsonTypeOf`,
-  `collectContainerPathKeys`, `defaultExpandedPaths`, `ROOT_PATH_KEY`, …
+  `collectContainerPathKeys`, `collectVisiblePaths`, `pathDomId`,
+  `defaultExpandedPaths`, `ROOT_PATH_KEY`, …
 - **Styles:** `json-tree-editor/styles.css`
+
+### Keyboard navigation (ARIA tree-style)
+
+Focus a tree row (click the row chrome, or Tab to the active row). Arrow keys
+move among **visible** rows (DFS with expanded ancestors). Navigation is
+**disabled** while focus is inside an `input` / `select` / `textarea` so caret
+and type controls keep their normal Left/Right (and select Up/Down) behavior.
+
+| Key | Action |
+| --- | --- |
+| `↓` ArrowDown | Next visible row |
+| `↑` ArrowUp | Previous visible row |
+| `→` ArrowRight | Expand a collapsed container; if already expanded, move to first child |
+| `←` ArrowLeft | Collapse an expanded container; if collapsed or a leaf, move to parent |
+| Home | First visible row |
+| End | Last visible row |
+
+Roving `tabindex` marks one visible `role="treeitem"` as `tabIndex={0}`; others
+use `-1`. Expand state is the same `expanded` set used by chevrons / expand-all.
 
 ## Architecture
 

@@ -9,6 +9,8 @@ import {
   type JsonPath,
   type JsonTypeName,
   jsonTypeOf,
+  pathDomId,
+  pathKey,
   renameKeyAtPath,
   setAtPath,
   uniqueObjectKey,
@@ -28,6 +30,9 @@ export type JsonTreeNodeProps = {
   onToggle: (path: JsonPath) => void;
   onExpand: (path: JsonPath) => void;
   onCommit: (nextRoot: unknown) => void;
+  /** Path key of the roving-tabindex active row. */
+  focusedPathKey: () => string;
+  onFocusPath: (path: JsonPath) => void;
 };
 
 export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
@@ -109,14 +114,48 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     props.path.length > 0 &&
     typeof props.path[props.path.length - 1] === 'number';
 
+  const tabIndex = () =>
+    pathKey(props.path) === props.focusedPathKey() ? 0 : -1;
+
+  const focusRow = () => {
+    props.onFocusPath(props.path);
+  };
+
+  /** Focus the treeitem when clicking non-editable parts of the row. */
+  const onRowMouseDown = (e: MouseEvent) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    if (t.closest('button, input, select, textarea, a, label')) return;
+    // Defer so we don't fight focus moves into nested controls.
+    const item = (e.currentTarget as HTMLElement).closest(
+      '[role="treeitem"]',
+    ) as HTMLElement | null;
+    if (!item) return;
+    focusRow();
+    // Focus the treeitem itself for arrow-key navigation.
+    queueMicrotask(() => item.focus({ preventScroll: true }));
+  };
+
+  const onTreeItemFocusIn = (e: FocusEvent) => {
+    const t = e.target;
+    if (!(t instanceof Element)) return;
+    // Only adopt focus for this row, not bubbled events from nested treeitems.
+    const nearest = t.closest('[role="treeitem"]');
+    if (nearest !== e.currentTarget) return;
+    focusRow();
+  };
+
   return (
     <div
       class="json-tree-node"
       classList={{ 'json-tree-node--root': !!props.isRoot }}
       role="treeitem"
       aria-expanded={isContainer() ? open() : undefined}
+      data-path={pathDomId(props.path)}
+      tabIndex={tabIndex()}
+      onFocusIn={onTreeItemFocusIn}
     >
-      <div class="json-tree-row">
+      <div class="json-tree-row" onMouseDown={onRowMouseDown}>
         <Show
           when={isContainer()}
           fallback={<span class="json-tree-chevron json-tree-chevron--leaf" />}
@@ -207,6 +246,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 onToggle={props.onToggle}
                 onExpand={props.onExpand}
                 onCommit={props.onCommit}
+                focusedPathKey={props.focusedPathKey}
+                onFocusPath={props.onFocusPath}
               />
             )}
           </For>

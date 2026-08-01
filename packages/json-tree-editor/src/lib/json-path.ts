@@ -43,6 +43,41 @@ export function defaultExpandedPaths(): Set<string> {
   return new Set([ROOT_PATH_KEY]);
 }
 
+/**
+ * Visible tree rows in depth-first order: a node is visible when every ancestor
+ * container is expanded. Root is always included.
+ */
+export function collectVisiblePaths(
+  root: unknown,
+  expanded: Set<string>,
+): JsonPath[] {
+  const paths: JsonPath[] = [];
+
+  const walk = (value: unknown, path: JsonPath): void => {
+    paths.push(path);
+    if (value === null || typeof value !== 'object') return;
+    if (!expanded.has(pathKey(path))) return;
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i += 1) {
+        walk(value[i], [...path, i]);
+      }
+      return;
+    }
+    const obj = value as Record<string, unknown>;
+    for (const k of Object.keys(obj)) {
+      walk(obj[k], [...path, k]);
+    }
+  };
+
+  walk(root, []);
+  return paths;
+}
+
+/** DOM-safe id for a path (for data attributes / querySelector). */
+export function pathDomId(path: JsonPath): string {
+  return JSON.stringify(path);
+}
+
 /** Read value at path; returns undefined if path is invalid. */
 export function getAtPath(root: unknown, path: JsonPath): unknown {
   let cur: unknown = root;
