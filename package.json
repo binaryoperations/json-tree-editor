@@ -5,6 +5,7 @@
   "description": "SolidJS JSON tree editor monorepo",
   "scripts": {
     "dev": "pnpm --filter @json-tree-editor/demo dev",
+    "dev:large": "pnpm --filter @json-tree-editor/demo dev:large",
     "build": "pnpm --filter @json-tree-editor/demo build",
     "preview": "pnpm --filter @json-tree-editor/demo preview"
   },

@@ -19,8 +19,29 @@ pnpm install
 pnpm dev
 ```
 
-- Dev server: **http://localhost:5176**
-- Build demo: `pnpm build` (or `pnpm -C demo build`)
+| Demo | URL | Description |
+| --- | --- | --- |
+| Main (3-pane) | **http://localhost:5176/** | Source (CM6) · Tree · Formatted |
+| Large tree | **http://localhost:5176/large.html** | ~5000-node stress test |
+
+```bash
+pnpm dev              # both pages on one Vite server
+pnpm dev:large        # same server, opens /large.html
+pnpm build            # multi-page build (index + large)
+# or: pnpm -C demo build
+```
+
+### Large tree stress demo
+
+Runtime generator (`demo/src/lib/generate-large-json.ts`) builds a deterministic
+document (seed `42`) with **~5000 nodes**.
+
+**Node count:** every JSON value is one node — objects, arrays, and primitives.
+Nested values sum under their parent (same model as tree rows).
+
+**UI:** Tree + stats / formatted preview by default. CodeMirror is **opt-in**
+(“Load source editor”) because mounting CM on a full pretty-print of ~5k nodes
+can be slow. Expand-all is omitted intentionally (can freeze the UI).
 
 ## Library usage
 
@@ -55,9 +76,13 @@ json-tree-editor/
       components/primitives/   # JsonTreeView split into small pieces
       lib/                     # json-path, parseJsonSource
       styles.css
-  demo/                        # three-pane app
+  demo/                        # multi-page Vite app
+    index.html                 # main three-pane demo
+    large.html                 # ~5k-node stress demo
     src/
       App.tsx
+      LargeApp.tsx
+      lib/generate-large-json.ts
       components/              # JsonEditor (CM6), JsonFormatted
 ```
 

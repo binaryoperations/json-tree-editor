@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
 
@@ -9,6 +11,13 @@ export default defineConfig({
   },
   build: {
     sourcemap: true,
+    rollupOptions: {
+      // Multi-page: main demo + large-tree stress demo
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        large: resolve(__dirname, 'large.html'),
+      },
+    },
   },
   resolve: {
     // Avoid dual solid-js copies when consuming the workspace library source.

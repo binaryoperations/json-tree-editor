@@ -50,6 +50,9 @@ export const App: Component = () => {
         <div class="app-header__left">
           <h1>json-tree-editor</h1>
           <span class="badge">Solid · demo</span>
+          <a class="nav-link" href="/large.html">
+            large tree →
+          </a>
         </div>
         <div class="app-header__right">
           <ValidityBadge validity={validity()} />
