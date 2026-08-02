@@ -1,11 +1,13 @@
-import { JsonTreeView } from '../../json-tree-editor/src';
 import {
-  collectContainerPathKeys,
-  defaultExpandedPaths,
+  JsonTreeView,
+  type ExpandProgress,
+  type JsonTreeViewHandle,
+} from '../../json-tree-editor/src';
+import {
   parseJsonSource,
   type JsonValidity,
 } from '../../json-tree-editor/src/utils';
-import { type Component, createMemo, createSignal, onCleanup, Show } from 'solid-js';
+import { type Component, createMemo, createSignal, Show } from 'solid-js';
 
 import { DemoHeader } from './components/DemoHeader';
 import { JsonEditor } from './components/JsonEditor';
@@ -19,19 +21,11 @@ import {
 const TARGET_NODES = 5000;
 const SEED = 42;
 
-/** How many container paths to open per animation frame during Expand all. */
-const EXPAND_CHUNK = 48;
-
-type ExpandProgress = {
-  done: number;
-  total: number;
-};
-
 /**
  * Large-tree stress demo.
  *
  * Default layout: **Tree + stats / formatted preview** (no CodeMirror).
- * Expand all is chunked via rAF so the UI stays responsive on ~5k nodes.
+ * Expand all is owned by JsonTreeView (chunked rAF) and driven via ref.
  */
 export const LargeApp: Component = () => {
   const generated = generateLargeJson({
@@ -42,10 +36,10 @@ export const LargeApp: Component = () => {
 
   const [source, setSource] = createSignal(initialSource);
   const [showSourceEditor, setShowSourceEditor] = createSignal(false);
-  const [expanded, setExpanded] = createSignal<Set<string>>(defaultExpandedPaths());
   const [expandProgress, setExpandProgress] = createSignal<ExpandProgress | null>(
     null,
   );
+  const [expandedCount, setExpandedCount] = createSignal(1);
   const [genInfo] = createSignal({
     nodeCount: generated.nodeCount,
     generationMs: generated.generationMs,
@@ -54,8 +48,7 @@ export const LargeApp: Component = () => {
     sourceChars: initialSource.length,
   });
 
-  /** Bumps to cancel an in-flight expand-all. */
-  let expandGeneration = 0;
+  let tree: JsonTreeViewHandle | undefined;
 
   const validity = createMemo(() => parseJsonSource(source()));
 
@@ -67,78 +60,26 @@ export const LargeApp: Component = () => {
 
   const expanding = () => expandProgress() !== null;
 
-  const cancelExpandAll = () => {
-    expandGeneration += 1;
-    setExpandProgress(null);
-  };
-
-  onCleanup(() => {
-    expandGeneration += 1;
-  });
-
   const onTreeChange = (pretty: string) => {
     setSource(pretty);
   };
 
-  const collapseAll = () => {
-    cancelExpandAll();
-    setExpanded(defaultExpandedPaths());
+  const expandAll = () => {
+    tree?.expandAll();
   };
 
-  /**
-   * Expand every object/array, adding paths in DFS order in rAF chunks so
-   * Solid can paint between batches (~5k containers can take a second or two).
-   */
-  const expandAll = () => {
-    const v = validity();
-    if (!v.ok || expanding()) return;
-
-    const keys = collectContainerPathKeys(v.value);
-    const total = keys.length;
-    if (total === 0) {
-      setExpanded(new Set(keys));
-      return;
-    }
-
-    const token = ++expandGeneration;
-    let index = 0;
-
-    // Start empty so we fill in document order (parents before deep children in DFS).
-    setExpanded(new Set([]));
-    setExpandProgress({ done: 0, total });
-
-    const step = () => {
-      if (token !== expandGeneration) return;
-
-      const end = Math.min(index + EXPAND_CHUNK, total);
-      const slice = keys.slice(index, end);
-      index = end;
-
-      setExpanded((prev) => {
-        const next = new Set(prev);
-        for (const k of slice) next.add(k);
-        return next;
-      });
-      setExpandProgress({ done: index, total });
-
-      if (index < total) {
-        requestAnimationFrame(step);
-      } else {
-        setExpandProgress(null);
-      }
-    };
-
-    requestAnimationFrame(step);
+  const collapseAll = () => {
+    tree?.collapseAll();
   };
 
   const regenerate = () => {
-    cancelExpandAll();
+    tree?.collapseAll();
     const next = generateLargeJson({
       targetNodes: TARGET_NODES,
       seed: SEED,
     });
     setSource(stringifyGenerated(next.value));
-    setExpanded(defaultExpandedPaths());
+    setExpandedCount(1);
   };
 
   const expandLabel = () => {
@@ -246,10 +187,14 @@ export const LargeApp: Component = () => {
             aria-busy={expanding() ? 'true' : 'false'}
           >
             <JsonTreeView
+              ref={(h) => {
+                tree = h;
+              }}
               value={source()}
               onChange={onTreeChange}
-              expanded={expanded()}
-              onExpandedChange={setExpanded}
+              onExpandProgress={setExpandProgress}
+              onExpand={(keys) => setExpandedCount(keys.size)}
+              onCollapse={(keys) => setExpandedCount(keys.size)}
             />
           </div>
         </section>
@@ -274,7 +219,7 @@ export const LargeApp: Component = () => {
                 <dt>Live nodes</dt>
                 <dd>{liveNodeCount() ?? 'invalid'}</dd>
                 <dt>Expanded paths</dt>
-                <dd>{expanded().size}</dd>
+                <dd>{expandedCount()}</dd>
                 <dt>Generation</dt>
                 <dd>{genInfo().generationMs} ms</dd>
                 <dt>Seed</dt>
@@ -294,9 +239,8 @@ export const LargeApp: Component = () => {
                 </dd>
               </dl>
               <p class="large-stats__hint">
-                Expand all walks every object/array path and opens them in rAF
-                chunks (~{EXPAND_CHUNK}/frame) so the main thread can paint.
-                Collapse all resets to root only.
+                Expand all is owned by JsonTreeView (rAF-chunked). Collapse all
+                resets to root only via the tree ref.
               </p>
             </div>
             <div class="large-preview">
@@ -321,7 +265,7 @@ export const LargeApp: Component = () => {
             ? `Expanding containers… ${expandProgress()!.done}/${expandProgress()!.total}`
             : validity().ok
               ? `Stress demo · ~${liveNodeCount()} nodes · tree editable`
-              : validity().error}
+              : (validity() as { error: string }).error}
         </span>
         <span class="status-bar__meta">
           <a class="nav-link nav-link--footer" href="/">

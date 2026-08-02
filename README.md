@@ -63,6 +63,7 @@ json-tree-editor/              # monorepo root
 1. Source string is sole document truth.
 2. `JsonTreeView` parses `value` internally and renders the tree.
 3. Tree edit → immutable path update → pretty `JSON.stringify` → `onChange` / WC events.
+4. Expand/collapse-all via Solid `ref` (`expandAll` / `collapseAll`) or WC element methods (chunked rAF).
 4. Invalid source → tree shows error state.
 
 ### Library surfaces (summary)

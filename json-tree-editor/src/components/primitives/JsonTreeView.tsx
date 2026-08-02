@@ -3,12 +3,15 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  onCleanup,
   Show,
 } from 'solid-js';
 
 import {
+  collectContainerPathKeys,
   collectVisiblePaths,
   defaultExpandedPaths,
+  expandedPathsUpToDepth,
   getAtPath,
   type JsonPath,
   pathDomId,
@@ -22,27 +25,53 @@ import {
 } from '../../lib/parse-json';
 import { JsonTreeNode } from './JsonTreeNode';
 
+/** Progress of a chunked {@link JsonTreeViewHandle.expandAll}. */
+export type ExpandProgress = { done: number; total: number };
+
+/** Imperative handle exposed via Solid `ref` on {@link JsonTreeView}. */
+export type JsonTreeViewHandle = {
+  expandAll: () => void;
+  collapseAll: () => void;
+  isExpanding: () => boolean;
+  /** The root `.json-tree` DOM element (or `null` before mount). */
+  getRoot: () => HTMLDivElement | null;
+};
+
 export type JsonTreeViewProps = {
   /** JSON document source (parsed internally). */
   value: string;
   /** Called with pretty-printed JSON (2-space indent) after a tree edit. */
   onChange: (prettyJson: string) => void;
   /**
-   * Controlled expanded path keys (`pathKey` / `ROOT_PATH_KEY`).
-   * When set, the parent owns expand state and should update via `onExpandedChange`.
+   * How many nesting levels start expanded.
+   * - `0` (default) — root container open only
+   * - `1` — root + each direct child container
+   * - `n` — all containers at path depth ≤ `n`
+   *
+   * Applied on mount from the initial document (not path keys — hosts never
+   * need internal expand keys).
    */
-  expanded?: Set<string>;
+  defaultExpandedDepth?: number;
   /**
-   * Notified whenever expand state changes (chevron toggle, expand after add,
-   * or parent-driven expand/collapse-all).
+   * Fired once when {@link JsonTreeViewHandle.expandAll} finishes successfully.
+   * Receives the full expanded path-key set.
    */
-  onExpandedChange?: (next: Set<string>) => void;
+  onExpand?: (expandedKeys: Set<string>) => void;
   /**
-   * Uncontrolled initial expanded set (default: root only).
-   * Ignored when `expanded` is provided.
+   * Fired during chunked expandAll; `null` when idle, finished, or cancelled.
    */
-  defaultExpanded?: Set<string>;
+  onExpandProgress?: (progress: ExpandProgress | null) => void;
+  /**
+   * Fired once when {@link JsonTreeViewHandle.collapseAll} completes.
+   * Receives the resulting expand set (root-only).
+   */
+  onCollapse?: (expandedKeys: Set<string>) => void;
+  /** Solid component ref (function form recommended). */
+  ref?: JsonTreeViewHandle | ((handle: JsonTreeViewHandle) => void);
 };
+
+/** Container paths opened per animation frame during expandAll. */
+const EXPAND_CHUNK = 48;
 
 function emitPretty(value: unknown, onChange: (s: string) => void): void {
   // No trailing whitespace / newline — keep source clean for hosts that round-trip.
@@ -60,17 +89,46 @@ function isContainerValue(value: unknown): boolean {
   return value !== null && typeof value === 'object';
 }
 
+function assignRef(
+  ref: JsonTreeViewProps['ref'],
+  handle: JsonTreeViewHandle,
+): void {
+  if (typeof ref === 'function') {
+    ref(handle);
+    return;
+  }
+  if (ref && typeof ref === 'object') {
+    Object.assign(ref, handle);
+  }
+}
+
+function initialExpandedFromProps(
+  value: string,
+  depth: number | undefined,
+): Set<string> {
+  const d = depth ?? 0;
+  if (d <= 0) return defaultExpandedPaths();
+  const parsed = parseJsonSource(value);
+  const root = parsed.ok
+    ? parsed.value
+    : parsed.value !== undefined
+      ? parsed.value
+      : EMPTY_ROOT;
+  return expandedPathsUpToDepth(root, d);
+}
+
 /**
  * Interactive collapsible JSON tree. Pass document source as `value`; the view
  * parses internally and writes pretty JSON back through `onChange`.
+ *
+ * Expand-all / collapse-all are available on the Solid `ref` handle (chunked
+ * rAF expand for large documents). Initial open depth is
+ * {@link JsonTreeViewProps.defaultExpandedDepth} (default `0` = root only).
  *
  * Always keeps a tree on screen:
  * - Valid document (including blank source → `{}`) → live root.
  * - Primitive root → error banner + normalized empty object `{}`.
  * - Syntax errors → error banner + previous valid tree (or `{}` if none yet).
- *
- * Expand state can be uncontrolled (default) or controlled via
- * `expanded` + `onExpandedChange` for expand-all / collapse-all toolbars.
  *
  * Keyboard (ARIA tree-style, when focus is not in an input/select/textarea):
  * ArrowUp/Down move among visible rows; ArrowRight expands or enters a child;
@@ -78,7 +136,7 @@ function isContainerValue(value: unknown): boolean {
  */
 export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   const [internalExpanded, setInternalExpanded] = createSignal<Set<string>>(
-    props.defaultExpanded ?? defaultExpandedPaths(),
+    initialExpandedFromProps(props.value, props.defaultExpandedDepth),
   );
   /** Roving tabindex: which visible row is the active treeitem. */
   const [focusedPathKey, setFocusedPathKey] =
@@ -90,7 +148,13 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   const [lastGoodRoot, setLastGoodRoot] = createSignal<JsonRootValue | null>(
     null,
   );
+  const [expandProgress, setExpandProgress] =
+    createSignal<ExpandProgress | null>(null);
 
+  /** Bumps to cancel an in-flight expand-all. */
+  let expandGeneration = 0;
+
+  let treeRootEl: HTMLDivElement | undefined;
   let treeScrollEl: HTMLDivElement | undefined;
 
   const validity = createMemo(() => parseJsonSource(props.value));
@@ -116,17 +180,95 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     return lastGoodRoot() ?? EMPTY_ROOT;
   };
 
-  const isControlled = () => props.expanded !== undefined;
-
-  const expanded = (): Set<string> =>
-    isControlled() ? props.expanded! : internalExpanded();
+  const expanded = (): Set<string> => internalExpanded();
 
   const applyExpanded = (next: Set<string>) => {
-    if (!isControlled()) {
-      setInternalExpanded(next);
-    }
-    props.onExpandedChange?.(next);
+    setInternalExpanded(next);
   };
+
+  const reportProgress = (progress: ExpandProgress | null) => {
+    setExpandProgress(progress);
+    props.onExpandProgress?.(progress);
+  };
+
+  const cancelExpandAll = () => {
+    expandGeneration += 1;
+    if (expandProgress() !== null) {
+      reportProgress(null);
+    }
+  };
+
+  const collapseAll = () => {
+    cancelExpandAll();
+    const next = defaultExpandedPaths();
+    applyExpanded(next);
+    props.onCollapse?.(next);
+  };
+
+  /**
+   * Expand every object/array in DFS order, adding path keys in rAF chunks so
+   * the UI can paint between batches on large documents.
+   */
+  const expandAll = () => {
+    cancelExpandAll();
+
+    const keys = collectContainerPathKeys(displayRoot());
+    const total = keys.length;
+    if (total === 0) {
+      const empty = new Set<string>();
+      applyExpanded(empty);
+      props.onExpand?.(empty);
+      return;
+    }
+
+    const token = ++expandGeneration;
+    let index = 0;
+    // Local accumulator so each chunk builds on the previous without lag.
+    const acc = new Set<string>();
+
+    // Start empty so we fill in document order (parents before deep children).
+    applyExpanded(new Set(acc));
+    reportProgress({ done: 0, total });
+
+    const step = () => {
+      if (token !== expandGeneration) return;
+
+      const end = Math.min(index + EXPAND_CHUNK, total);
+      const slice = keys.slice(index, end);
+      index = end;
+
+      for (const k of slice) acc.add(k);
+      applyExpanded(new Set(acc));
+      reportProgress({ done: index, total });
+
+      if (index < total) {
+        requestAnimationFrame(step);
+        return;
+      }
+
+      reportProgress(null);
+      props.onExpand?.(new Set(acc));
+    };
+
+    requestAnimationFrame(step);
+  };
+
+  const isExpanding = () => expandProgress() !== null;
+
+  const handle: JsonTreeViewHandle = {
+    expandAll,
+    collapseAll,
+    isExpanding,
+    getRoot: () => treeRootEl ?? null,
+  };
+
+  createEffect(() => {
+    assignRef(props.ref, handle);
+  });
+
+  onCleanup(() => {
+    expandGeneration += 1;
+  });
 
   const isExpanded = (path: JsonPath) => expanded().has(pathKey(path));
 
@@ -307,7 +449,13 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   return (
-    <div class="json-tree" part="tree">
+    <div
+      class="json-tree"
+      part="tree"
+      ref={(el) => {
+        treeRootEl = el;
+      }}
+    >
       <Show when={errorMessage()}>
         {(msg) => (
           <div class="json-tree__error" part="error" role="status">

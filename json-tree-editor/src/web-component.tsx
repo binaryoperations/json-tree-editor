@@ -9,14 +9,23 @@
  * API:
  *   - property `value` (string) — preferred source of truth (esp. large JSON)
  *   - attribute `value` — optional; reflected only for small values
- *   - property/attribute `disabled`
- *   - events `change` and `json-change` — detail: `{ value: string }`
+ *   - property/attribute `default-expanded-depth` / `defaultExpandedDepth`
+ *     (number, default `0` = root open only)
+ *   - property/attribute `disabled` — blocks pointer edits; expandAll/collapseAll still work
+ *   - methods `expandAll()`, `collapseAll()`, `getRoot()`, getter `isExpanding`
+ *   - events `change` / `json-change` — detail: `{ value: string }`
+ *   - events `expand` / `collapse` — detail: `{ expanded: string[] }` (once each)
+ *   - event `expand-progress` — detail: `{ done, total } | null`
  */
 
 import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 
-import { JsonTreeView } from './components/primitives/JsonTreeView';
+import {
+  JsonTreeView,
+  type ExpandProgress,
+  type JsonTreeViewHandle,
+} from './components/primitives/JsonTreeView';
 import styles from './styles.css?inline';
 
 const TAG = 'json-tree-editor';
@@ -27,20 +36,37 @@ export type JsonTreeEditorChangeDetail = {
   value: string;
 };
 
+export type JsonTreeEditorExpandDetail = {
+  expanded: string[];
+};
+
+export type JsonTreeEditorExpandProgressDetail = ExpandProgress | null;
+
 export type JsonTreeEditorElement = InstanceType<typeof JsonTreeEditor>;
 
 type HostBridge = {
   setValue: (next: string) => void;
   setDisabled: (next: boolean) => void;
+  expandAll: () => void;
+  collapseAll: () => void;
+  isExpanding: () => boolean;
+  getRoot: () => HTMLDivElement | null;
 };
+
+function parseDepth(raw: unknown): number {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.floor(n));
+}
 
 class JsonTreeEditor extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['value', 'disabled'];
+    return ['value', 'disabled', 'default-expanded-depth'];
   }
 
   #value = '';
   #disabled = false;
+  #defaultExpandedDepth = 0;
   #mounted = false;
   #bridge: HostBridge | null = null;
   #dispose: (() => void) | null = null;
@@ -74,6 +100,40 @@ class JsonTreeEditor extends HTMLElement {
     this.#reflecting = false;
   }
 
+  /**
+   * Nesting levels open on mount (`0` = root only).
+   * Applied when the tree mounts; later changes do not reset live expand state.
+   */
+  get defaultExpandedDepth(): number {
+    return this.#defaultExpandedDepth;
+  }
+
+  set defaultExpandedDepth(next: number) {
+    const d = parseDepth(next);
+    if (d === this.#defaultExpandedDepth) return;
+    this.#defaultExpandedDepth = d;
+    this.#syncDefaultExpandedDepthAttribute(d);
+  }
+
+  /** Expand every object/array (chunked). Works even when `disabled`. */
+  expandAll(): void {
+    this.#bridge?.expandAll();
+  }
+
+  /** Collapse to root only. Works even when `disabled`. */
+  collapseAll(): void {
+    this.#bridge?.collapseAll();
+  }
+
+  get isExpanding(): boolean {
+    return this.#bridge?.isExpanding() ?? false;
+  }
+
+  /** The tree root element (`.json-tree` in shadow DOM), or `null` if unmounted. */
+  getRoot(): HTMLDivElement | null {
+    return this.#bridge?.getRoot() ?? null;
+  }
+
   connectedCallback(): void {
     if (this.#mounted) return;
     this.#mounted = true;
@@ -84,6 +144,12 @@ class JsonTreeEditor extends HTMLElement {
       if (attr != null) this.#value = attr;
     }
     this.#disabled = this.hasAttribute('disabled');
+
+    if (this.hasAttribute('default-expanded-depth')) {
+      this.#defaultExpandedDepth = parseDepth(
+        this.getAttribute('default-expanded-depth'),
+      );
+    }
 
     const shadow =
       this.shadowRoot ?? this.attachShadow({ mode: 'open' });
@@ -109,14 +175,20 @@ class JsonTreeEditor extends HTMLElement {
     const host = this;
     const initialValue = this.#value;
     const initialDisabled = this.#disabled;
+    const initialDepth = this.#defaultExpandedDepth;
 
     this.#dispose = render(() => {
       const [value, setValue] = createSignal(initialValue);
       const [disabled, setDisabled] = createSignal(initialDisabled);
+      let treeHandle: JsonTreeViewHandle | undefined;
 
       host.#bridge = {
         setValue: (next) => setValue(next),
         setDisabled: (next) => setDisabled(next),
+        expandAll: () => treeHandle?.expandAll(),
+        collapseAll: () => treeHandle?.collapseAll(),
+        isExpanding: () => treeHandle?.isExpanding() ?? false,
+        getRoot: () => treeHandle?.getRoot() ?? null,
       };
 
       const onChange = (pretty: string) => {
@@ -138,7 +210,23 @@ class JsonTreeEditor extends HTMLElement {
           }}
           aria-disabled={disabled() ? 'true' : undefined}
         >
-          <JsonTreeView value={value()} onChange={onChange} />
+          <JsonTreeView
+            ref={(h) => {
+              treeHandle = h;
+            }}
+            value={value()}
+            onChange={onChange}
+            defaultExpandedDepth={initialDepth}
+            onExpand={(keys) => {
+              host.#emitExpand([...keys]);
+            }}
+            onExpandProgress={(p) => {
+              host.#emitExpandProgress(p);
+            }}
+            onCollapse={(keys) => {
+              host.#emitCollapse([...keys]);
+            }}
+          />
         </div>
       );
     }, mount);
@@ -169,6 +257,10 @@ class JsonTreeEditor extends HTMLElement {
       if (flag === this.#disabled) return;
       this.#disabled = flag;
       this.#bridge?.setDisabled(flag);
+      return;
+    }
+    if (name === 'default-expanded-depth') {
+      this.#defaultExpandedDepth = parseDepth(next);
     }
   }
 
@@ -188,6 +280,14 @@ class JsonTreeEditor extends HTMLElement {
     this.#reflecting = false;
   }
 
+  #syncDefaultExpandedDepthAttribute(depth: number): void {
+    const raw = String(depth);
+    if (this.getAttribute('default-expanded-depth') === raw) return;
+    this.#reflecting = true;
+    this.setAttribute('default-expanded-depth', raw);
+    this.#reflecting = false;
+  }
+
   #emitChange(value: string): void {
     const detail: JsonTreeEditorChangeDetail = { value };
     this.dispatchEvent(
@@ -195,6 +295,31 @@ class JsonTreeEditor extends HTMLElement {
     );
     this.dispatchEvent(
       new CustomEvent('json-change', {
+        detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  #emitExpand(expanded: string[]): void {
+    const detail: JsonTreeEditorExpandDetail = { expanded };
+    this.dispatchEvent(
+      new CustomEvent('expand', { detail, bubbles: true, composed: true }),
+    );
+  }
+
+  #emitCollapse(expanded: string[]): void {
+    const detail: JsonTreeEditorExpandDetail = { expanded };
+    this.dispatchEvent(
+      new CustomEvent('collapse', { detail, bubbles: true, composed: true }),
+    );
+  }
+
+  #emitExpandProgress(progress: ExpandProgress | null): void {
+    const detail: JsonTreeEditorExpandProgressDetail = progress;
+    this.dispatchEvent(
+      new CustomEvent('expand-progress', {
         detail,
         bubbles: true,
         composed: true,

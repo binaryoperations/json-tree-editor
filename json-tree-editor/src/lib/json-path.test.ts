@@ -10,6 +10,7 @@ import {
   collectVisiblePaths,
   convertJsonType,
   defaultExpandedPaths,
+  expandedPathsUpToDepth,
   deleteAtPath,
   deepCloneJson,
   duplicateAtPath,
@@ -44,6 +45,33 @@ describe('pathKey / pathDomId / defaultExpandedPaths', () => {
 
   it('defaults expand set to root only', () => {
     expect([...defaultExpandedPaths()]).toEqual([ROOT_PATH_KEY]);
+  });
+});
+
+describe('expandedPathsUpToDepth', () => {
+  const doc = {
+    a: { b: { c: 1 } },
+    list: [{ x: true }],
+  };
+
+  it('depth 0 is root only', () => {
+    expect([...expandedPathsUpToDepth(doc, 0)]).toEqual([ROOT_PATH_KEY]);
+  });
+
+  it('depth 1 includes root and direct child containers', () => {
+    const keys = expandedPathsUpToDepth(doc, 1);
+    expect(keys.has(ROOT_PATH_KEY)).toBe(true);
+    expect(keys.has(pathKey(['a']))).toBe(true);
+    expect(keys.has(pathKey(['list']))).toBe(true);
+    expect(keys.has(pathKey(['a', 'b']))).toBe(false);
+    expect(keys.has(pathKey(['list', 0]))).toBe(false);
+  });
+
+  it('depth 2 opens one level deeper', () => {
+    const keys = expandedPathsUpToDepth(doc, 2);
+    expect(keys.has(pathKey(['a', 'b']))).toBe(true);
+    expect(keys.has(pathKey(['list', 0]))).toBe(true);
+    expect(keys.has(pathKey(['a', 'b', 'c']))).toBe(false);
   });
 });
 

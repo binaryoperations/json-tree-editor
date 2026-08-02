@@ -44,6 +44,50 @@ export function defaultExpandedPaths(): Set<string> {
 }
 
 /**
+ * Expand path keys for every container whose path depth is ≤ `maxDepth`.
+ *
+ * - Depth `0` → root only (`ROOT_PATH_KEY`)
+ * - Depth `1` → root + each direct child container
+ * - Depth `n` → all containers at path length ≤ `n`
+ *
+ * Non-finite or negative `maxDepth` is treated as `0`.
+ */
+export function expandedPathsUpToDepth(
+  value: unknown,
+  maxDepth: number,
+): Set<string> {
+  const depth =
+    typeof maxDepth === 'number' && Number.isFinite(maxDepth)
+      ? Math.max(0, Math.floor(maxDepth))
+      : 0;
+  const keys = new Set<string>();
+
+  const walk = (v: unknown, path: JsonPath): void => {
+    if (v === null || typeof v !== 'object') return;
+    if (path.length <= depth) {
+      keys.add(pathKey(path));
+    }
+    // No need to walk deeper than depth+1 for collecting open containers.
+    if (path.length >= depth) return;
+    if (Array.isArray(v)) {
+      for (let i = 0; i < v.length; i += 1) {
+        walk(v[i], [...path, i]);
+      }
+      return;
+    }
+    const obj = v as Record<string, unknown>;
+    for (const k of Object.keys(obj)) {
+      walk(obj[k], [...path, k]);
+    }
+  };
+
+  walk(value, []);
+  // Always include root when the value is a container (or empty fallback).
+  if (keys.size === 0) keys.add(ROOT_PATH_KEY);
+  return keys;
+}
+
+/**
  * Visible tree rows in depth-first order: a node is visible when every ancestor
  * container is expanded. Root is always included.
  */

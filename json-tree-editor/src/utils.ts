@@ -46,6 +46,7 @@ export {
   collectVisiblePaths,
   pathDomId,
   defaultExpandedPaths,
+  expandedPathsUpToDepth,
   getAtPath,
   setAtPath,
   deleteAtPath,

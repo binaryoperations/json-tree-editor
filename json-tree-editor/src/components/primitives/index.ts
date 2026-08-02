@@ -1,4 +1,9 @@
-export { JsonTreeView, type JsonTreeViewProps } from './JsonTreeView';
+export {
+  JsonTreeView,
+  type JsonTreeViewProps,
+  type JsonTreeViewHandle,
+  type ExpandProgress,
+} from './JsonTreeView';
 export { JsonTreeNode, type JsonTreeNodeProps } from './JsonTreeNode';
 export { TypeBadge, type TypeBadgeProps } from './TypeBadge';
 export {
