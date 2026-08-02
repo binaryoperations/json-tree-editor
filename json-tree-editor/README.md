@@ -284,6 +284,10 @@ Roving `tabindex` marks one visible `role="treeitem"` as tabbable; others use `-
 
 ---
 
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history. On version bumps (`pnpm version:patch` from the monorepo), the changelog is updated automatically from commits since the previous tag.
+
 ## Demos
 
 Interactive demos are coming soon. Until then, clone the monorepo and run the local demo package (see the [repository README](https://github.com/binaryoperations/json-tree-editor)).

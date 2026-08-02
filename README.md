@@ -92,13 +92,19 @@ Releases target **only** `@binaryoperations/json-tree-editor` (not the monorepo 
 
 ### Bump only (commit + tag, no publish)
 
-From the monorepo root. Updates `json-tree-editor/package.json`, creates a git **commit** and a **`vX.Y.Z`** tag:
+From the monorepo root. Updates `json-tree-editor/package.json`, regenerates **`json-tree-editor/CHANGELOG.md`** from commits since the previous tag, then creates a git **commit** and a **`vX.Y.Z`** tag:
 
 ```bash
-pnpm version:patch       # 0.1.1 → 0.1.2  → commit + tag v0.1.2
+pnpm version:patch       # 0.1.1 → 0.1.2  → changelog + commit + tag v0.1.2
 pnpm version:minor
 pnpm version:major
 pnpm version:prerelease
+```
+
+Changelog source: conventional commits (`feat:`, `fix:`, `refactor:`, …) between the last `v*` tag and `HEAD`. Manual rebuild:
+
+```bash
+pnpm --filter @binaryoperations/json-tree-editor changelog:init
 ```
 
 ### Release (bump + publish)
