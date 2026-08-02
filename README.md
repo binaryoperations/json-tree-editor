@@ -61,7 +61,7 @@ json-tree-editor/              # monorepo root
 **Sync rules**
 
 1. Source string is sole document truth.
-2. Valid parse → tree renders from `validity.value`.
+2. `JsonTreeView` parses `value` internally and renders the tree.
 3. Tree edit → immutable path update → pretty `JSON.stringify` → `onChange` / WC events.
 4. Invalid source → tree shows error state.
 

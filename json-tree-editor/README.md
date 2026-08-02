@@ -110,18 +110,16 @@ import '@binaryoperations/json-tree-editor/styles.css';
 <summary>Solid component example</summary>
 
 ```tsx
-import { createMemo, createSignal } from 'solid-js';
+import { createSignal } from 'solid-js';
 import { JsonTreeView } from '@binaryoperations/json-tree-editor';
-import { parseJsonSource } from '@binaryoperations/json-tree-editor/utils';
 import '@binaryoperations/json-tree-editor/styles.css';
 
 export function JsonPanel() {
   const [source, setSource] = createSignal('{"hello":"world"}');
-  const validity = createMemo(() => parseJsonSource(source()));
 
   return (
     <JsonTreeView
-      validity={validity()}
+      value={source()}
       onChange={(prettyJson) => setSource(prettyJson)}
     />
   );
@@ -145,6 +143,7 @@ import {
 
 const [source, setSource] = createSignal(myJson);
 const [expanded, setExpanded] = createSignal(defaultExpandedPaths());
+// Optional: parse yourself only if the host UI needs validity (badges, etc.)
 const validity = createMemo(() => parseJsonSource(source()));
 
 function expandAll() {
@@ -158,7 +157,7 @@ function collapseAll() {
 }
 
 <JsonTreeView
-  validity={validity()}
+  value={source()}
   onChange={setSource}
   expanded={expanded()}
   onExpandedChange={setExpanded}
@@ -171,28 +170,15 @@ function collapseAll() {
 
 | Prop | Type | Required | Description |
 | --- | --- | --- | --- |
-| `validity` | `JsonValidity` | yes | Result of `parseJsonSource(source)`. Tree is interactive only when `ok: true` |
+| `value` | `string` | yes | JSON document source (parsed internally) |
 | `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent, no trailing whitespace) |
 | `expanded` | `Set<string>` | no | Controlled expand path keys (`pathKey` / `ROOT_PATH_KEY`) |
 | `onExpandedChange` | `(next: Set<string>) => void` | no | Fired when expand state changes |
 | `defaultExpanded` | `Set<string>` | no | Uncontrolled initial expand set (default: root only). Ignored when `expanded` is set |
 
-### Parsing
+Keep the source string as document truth: pass it as `value`, push tree edits back via `onChange`.
 
-```ts
-import {
-  parseJsonSource,
-  type JsonValidity,
-} from '@binaryoperations/json-tree-editor/utils';
-
-const validity: JsonValidity = parseJsonSource(source);
-// { ok: true, pretty: string, value: object | array }
-// | { ok: false, error: string, value?: object, reason?: 'invalid-root' }
-```
-
-Keep the source string as document truth: parse for the tree, push tree edits back via `onChange`, and re-parse on the next render.
-
-**Root rules:** blank source is treated as a valid empty object `{}` (no error). The root must be an **object or array** (never `string` / `number` / `boolean` / `null`).
+**Root rules** (applied inside the view): blank source is treated as a valid empty object `{}` (no error). The root must be an **object or array** (never `string` / `number` / `boolean` / `null`).
 
 `JsonTreeView` always keeps a tree visible:
 - Blank source → empty object `{}` (no error banner)
@@ -202,7 +188,7 @@ Keep the source string as document truth: parse for the tree, push tree edits ba
 
 ### Utils entry (`@binaryoperations/json-tree-editor/utils`)
 
-Path helpers (`getAtPath`, `setAtPath`, …), type utilities, parse helpers (`parseJsonSource`, `JsonValidity`), and lower-level primitives (`JsonTreeNode`, editors, badges) are exported from `/utils`. Most apps only need the package root plus `parseJsonSource` from utils.
+Path helpers (`getAtPath`, `setAtPath`, …), type utilities, parse helpers (`parseJsonSource`, `JsonValidity`), and lower-level primitives (`JsonTreeNode`, editors, badges) are exported from `/utils`. Most apps only need the package root (`JsonTreeView`); use utils when the host needs validity for its own UI or expand-all helpers.
 
 ---
 

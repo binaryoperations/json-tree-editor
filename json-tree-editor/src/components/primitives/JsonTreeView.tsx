@@ -1,6 +1,7 @@
 import {
   type Component,
   createEffect,
+  createMemo,
   createSignal,
   Show,
 } from 'solid-js';
@@ -17,12 +18,13 @@ import {
 import {
   EMPTY_ROOT,
   type JsonRootValue,
-  type JsonValidity,
+  parseJsonSource,
 } from '../../lib/parse-json';
 import { JsonTreeNode } from './JsonTreeNode';
 
 export type JsonTreeViewProps = {
-  validity: JsonValidity;
+  /** JSON document source (parsed internally). */
+  value: string;
   /** Called with pretty-printed JSON (2-space indent) after a tree edit. */
   onChange: (prettyJson: string) => void;
   /**
@@ -59,7 +61,8 @@ function isContainerValue(value: unknown): boolean {
 }
 
 /**
- * Interactive collapsible JSON tree. Edits flow back as pretty-printed source.
+ * Interactive collapsible JSON tree. Pass document source as `value`; the view
+ * parses internally and writes pretty JSON back through `onChange`.
  *
  * Always keeps a tree on screen:
  * - Valid document (including blank source → `{}`) → live root.
@@ -90,8 +93,10 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
 
   let treeScrollEl: HTMLDivElement | undefined;
 
+  const validity = createMemo(() => parseJsonSource(props.value));
+
   createEffect(() => {
-    const v = props.validity;
+    const v = validity();
     if (v.ok) {
       setLastGoodRoot(v.value);
     }
@@ -105,7 +110,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
    * 4. Empty object as last resort
    */
   const displayRoot = (): JsonRootValue => {
-    const v = props.validity;
+    const v = validity();
     if (v.ok) return v.value;
     if (v.value !== undefined) return v.value;
     return lastGoodRoot() ?? EMPTY_ROOT;
@@ -285,11 +290,13 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     }
   };
 
-  const errorMessage = () =>
-    props.validity.ok ? null : props.validity.error;
+  const errorMessage = () => {
+    const v = validity();
+    return v.ok ? null : v.error;
+  };
 
   const errorHint = () => {
-    const v = props.validity;
+    const v = validity();
     if (v.ok) return null;
     if (v.reason === 'invalid-root') {
       return 'Showing empty object. Change the root type below or fix the source.';

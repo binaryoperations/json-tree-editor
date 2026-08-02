@@ -96,7 +96,7 @@ export const LargeApp: Component = () => {
     const keys = collectContainerPathKeys(v.value);
     const total = keys.length;
     if (total === 0) {
-      setExpanded(new Set());
+      setExpanded(new Set(keys));
       return;
     }
 
@@ -104,7 +104,7 @@ export const LargeApp: Component = () => {
     let index = 0;
 
     // Start empty so we fill in document order (parents before deep children in DFS).
-    setExpanded(new Set());
+    setExpanded(new Set([]));
     setExpandProgress({ done: 0, total });
 
     const step = () => {
@@ -246,7 +246,7 @@ export const LargeApp: Component = () => {
             aria-busy={expanding() ? 'true' : 'false'}
           >
             <JsonTreeView
-              validity={validity()}
+              value={source()}
               onChange={onTreeChange}
               expanded={expanded()}
               onExpandedChange={setExpanded}

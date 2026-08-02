@@ -1,21 +1,19 @@
 import { cleanup, render, screen, within } from '@solidjs/testing-library';
 import userEvent from '@testing-library/user-event';
-import { createMemo, createSignal } from 'solid-js';
+import { createSignal } from 'solid-js';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { parseJsonSource } from '../../lib/parse-json';
 import { JsonTreeView } from './JsonTreeView';
 
 afterEach(() => cleanup());
 
 function TreeHarness(props: { initial: string }) {
   const [source, setSource] = createSignal(props.initial);
-  const validity = createMemo(() => parseJsonSource(source()));
 
   return (
     <div>
       <div data-testid="source">{source()}</div>
-      <JsonTreeView validity={validity()} onChange={setSource} />
+      <JsonTreeView value={source()} onChange={setSource} />
     </div>
   );
 }

@@ -82,7 +82,7 @@ export const App: Component = () => {
             <span>edit · add · remove · types</span>
           </div>
           <div class="pane-body">
-            <JsonTreeView validity={validity()} onChange={onTreeChange} />
+            <JsonTreeView value={source()} onChange={onTreeChange} />
           </div>
         </section>
 

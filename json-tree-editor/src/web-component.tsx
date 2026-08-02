@@ -13,11 +13,10 @@
  *   - events `change` and `json-change` — detail: `{ value: string }`
  */
 
-import { createMemo, createSignal } from 'solid-js';
+import { createSignal } from 'solid-js';
 import { render } from 'solid-js/web';
 
 import { JsonTreeView } from './components/primitives/JsonTreeView';
-import { parseJsonSource } from './lib/parse-json';
 import styles from './styles.css?inline';
 
 const TAG = 'json-tree-editor';
@@ -114,7 +113,6 @@ class JsonTreeEditor extends HTMLElement {
     this.#dispose = render(() => {
       const [value, setValue] = createSignal(initialValue);
       const [disabled, setDisabled] = createSignal(initialDisabled);
-      const validity = createMemo(() => parseJsonSource(value()));
 
       host.#bridge = {
         setValue: (next) => setValue(next),
@@ -140,7 +138,7 @@ class JsonTreeEditor extends HTMLElement {
           }}
           aria-disabled={disabled() ? 'true' : undefined}
         >
-          <JsonTreeView validity={validity()} onChange={onChange} />
+          <JsonTreeView value={value()} onChange={onChange} />
         </div>
       );
     }, mount);
