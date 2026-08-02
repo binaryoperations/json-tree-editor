@@ -70,7 +70,13 @@ export type JsonTreeViewProps = {
   ref?: JsonTreeViewHandle | ((handle: JsonTreeViewHandle) => void);
 };
 
-/** Container paths opened per animation frame during expandAll. */
+/**
+ * expandAll scheduling:
+ * rAF does not make work async — the callback still runs synchronously and
+ * blocks input/paint until it returns. So we do at most one applyExpanded per
+ * frame (EXPAND_CHUNK keys), then return and schedule the next rAF so the
+ * browser can paint and handle events between batches.
+ */
 const EXPAND_CHUNK = 48;
 
 function emitPretty(value: unknown, onChange: (s: string) => void): void {
@@ -206,8 +212,9 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   /**
-   * Expand every object/array in DFS order, adding path keys in rAF chunks so
-   * the UI can paint between batches on large documents.
+   * Expand every object/array in DFS order. One Solid apply per animation
+   * frame, then yield — rAF only defers the next turn; it does not unblock
+   * work already running inside the callback.
    */
   const expandAll = () => {
     cancelExpandAll();
@@ -234,14 +241,18 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       if (token !== expandGeneration) return;
 
       const end = Math.min(index + EXPAND_CHUNK, total);
-      const slice = keys.slice(index, end);
-      index = end;
+      while (index < end) {
+        acc.add(keys[index]);
+        index += 1;
+      }
 
-      for (const k of slice) acc.add(k);
+      // Single apply per frame — this is the expensive, blocking re-render.
       applyExpanded(new Set(acc));
       reportProgress({ done: index, total });
 
       if (index < total) {
+        // Return from the callback so the browser can paint / handle input,
+        // then continue on the next frame.
         requestAnimationFrame(step);
         return;
       }
