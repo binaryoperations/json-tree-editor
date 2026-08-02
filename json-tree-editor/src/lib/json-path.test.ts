@@ -11,6 +11,9 @@ import {
   convertJsonType,
   defaultExpandedPaths,
   deleteAtPath,
+  deepCloneJson,
+  duplicateAtPath,
+  duplicateKeyAtPath,
   getAtPath,
   jsonTypeOf,
   parseCompleteNumber,
@@ -293,6 +296,55 @@ describe('addShapedItemAtPath / addShapedPropertyAtPath', () => {
     const root = { list: [1], obj: { a: 1 } };
     expect(addShapedItemAtPath(root, ['obj'])).toBe(root);
     expect(addShapedPropertyAtPath(root, ['list'], 'x')).toBe(root);
+  });
+});
+
+
+describe('duplicateAtPath', () => {
+  it('no-ops on the document root', () => {
+    const root = { a: 1 };
+    expect(duplicateAtPath(root, [])).toBe(root);
+    expect(duplicateKeyAtPath(root, [])).toBe(null);
+  });
+
+  it('deep-clones an entire object property as the next sibling key', () => {
+    const root = {
+      meta: { createdAt: 't', author: { id: 7 } },
+      name: 'Ada',
+    };
+    const next = duplicateAtPath(root, ['meta']) as typeof root & {
+      meta1: unknown;
+    };
+    expect(Object.keys(next)).toEqual(['meta', 'meta1', 'name']);
+    expect(next.meta1).toEqual({ createdAt: 't', author: { id: 7 } });
+    expect(next.meta1).not.toBe(next.meta);
+    expect(
+      (next.meta1 as { author: unknown }).author,
+    ).not.toBe(next.meta.author);
+    expect(duplicateKeyAtPath(root, ['meta'])).toBe('meta1');
+  });
+
+  it('inserts a deep-cloned array item immediately after the source index', () => {
+    const root = { list: [{ sku: 'A' }, { sku: 'B' }] };
+    const next = duplicateAtPath(root, ['list', 0]) as typeof root;
+    expect(next.list).toEqual([{ sku: 'A' }, { sku: 'A' }, { sku: 'B' }]);
+    expect(next.list[1]).not.toBe(next.list[0]);
+  });
+
+  it('no-ops when the node is a primitive', () => {
+    const root = { name: 'Ada', n: 1, list: [true, null] };
+    expect(duplicateAtPath(root, ['name'])).toBe(root);
+    expect(duplicateAtPath(root, ['n'])).toBe(root);
+    expect(duplicateAtPath(root, ['list', 0])).toBe(root);
+    expect(duplicateAtPath(root, ['list', 1])).toBe(root);
+  });
+
+  it('deepCloneJson copies nested structures', () => {
+    const v = { a: [1, { b: 2 }] };
+    const c = deepCloneJson(v) as typeof v;
+    expect(c).toEqual(v);
+    expect(c).not.toBe(v);
+    expect(c.a).not.toBe(v.a);
   });
 });
 

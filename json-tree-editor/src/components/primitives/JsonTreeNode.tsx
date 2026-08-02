@@ -6,6 +6,8 @@ import {
   convertJsonType,
   DEFAULT_OBJECT_KEY,
   deleteAtPath,
+  duplicateAtPath,
+  duplicateKeyAtPath,
   getAtPath,
   type JsonPath,
   type JsonTypeName,
@@ -37,6 +39,11 @@ export type JsonTreeNodeProps = {
   /** When true, this row's key editor opens in rename mode on mount. */
   autoEditKey?: boolean;
   onAutoEditKeyStart?: () => void;
+  /**
+   * Ask the parent object node to open rename on a newly created key
+   * (e.g. after duplicating a property).
+   */
+  onRequestEditKey?: (key: string) => void;
 };
 
 export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
@@ -125,6 +132,17 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     // Clone shape of last element (or first when only one); empty → null.
     props.onCommit(addShapedItemAtPath(props.root(), props.path));
     props.onExpand(props.path);
+  };
+
+  /** Duplicate this entire object/array as the next sibling (not root / not primitives). */
+  const duplicateSelf = () => {
+    if (props.isRoot || props.path.length === 0) return;
+    if (!isContainer()) return;
+    const newKey = duplicateKeyAtPath(props.root(), props.path);
+    props.onCommit(duplicateAtPath(props.root(), props.path));
+    if (newKey != null) {
+      props.onRequestEditKey?.(newKey);
+    }
   };
 
   const renameKey = (newKey: string) => {
@@ -275,6 +293,17 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
               + item
             </button>
           </Show>
+          <Show when={!props.isRoot && isContainer()}>
+            <button
+              type="button"
+              class="json-tree-action"
+              part="action"
+              title="Duplicate"
+              onClick={duplicateSelf}
+            >
+              duplicate
+            </button>
+          </Show>
           <Show when={!props.isRoot}>
             <button
               type="button"
@@ -314,6 +343,11 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                   typeof key === 'string' && pendingEditKey() === key
                 }
                 onAutoEditKeyStart={() => setPendingEditKey(null)}
+                onRequestEditKey={
+                  typeName() === 'object'
+                    ? (k) => setPendingEditKey(k)
+                    : undefined
+                }
               />
             )}
           </For>

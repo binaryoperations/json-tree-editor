@@ -286,6 +286,72 @@ export function addShapedPropertyAtPath(
   return addPropertyAtPath(root, path, key, siblingTemplateShape(parent));
 }
 
+/** Deep-clone a JSON value (structure + content). */
+export function deepCloneJson(value: unknown): unknown {
+  return JSON.parse(JSON.stringify(value)) as unknown;
+}
+
+/**
+ * Duplicate an object or array node at `path` as the next sibling under its parent.
+ * Deep-clones the entire value (not a shape template).
+ * No-op for the document root, primitives, or invalid paths.
+ *
+ * - Array parent: insert clone immediately after the index.
+ * - Object parent: insert a unique key (based on the source key) right after it.
+ */
+export function duplicateAtPath(root: unknown, path: JsonPath): unknown {
+  if (path.length === 0) return root;
+
+  const parentPath = path.slice(0, -1);
+  const last = path[path.length - 1];
+  const parent = getAtPath(root, parentPath);
+  const current = getAtPath(root, path);
+  // Only containers (object / array) may be duplicated.
+  if (current === null || typeof current !== 'object') return root;
+  const clone = deepCloneJson(current);
+
+  if (Array.isArray(parent)) {
+    if (typeof last !== 'number') return root;
+    const next = parent.slice();
+    next.splice(last + 1, 0, clone);
+    return setAtPath(root, parentPath, next);
+  }
+
+  if (parent !== null && typeof parent === 'object') {
+    const obj = parent as Record<string, unknown>;
+    const oldKey = String(last);
+    if (!(oldKey in obj)) return root;
+    const newKey = uniqueObjectKey(obj, oldKey);
+    const next: Record<string, unknown> = {};
+    for (const k of Object.keys(obj)) {
+      next[k] = obj[k];
+      if (k === oldKey) {
+        next[newKey] = clone;
+      }
+    }
+    return setAtPath(root, parentPath, next);
+  }
+
+  return root;
+}
+
+/**
+ * Key that {@link duplicateAtPath} would assign when duplicating an object
+ * property at `path`. Returns `null` for root / non-object parents.
+ */
+export function duplicateKeyAtPath(
+  root: unknown,
+  path: JsonPath,
+): string | null {
+  if (path.length === 0) return null;
+  const parent = getAtPath(root, path.slice(0, -1));
+  if (parent === null || typeof parent !== 'object' || Array.isArray(parent)) {
+    return null;
+  }
+  const oldKey = String(path[path.length - 1]);
+  return uniqueObjectKey(parent as Record<string, unknown>, oldKey);
+}
+
 /** Generate a unique object key. */
 export function uniqueObjectKey(
   obj: Record<string, unknown>,
