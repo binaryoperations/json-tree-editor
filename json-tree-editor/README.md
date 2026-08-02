@@ -286,7 +286,7 @@ Roving `tabindex` marks one visible `role="treeitem"` as tabbable; others use `-
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for release history. On version bumps (`pnpm version:patch` from the monorepo), the changelog is updated automatically from commits since the previous tag.
+See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ## Demos
 

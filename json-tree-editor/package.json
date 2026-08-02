@@ -1,6 +1,6 @@
 {
   "name": "@binaryoperations/json-tree-editor",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Interactive JSON tree editor — Solid components + framework-agnostic web component",
   "type": "module",
   "license": "MIT",
@@ -48,12 +48,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "changelog": "node ./scripts/update-changelog.mjs",
-    "changelog:init": "node ./scripts/update-changelog.mjs --init",
     "package:restore": "node ./scripts/package-json-for-publish.mjs restore",
     "prepack": "node ./scripts/prepack.mjs",
-    "postpack": "node ./scripts/package-json-for-publish.mjs restore",
-    "version": "node ./scripts/update-changelog.mjs && git add CHANGELOG.md"
+    "postpack": "node ./scripts/package-json-for-publish.mjs restore"
   },
   "peerDependencies": {
     "solid-js": "^1.8.0"
