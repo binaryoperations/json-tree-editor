@@ -8,6 +8,8 @@ export {
   type TypeBadgeProps,
   TypeSelect,
   type TypeSelectProps,
+  ROOT_JSON_TYPES,
+  ALL_JSON_TYPES,
   KeyEditor,
   type KeyEditorProps,
   PrimitiveEditor,
@@ -21,7 +23,10 @@ export {
 // Parse / validity
 export {
   parseJsonSource,
+  isJsonRootValue,
+  EMPTY_ROOT,
   type JsonValidity,
+  type JsonRootValue,
 } from './lib/parse-json';
 
 // Path helpers and JSON shape utilities
@@ -41,7 +46,9 @@ export {
   addPropertyAtPath,
   addItemAtPath,
   cloneJsonShape,
+  siblingTemplateShape,
   addShapedItemAtPath,
+  addShapedPropertyAtPath,
   uniqueObjectKey,
   parseCompleteNumber,
   jsonTypeOf,

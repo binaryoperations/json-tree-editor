@@ -36,7 +36,7 @@ export const JsonEditor: Component<JsonEditorProps> = (props) => {
       if (!update.docChanged) return;
       const next = update.state.doc.toString();
       lastEmitted = next;
-      props.onChange(next);
+      props.onChange(next.trim());
     });
 
     const state = EditorState.create({

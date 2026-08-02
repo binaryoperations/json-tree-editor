@@ -209,7 +209,7 @@ export function addItemAtPath(
 }
 
 /**
- * Clone the *shape* of a JSON value for new array items / templates.
+ * Clone the *shape* of a JSON value for new array items / object properties.
  * - null → null
  * - string → ""
  * - number → 0
@@ -238,15 +238,49 @@ export function cloneJsonShape(value: unknown): unknown {
 }
 
 /**
+ * Template value for a new sibling in a container.
+ * Prefers the **last** entry's shape; if the container is empty, falls back to
+ * `null`. For objects, "last" is the last key in insertion order.
+ */
+export function siblingTemplateShape(container: unknown): unknown {
+  if (Array.isArray(container)) {
+    if (container.length === 0) return null;
+    // Prefer last; first is the same when length === 1.
+    return cloneJsonShape(container[container.length - 1]);
+  }
+  if (container !== null && typeof container === 'object') {
+    const keys = Object.keys(container as Record<string, unknown>);
+    if (keys.length === 0) return null;
+    const lastKey = keys[keys.length - 1];
+    return cloneJsonShape((container as Record<string, unknown>)[lastKey]);
+  }
+  return null;
+}
+
+/**
  * Append an item shaped like the last array element.
  * Empty arrays still append `null`.
  */
 export function addShapedItemAtPath(root: unknown, path: JsonPath): unknown {
   const parent = getAtPath(root, path);
   if (!Array.isArray(parent)) return root;
-  const value =
-    parent.length > 0 ? cloneJsonShape(parent[parent.length - 1]) : null;
-  return addItemAtPath(root, path, value);
+  return addItemAtPath(root, path, siblingTemplateShape(parent));
+}
+
+/**
+ * Add a property shaped like the last existing property value.
+ * Empty objects still insert `null`.
+ */
+export function addShapedPropertyAtPath(
+  root: unknown,
+  path: JsonPath,
+  key: string,
+): unknown {
+  const parent = getAtPath(root, path);
+  if (parent === null || typeof parent !== 'object' || Array.isArray(parent)) {
+    return root;
+  }
+  return addPropertyAtPath(root, path, key, siblingTemplateShape(parent));
 }
 
 /** Generate a unique object key. */

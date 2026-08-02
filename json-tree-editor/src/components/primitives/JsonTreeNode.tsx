@@ -1,8 +1,8 @@
 import { type Component, For, Show } from 'solid-js';
 
 import {
-  addPropertyAtPath,
   addShapedItemAtPath,
+  addShapedPropertyAtPath,
   convertJsonType,
   deleteAtPath,
   getAtPath,
@@ -18,7 +18,7 @@ import {
 import { KeyEditor } from './KeyEditor';
 import { PrimitiveEditor } from './PrimitiveEditor';
 import { TypeBadge } from './TypeBadge';
-import { TypeSelect } from './TypeSelect';
+import { ROOT_JSON_TYPES, TypeSelect } from './TypeSelect';
 
 export type JsonTreeNodeProps = {
   root: () => unknown;
@@ -74,6 +74,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
   };
 
   const changeType = (to: JsonTypeName) => {
+    // Document root may only be object or array — never a primitive.
+    if (props.isRoot && to !== 'object' && to !== 'array') return;
     const converted = convertJsonType(value(), to);
     setValue(converted);
     if (to === 'object' || to === 'array') {
@@ -86,17 +88,29 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     props.onCommit(deleteAtPath(props.root(), props.path));
   };
 
+  const emptyContainer = () => {
+    const t = typeName();
+    if (t === 'object') {
+      setValue({});
+      return;
+    }
+    if (t === 'array') {
+      setValue([]);
+    }
+  };
+
   const addProperty = () => {
     const v = value();
     if (v === null || typeof v !== 'object' || Array.isArray(v)) return;
+    // Clone shape of last property (or first when only one); empty → null.
     const key = uniqueObjectKey(v as Record<string, unknown>);
-    props.onCommit(addPropertyAtPath(props.root(), props.path, key, null));
+    props.onCommit(addShapedPropertyAtPath(props.root(), props.path, key));
     props.onExpand(props.path);
   };
 
   const addItem = () => {
     if (!Array.isArray(value())) return;
-    // Clone shape of last element (empty leaves); empty array → null.
+    // Clone shape of last element (or first when only one); empty → null.
     props.onCommit(addShapedItemAtPath(props.root(), props.path));
     props.onExpand(props.path);
   };
@@ -207,9 +221,21 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           <PrimitiveEditor value={value()} onCommit={setValue} />
         </Show>
 
-        <TypeSelect type={typeName()} onChange={changeType} />
-
         <div class="json-tree-actions" part="actions">
+          <Show when={typeName() === 'object' || typeName() === 'array'}>
+            <button
+              type="button"
+              class="json-tree-action json-tree-action--danger"
+              part="action"
+              title={
+                typeName() === 'array' ? 'Empty array' : 'Empty object'
+              }
+              disabled={childKeys().length === 0}
+              onClick={emptyContainer}
+            >
+              empty
+            </button>
+          </Show>
           <Show when={typeName() === 'object'}>
             <button
               type="button"
@@ -244,6 +270,13 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
             </button>
           </Show>
         </div>
+
+        {/* Type select is always last (far right), after + key / + item / delete. */}
+        <TypeSelect
+          type={typeName()}
+          onChange={changeType}
+          allowedTypes={props.isRoot ? ROOT_JSON_TYPES : undefined}
+        />
       </div>
 
       <Show when={isContainer() && open()}>

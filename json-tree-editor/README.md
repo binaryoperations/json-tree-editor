@@ -173,7 +173,7 @@ function collapseAll() {
 | Prop | Type | Required | Description |
 | --- | --- | --- | --- |
 | `validity` | `JsonValidity` | yes | Result of `parseJsonSource(source)`. Tree is interactive only when `ok: true` |
-| `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent + trailing newline) |
+| `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent, no trailing whitespace) |
 | `expanded` | `Set<string>` | no | Controlled expand path keys (`pathKey` / `ROOT_PATH_KEY`) |
 | `onExpandedChange` | `(next: Set<string>) => void` | no | Fired when expand state changes |
 | `defaultExpanded` | `Set<string>` | no | Uncontrolled initial expand set (default: root only). Ignored when `expanded` is set |
@@ -184,11 +184,18 @@ function collapseAll() {
 import { parseJsonSource, type JsonValidity } from '@binaryoperations/json-tree-editor';
 
 const validity: JsonValidity = parseJsonSource(source);
-// { ok: true, pretty: string, value: unknown }
-// | { ok: false, error: string }
+// { ok: true, pretty: string, value: object | array }
+// | { ok: false, error: string, value?: object, reason?: 'empty' | 'invalid-root' }
 ```
 
 Keep the source string as document truth: parse for the tree, push tree edits back via `onChange`, and re-parse on the next render.
+
+**Root rules:** the document may not be empty, and the root must be an **object or array** (never `string` / `number` / `boolean` / `null`).
+
+`JsonTreeView` always keeps a tree visible:
+- Empty source or primitive root → error banner + normalized empty object `{}`
+- Syntax errors → error banner + previous valid tree (or `{}` if none yet)
+- Tree edits still call `onChange` with pretty JSON so the user can recover from the tree pane
 
 ### Other Solid exports
 

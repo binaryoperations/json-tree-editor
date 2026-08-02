@@ -1,4 +1,9 @@
-import { type Component, createSignal, Show } from 'solid-js';
+import {
+  type Component,
+  createEffect,
+  createSignal,
+  Show,
+} from 'solid-js';
 
 import {
   collectVisiblePaths,
@@ -9,7 +14,11 @@ import {
   pathKey,
   ROOT_PATH_KEY,
 } from '../../lib/json-path';
-import type { JsonValidity } from '../../lib/parse-json';
+import {
+  EMPTY_ROOT,
+  type JsonRootValue,
+  type JsonValidity,
+} from '../../lib/parse-json';
 import { JsonTreeNode } from './JsonTreeNode';
 
 export type JsonTreeViewProps = {
@@ -34,7 +43,8 @@ export type JsonTreeViewProps = {
 };
 
 function emitPretty(value: unknown, onChange: (s: string) => void): void {
-  onChange(JSON.stringify(value, null, 2) + '\n');
+  // No trailing whitespace / newline — keep source clean for hosts that round-trip.
+  onChange(JSON.stringify(value, null, 2));
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -50,7 +60,11 @@ function isContainerValue(value: unknown): boolean {
 
 /**
  * Interactive collapsible JSON tree. Edits flow back as pretty-printed source.
- * Disabled when validity is not ok so users can fix syntax in the source pane.
+ *
+ * Always keeps a tree on screen:
+ * - Valid document → live root.
+ * - Empty / primitive root → error banner + normalized empty object `{}`.
+ * - Syntax errors → error banner + previous valid tree (or `{}` if none yet).
  *
  * Expand state can be uncontrolled (default) or controlled via
  * `expanded` + `onExpandedChange` for expand-all / collapse-all toolbars.
@@ -66,8 +80,36 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   /** Roving tabindex: which visible row is the active treeitem. */
   const [focusedPathKey, setFocusedPathKey] =
     createSignal<string>(ROOT_PATH_KEY);
+  /**
+   * Last successfully parsed root. Used when the source has a syntax error so
+   * the tree stays visible while the user fixes the document.
+   */
+  const [lastGoodRoot, setLastGoodRoot] = createSignal<JsonRootValue | null>(
+    null,
+  );
 
   let treeScrollEl: HTMLDivElement | undefined;
+
+  createEffect(() => {
+    const v = props.validity;
+    if (v.ok) {
+      setLastGoodRoot(v.value);
+    }
+  });
+
+  /**
+   * Root shown in the tree:
+   * 1. Live valid value
+   * 2. Parser fallback (`{}` for empty / invalid-root)
+   * 3. Previous valid tree (syntax errors)
+   * 4. Empty object as last resort
+   */
+  const displayRoot = (): JsonRootValue => {
+    const v = props.validity;
+    if (v.ok) return v.value;
+    if (v.value !== undefined) return v.value;
+    return lastGoodRoot() ?? EMPTY_ROOT;
+  };
 
   const isControlled = () => props.expanded !== undefined;
 
@@ -114,9 +156,6 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   const commit = (nextRoot: unknown) => {
     emitPretty(nextRoot, props.onChange);
   };
-
-  const rootValue = (): unknown =>
-    (props.validity as Extract<JsonValidity, { ok: true }>).value;
 
   const findTreeItem = (path: JsonPath): HTMLElement | null => {
     const el = treeScrollEl;
@@ -183,9 +222,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       return;
     }
 
-    if (!props.validity.ok) return;
-
-    const root = rootValue();
+    const root = displayRoot();
     const visible = collectVisiblePaths(root, expanded());
     if (visible.length === 0) return;
 
@@ -248,44 +285,60 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     }
   };
 
+  const errorMessage = () =>
+    props.validity.ok ? null : props.validity.error;
+
+  const errorHint = () => {
+    const v = props.validity;
+    if (v.ok) return null;
+    if (v.reason === 'empty') {
+      return 'Showing empty object. Edit the tree or type a JSON object/array in the source.';
+    }
+    if (v.reason === 'invalid-root') {
+      return 'Showing empty object. Change the root type below or fix the source.';
+    }
+    return lastGoodRoot()
+      ? 'Showing the last valid tree. Fix JSON syntax in the source editor.'
+      : 'Showing empty object. Fix JSON syntax in the source editor.';
+  };
+
   return (
     <div class="json-tree" part="tree">
-      <Show
-        when={props.validity.ok}
-        fallback={
-          <div class="json-tree__disabled" part="disabled" role="status">
-            <strong>Tree unavailable</strong>
-            <p>{props.validity.ok ? '' : props.validity.error}</p>
-            <p class="json-tree__hint">
-              Fix JSON syntax in the source editor to enable the tree.
-            </p>
+      <Show when={errorMessage()}>
+        {(msg) => (
+          <div class="json-tree__error" part="error" role="status">
+            <strong>Invalid JSON</strong>
+            <p>{msg()}</p>
+            <Show when={errorHint()}>
+              {(hint) => <p class="json-tree__hint">{hint()}</p>}
+            </Show>
           </div>
-        }
-      >
-        <div
-          class="json-tree__scroll"
-          part="scroll"
-          role="tree"
-          aria-label="JSON tree"
-          ref={(el) => {
-            treeScrollEl = el;
-          }}
-          onKeyDown={onTreeKeyDown}
-        >
-          <JsonTreeNode
-            root={rootValue}
-            path={[]}
-            keyLabel="root"
-            isRoot
-            isExpanded={isExpanded}
-            onToggle={toggle}
-            onExpand={expandPath}
-            onCommit={commit}
-            focusedPathKey={focusedPathKey}
-            onFocusPath={onFocusPath}
-          />
-        </div>
+        )}
       </Show>
+
+      <div
+        class="json-tree__scroll"
+        part="scroll"
+        role="tree"
+        aria-label="JSON tree"
+        ref={(el) => {
+          treeScrollEl = el;
+        }}
+        onKeyDown={onTreeKeyDown}
+      >
+        <JsonTreeNode
+          root={displayRoot}
+          path={[]}
+          keyLabel="root"
+          isRoot
+          isExpanded={isExpanded}
+          onToggle={toggle}
+          onExpand={expandPath}
+          onCommit={commit}
+          focusedPathKey={focusedPathKey}
+          onFocusPath={onFocusPath}
+        />
+      </div>
     </div>
   );
 };

@@ -14,13 +14,20 @@ export const KeyEditor: Component<KeyEditorProps> = (props) => {
   });
 
   const commit = () => {
-    setEditing(false);
+    // Capture draft *before* leaving edit mode. `setEditing(false)` re-runs the
+    // effect above, which resets draft to `props.label` and would drop the rename.
     const next = draft().trim();
+    setEditing(false);
     if (next && next !== props.label) {
       props.onRename(next);
     } else {
       setDraft(props.label);
     }
+  };
+
+  const cancel = () => {
+    setDraft(props.label);
+    setEditing(false);
   };
 
   return (
@@ -59,8 +66,8 @@ export const KeyEditor: Component<KeyEditorProps> = (props) => {
             (e.currentTarget as HTMLInputElement).blur();
           }
           if (e.key === 'Escape') {
-            setDraft(props.label);
-            setEditing(false);
+            e.preventDefault();
+            cancel();
           }
         }}
       />

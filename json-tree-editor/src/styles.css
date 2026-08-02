@@ -129,26 +129,31 @@
   color: var(--jte-fg, #e6e8ec);
 }
 
+/* Error banner above a still-visible tree (empty/primitive root or syntax). */
+.json-tree__error,
 .json-tree__disabled {
-  margin: 1rem;
-  padding: 0.85rem 1rem;
+  flex-shrink: 0;
+  margin: 0.55rem 0.55rem 0;
+  padding: 0.65rem 0.85rem;
   border-radius: 8px;
   border: 1px solid var(--jte-error-border, #7f1d1d);
   background: var(--jte-error-bg, #1c0f0f);
   color: var(--jte-error-fg, #fecaca);
 }
 
+.json-tree__error strong,
 .json-tree__disabled strong {
   display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--jte-error-title, #fca5a5);
 }
 
+.json-tree__error p,
 .json-tree__disabled p {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.25rem;
   font-family: var(
     --jte-font-mono,
     ui-monospace,
@@ -158,17 +163,18 @@
     Consolas,
     monospace
   );
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   line-height: 1.45;
   color: var(--jte-error-body, #fca5a5);
   word-break: break-word;
 }
 
 .json-tree__hint {
-  margin-top: 0.55rem !important;
+  margin-top: 0.4rem !important;
+  margin-bottom: 0 !important;
   color: var(--jte-hint, #9aa3b2) !important;
   font-family: inherit !important;
-  font-size: 0.78rem !important;
+  font-size: 0.75rem !important;
 }
 
 .json-tree-node {
@@ -475,10 +481,15 @@
   line-height: 1.2;
 }
 
-.json-tree-action:hover {
+.json-tree-action:hover:not(:disabled) {
   color: var(--jte-fg, #e6e8ec);
   border-color: #4b5568;
   background: var(--jte-surface-4, #232833);
+}
+
+.json-tree-action:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .json-tree-action:focus-visible {
@@ -493,7 +504,7 @@
   padding-right: 0.3rem;
 }
 
-.json-tree-action--danger:hover {
+.json-tree-action--danger:hover:not(:disabled) {
   color: var(--jte-danger-strong, #fecaca);
   border-color: var(--jte-danger-border, #991b1b);
   background: var(--jte-danger-bg, #7f1d1d55);

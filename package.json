@@ -18,6 +18,8 @@
     "build": "pnpm --filter @binaryoperations/json-tree-editor build && pnpm --filter @json-tree-editor/demo build",
     "build:lib": "pnpm --filter @binaryoperations/json-tree-editor build",
     "typecheck": "pnpm --filter @binaryoperations/json-tree-editor typecheck",
+    "test": "pnpm --filter @binaryoperations/json-tree-editor test",
+    "test:watch": "pnpm --filter @binaryoperations/json-tree-editor test:watch",
     "preview": "pnpm --filter @json-tree-editor/demo preview",
     "version:patch": "npm version patch --prefix json-tree-editor",
     "version:minor": "npm version minor --prefix json-tree-editor",
