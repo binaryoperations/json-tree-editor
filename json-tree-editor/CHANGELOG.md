@@ -5,64 +5,74 @@ All notable changes to `@binaryoperations/json-tree-editor` are documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.4] - 2026-08-02
+## [1.0.5] - 2026-08-02
 
-### Chore
+### Added
 
-- add CHANGELOG and update it on version bumps
+- **Imperative expand API** on Solid `ref` and the web component: `expandAll()`, `collapseAll()`, `isExpanding()`, and `getRoot()` (returns the `.json-tree` element).
+- **Expand lifecycle callbacks / events**: progress while expanding, and one-shot completion for expand and collapse (full expanded key list on completion).
+- **`defaultExpandedDepth`** (default `0` = root open only) for Solid and the web component (`default-expanded-depth`), so hosts set initial open depth without knowing internal path keys.
+
+### Changed
+
+- **`JsonTreeView` owns parsing**: pass `value` (JSON string) instead of a precomputed `validity` object; the tree runs `parseJsonSource` internally.
+- **Package entry split**: root export is only `JsonTreeView` (+ handle/types). Helpers, parse utilities, and primitives live under `@binaryoperations/json-tree-editor/utils`.
+- **Type UI**: removed the separate type badge; the type `<select>` is badge-styled (one control per row, fewer DOM nodes on large trees).
+- **Publish packaging**: optional `solid-js` peer for web-component-only installs; pack strips monorepo-only `package.json` fields with a restorable backup.
+- **expandAll pacing**: fixed-size rAF chunks (one apply per frame) so the UI can paint between batches without multi-second freezes.
+
+### Fixed
+
+- Expand/collapse methods remain available when the control is `disabled` (pointer edits stay blocked).
 
 ## [1.0.3] - 2026-08-02
 
 ### Added
 
-- expose expand/collapse APIs and defaultExpandedDepth
+- First cut of expand/collapse-all surface and depth-based expand defaults (superseded and polished in 1.0.5).
 
 ### Changed
 
-- parse document source inside JsonTreeView
+- Document parsing moved into `JsonTreeView` (`value` prop) so hosts no longer pass parse results into the tree.
 
 ## [1.0.2] - 2026-08-02
 
 ### Added
 
-- split utils export and harden publish package.json
+- **`/utils` package export** for path helpers, parsing, and lower-level primitives.
+- Safer **publish flow** for the web-component build and consumer-facing package metadata.
 
 ## [1.0.1] - 2026-08-02
 
 ### Added
 
-- move add and clear controls into container child rows
-- duplicate non-root object and array nodes
-- add editable null leaf with typed draft parsing
-- seed new containers, tighten shape clone, quiet empty docs
-- harden document root, tree UX, and add vitest coverage
+- **Root document rules**: blank input becomes a valid empty object; root must be object or array; invalid roots show an error while keeping a usable tree (last good or empty object).
+- **Null editor**: focus/click `null` to type free text; JSON, number, or string is inferred; empty keeps `null`.
+- **Duplicate** for non-root objects and arrays (deep clone as next sibling).
+- **Container toolbar row**: `+ key` / `+ item`, **duplicate**, and **clear** inside expanded objects/arrays.
+- **Smarter type conversion**: new objects/arrays seed one entry; primitives wrap into that entry when converting to object/array; string → `""`, boolean → `false`.
+- **Shape cloning** for new siblings: arrays always seed a single item (not full length copy).
+- **Vitest** coverage for path helpers, parse rules, editors, and tree behaviors.
+
+### Changed
+
+- Tree edits emit pretty JSON **without trailing whitespace**.
+- Root type select limited to object/array.
 
 ## [1.0.0] - 2026-08-02
 
 ### Added
 
-- shared header with left Popover drawer nav
-- dual library surface — Solid entry + bundled web component
+- Initial public release of `@binaryoperations/json-tree-editor`.
+- **Solid** tree editor: collapsible JSON tree with key/value/type editing.
+- **Web component** `<json-tree-editor>` with bundled Solid for non-Solid hosts.
+- Keyboard navigation (ARIA tree-style arrows), theming via CSS variables and `::part`.
+- Demo apps including a large-tree stress page.
 
-### Docs
+---
 
-- add package consumer README and restructure monorepo README
-
-### Chore
-
-- version scripts commit and tag library releases
-- add version bump scripts for library package
-- rename package to @binaryoperations/json-tree-editor
-- add MIT license, npm metadata, and publish script
-- relocate core project
-- ship Solid as TS source; build only web-component
-- drop unnecessary scripts
-
-### Other
-
-- Public WC export is only json-tree-editor/web-component
-- Add ARIA tree-style keyboard arrow navigation
-- Add expand/collapse all for large-tree demo
-- Add large-tree stress demo (~5000 nodes)
-- Initial scaffold: json-tree-editor library + demo
-
+[1.0.5]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.3...v1.0.5
+[1.0.3]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/binaryoperations/json-tree-editor/releases/tag/v1.0.0
