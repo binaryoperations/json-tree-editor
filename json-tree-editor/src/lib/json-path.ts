@@ -214,10 +214,11 @@ export function addItemAtPath(
  * - string → ""
  * - number → 0
  * - boolean → false
- * - array → each element shape cloned (same length/structure)
+ * - array → **one** item shaped like the last element (empty → `[null]`)
  * - object → same keys with recursively shaped values
  *
  * Leaf values are cleared to type defaults (not deep-copied content).
+ * Arrays never preserve length — new siblings always start with a single slot.
  */
 export function cloneJsonShape(value: unknown): unknown {
   if (value === null) return null;
@@ -225,7 +226,9 @@ export function cloneJsonShape(value: unknown): unknown {
   if (typeof value === 'number') return 0;
   if (typeof value === 'boolean') return false;
   if (Array.isArray(value)) {
-    return value.map((item) => cloneJsonShape(item));
+    if (value.length === 0) return [null];
+    // Prefer last element (same policy as sibling templates); always length 1.
+    return [cloneJsonShape(value[value.length - 1])];
   }
   if (typeof value === 'object') {
     const out: Record<string, unknown> = {};
@@ -330,6 +333,19 @@ export function jsonTypeOf(value: unknown): JsonTypeName {
   return 'string';
 }
 
+/** Default property name used when seeding a new object. */
+export const DEFAULT_OBJECT_KEY = 'key';
+
+/** New object with a single editable key (value `null`). */
+export function defaultNewObject(): Record<string, unknown> {
+  return { [DEFAULT_OBJECT_KEY]: null };
+}
+
+/** New array with a single `null` item. */
+export function defaultNewArray(): unknown[] {
+  return [null];
+}
+
 /** Convert a value to a different JSON type (best-effort). */
 export function convertJsonType(value: unknown, to: JsonTypeName): unknown {
   switch (to) {
@@ -357,10 +373,12 @@ export function convertJsonType(value: unknown, to: JsonTypeName): unknown {
       if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
         return value;
       }
-      return {};
+      // Fresh objects always start with one key so the tree is immediately useful.
+      return defaultNewObject();
     case 'array':
       if (Array.isArray(value)) return value;
-      return [];
+      // Fresh arrays always start with one item.
+      return defaultNewArray();
     default:
       return value;
   }

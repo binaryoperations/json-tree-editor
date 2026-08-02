@@ -3,6 +3,13 @@ import { type Component, createEffect, createSignal, Show } from 'solid-js';
 export type KeyEditorProps = {
   label: string;
   onRename: (newKey: string) => void;
+  /**
+   * When true on mount / when flipped true, enter rename mode immediately
+   * (used after +key or converting a value to object).
+   */
+  autoEdit?: boolean;
+  /** Called once after auto-edit mode is entered so the parent can clear the flag. */
+  onAutoEditStart?: () => void;
 };
 
 export const KeyEditor: Component<KeyEditorProps> = (props) => {
@@ -13,9 +20,17 @@ export const KeyEditor: Component<KeyEditorProps> = (props) => {
     if (!editing()) setDraft(props.label);
   });
 
+  // Enter rename mode when the parent requests auto-edit (new property).
+  createEffect(() => {
+    if (!props.autoEdit || editing()) return;
+    setDraft(props.label);
+    setEditing(true);
+    props.onAutoEditStart?.();
+  });
+
   const commit = () => {
     // Capture draft *before* leaving edit mode. `setEditing(false)` re-runs the
-    // effect above, which resets draft to `props.label` and would drop the rename.
+    // label-sync effect above, which would reset draft to `props.label`.
     const next = draft().trim();
     setEditing(false);
     if (next && next !== props.label) {
@@ -55,8 +70,10 @@ export const KeyEditor: Component<KeyEditorProps> = (props) => {
         value={draft()}
         aria-label="Property key"
         ref={(el) => {
-          queueMicrotask(() => el.focus());
-          el.select();
+          queueMicrotask(() => {
+            el.focus();
+            el.select();
+          });
         }}
         onInput={(e) => setDraft(e.currentTarget.value)}
         onBlur={commit}

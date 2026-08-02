@@ -1,9 +1,10 @@
-import { type Component, For, Show } from 'solid-js';
+import { type Component, createSignal, For, Show } from 'solid-js';
 
 import {
   addShapedItemAtPath,
   addShapedPropertyAtPath,
   convertJsonType,
+  DEFAULT_OBJECT_KEY,
   deleteAtPath,
   getAtPath,
   type JsonPath,
@@ -33,6 +34,9 @@ export type JsonTreeNodeProps = {
   /** Path key of the roving-tabindex active row. */
   focusedPathKey: () => string;
   onFocusPath: (path: JsonPath) => void;
+  /** When true, this row's key editor opens in rename mode on mount. */
+  autoEditKey?: boolean;
+  onAutoEditKeyStart?: () => void;
 };
 
 export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
@@ -43,6 +47,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     return t === 'object' || t === 'array';
   };
   const open = () => props.isExpanded(props.path);
+  /** Child object key that should open in rename mode (after +key / type→object). */
+  const [pendingEditKey, setPendingEditKey] = createSignal<string | null>(null);
 
   /**
    * Primitive keys (string | number) so Solid <For> reconciles by value and
@@ -76,10 +82,15 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
   const changeType = (to: JsonTypeName) => {
     // Document root may only be object or array — never a primitive.
     if (props.isRoot && to !== 'object' && to !== 'array') return;
+    const prevType = typeName();
     const converted = convertJsonType(value(), to);
     setValue(converted);
     if (to === 'object' || to === 'array') {
       props.onExpand(props.path);
+    }
+    // Fresh object (not already an object) seeds one key — open it for rename.
+    if (to === 'object' && prevType !== 'object') {
+      setPendingEditKey(DEFAULT_OBJECT_KEY);
     }
   };
 
@@ -106,6 +117,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     const key = uniqueObjectKey(v as Record<string, unknown>);
     props.onCommit(addShapedPropertyAtPath(props.root(), props.path, key));
     props.onExpand(props.path);
+    setPendingEditKey(key);
   };
 
   const addItem = () => {
@@ -206,7 +218,12 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
             </span>
           }
         >
-          <KeyEditor label={props.keyLabel} onRename={renameKey} />
+          <KeyEditor
+            label={props.keyLabel}
+            onRename={renameKey}
+            autoEdit={props.autoEditKey}
+            onAutoEditStart={props.onAutoEditKeyStart}
+          />
         </Show>
 
         <TypeBadge type={typeName()} />
@@ -293,6 +310,10 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 onCommit={props.onCommit}
                 focusedPathKey={props.focusedPathKey}
                 onFocusPath={props.onFocusPath}
+                autoEditKey={
+                  typeof key === 'string' && pendingEditKey() === key
+                }
+                onAutoEditKeyStart={() => setPendingEditKey(null)}
               />
             )}
           </For>

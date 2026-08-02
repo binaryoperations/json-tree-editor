@@ -101,4 +101,19 @@ describe('KeyEditor', () => {
 
     expect(onRename).toHaveBeenCalledWith('title');
   });
+
+  it('enters edit mode when autoEdit is set', () => {
+    const onAutoEditStart = vi.fn();
+    render(() => (
+      <KeyEditor
+        label="key"
+        onRename={vi.fn()}
+        autoEdit
+        onAutoEditStart={onAutoEditStart}
+      />
+    ));
+
+    expect(screen.getByLabelText('Property key')).toBeTruthy();
+    expect(onAutoEditStart).toHaveBeenCalled();
+  });
 });

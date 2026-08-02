@@ -62,8 +62,8 @@ function isContainerValue(value: unknown): boolean {
  * Interactive collapsible JSON tree. Edits flow back as pretty-printed source.
  *
  * Always keeps a tree on screen:
- * - Valid document → live root.
- * - Empty / primitive root → error banner + normalized empty object `{}`.
+ * - Valid document (including blank source → `{}`) → live root.
+ * - Primitive root → error banner + normalized empty object `{}`.
  * - Syntax errors → error banner + previous valid tree (or `{}` if none yet).
  *
  * Expand state can be uncontrolled (default) or controlled via
@@ -291,9 +291,6 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   const errorHint = () => {
     const v = props.validity;
     if (v.ok) return null;
-    if (v.reason === 'empty') {
-      return 'Showing empty object. Edit the tree or type a JSON object/array in the source.';
-    }
     if (v.reason === 'invalid-root') {
       return 'Showing empty object. Change the root type below or fix the source.';
     }

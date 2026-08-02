@@ -50,14 +50,13 @@ describe('parseJsonSource', () => {
     expect(parseJsonSource('[]')).toMatchObject({ ok: true, value: [] });
   });
 
-  it('rejects empty / whitespace-only source with empty-object fallback', () => {
+  it('treats empty / whitespace-only source as a valid empty object (no error)', () => {
     for (const source of ['', '   ', '\n\t']) {
       const result = parseJsonSource(source);
       expect(result).toEqual({
-        ok: false,
-        error: 'Document is empty',
+        ok: true,
+        pretty: JSON.stringify(EMPTY_ROOT, null, 2),
         value: EMPTY_ROOT,
-        reason: 'empty',
       });
     }
   });

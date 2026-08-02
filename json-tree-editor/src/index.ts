@@ -53,4 +53,7 @@ export {
   parseCompleteNumber,
   jsonTypeOf,
   convertJsonType,
+  DEFAULT_OBJECT_KEY,
+  defaultNewObject,
+  defaultNewArray,
 } from './lib/json-path';

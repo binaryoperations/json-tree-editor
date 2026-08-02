@@ -205,14 +205,17 @@ describe('cloneJsonShape', () => {
     expect(cloneJsonShape('hi')).toBe('');
     expect(cloneJsonShape(42)).toBe(0);
     expect(cloneJsonShape(true)).toBe(false);
-    expect(cloneJsonShape([1, 'a', false])).toEqual([0, '', false]);
+    // Arrays always seed exactly one item (shape of the last element).
+    expect(cloneJsonShape([1, 'a', false])).toEqual([false]);
+    expect(cloneJsonShape([0, 1])).toEqual([0]);
+    expect(cloneJsonShape([])).toEqual([null]);
     expect(
       cloneJsonShape({
         name: 'Ada',
         score: 10,
         ok: true,
         note: null,
-        tags: ['x'],
+        tags: ['x', 'y'],
         meta: { id: 7 },
       }),
     ).toEqual({
@@ -220,7 +223,7 @@ describe('cloneJsonShape', () => {
       score: 0,
       ok: false,
       note: null,
-      tags: [''],
+      tags: [''], // one slot from last tag "y"
       meta: { id: 0 },
     });
   });
@@ -242,13 +245,22 @@ describe('siblingTemplateShape', () => {
     expect(siblingTemplateShape(['only'])).toBe('');
   });
 
-  it('clones the last object property value shape', () => {
+  it('clones the last object property value shape (arrays → 1 item)', () => {
     expect(
       siblingTemplateShape({
         first: { a: 1 },
-        last: { name: 'z', tags: [1] },
+        last: { name: 'z', tags: [1, 2] },
       }),
     ).toEqual({ name: '', tags: [0] });
+  });
+
+  it('when adding a key after an array property, seeds a 1-item array', () => {
+    // Repro: root { key: [0, 1] } +key should not copy length 2.
+    expect(siblingTemplateShape({ key: [0, 1] })).toEqual([0]);
+    expect(addShapedPropertyAtPath({ key: [0, 1] }, [], 'key1')).toEqual({
+      key: [0, 1],
+      key1: [0],
+    });
   });
 });
 
@@ -361,9 +373,13 @@ describe('convertJsonType', () => {
 
   it('converts to null / object / array defaults', () => {
     expect(convertJsonType(1, 'null')).toBe(null);
-    expect(convertJsonType(1, 'object')).toEqual({});
+    // Fresh containers seed one entry so the tree is immediately editable.
+    expect(convertJsonType(1, 'object')).toEqual({ key: null });
+    expect(convertJsonType(null, 'object')).toEqual({ key: null });
+    expect(convertJsonType([1], 'object')).toEqual({ key: null });
     expect(convertJsonType({ a: 1 }, 'object')).toEqual({ a: 1 });
-    expect(convertJsonType(1, 'array')).toEqual([]);
+    expect(convertJsonType(1, 'array')).toEqual([null]);
+    expect(convertJsonType({ a: 1 }, 'array')).toEqual([null]);
     expect(convertJsonType([1], 'array')).toEqual([1]);
   });
 });

@@ -185,15 +185,16 @@ import { parseJsonSource, type JsonValidity } from '@binaryoperations/json-tree-
 
 const validity: JsonValidity = parseJsonSource(source);
 // { ok: true, pretty: string, value: object | array }
-// | { ok: false, error: string, value?: object, reason?: 'empty' | 'invalid-root' }
+// | { ok: false, error: string, value?: object, reason?: 'invalid-root' }
 ```
 
 Keep the source string as document truth: parse for the tree, push tree edits back via `onChange`, and re-parse on the next render.
 
-**Root rules:** the document may not be empty, and the root must be an **object or array** (never `string` / `number` / `boolean` / `null`).
+**Root rules:** blank source is treated as a valid empty object `{}` (no error). The root must be an **object or array** (never `string` / `number` / `boolean` / `null`).
 
 `JsonTreeView` always keeps a tree visible:
-- Empty source or primitive root → error banner + normalized empty object `{}`
+- Blank source → empty object `{}` (no error banner)
+- Primitive root → error banner + normalized empty object `{}`
 - Syntax errors → error banner + previous valid tree (or `{}` if none yet)
 - Tree edits still call `onChange` with pretty JSON so the user can recover from the tree pane
 
