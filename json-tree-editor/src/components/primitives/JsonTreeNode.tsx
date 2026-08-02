@@ -257,42 +257,6 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
         </Show>
 
         <div class="json-tree-actions" part="actions">
-          <Show when={typeName() === 'object' || typeName() === 'array'}>
-            <button
-              type="button"
-              class="json-tree-action json-tree-action--danger"
-              part="action"
-              title={
-                typeName() === 'array' ? 'Empty array' : 'Empty object'
-              }
-              disabled={childKeys().length === 0}
-              onClick={emptyContainer}
-            >
-              empty
-            </button>
-          </Show>
-          <Show when={typeName() === 'object'}>
-            <button
-              type="button"
-              class="json-tree-action"
-              part="action"
-              title="Add property"
-              onClick={addProperty}
-            >
-              + key
-            </button>
-          </Show>
-          <Show when={typeName() === 'array'}>
-            <button
-              type="button"
-              class="json-tree-action"
-              part="action"
-              title="Add item"
-              onClick={addItem}
-            >
-              + item
-            </button>
-          </Show>
           <Show when={!props.isRoot && isContainer()}>
             <button
               type="button"
@@ -317,7 +281,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           </Show>
         </div>
 
-        {/* Type select is always last (far right), after + key / + item / delete. */}
+        {/* Type select is always last (far right). */}
         <TypeSelect
           type={typeName()}
           onChange={changeType}
@@ -327,6 +291,49 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
 
       <Show when={isContainer() && open()}>
         <div class="json-tree-children" role="group">
+          {/* + add then empty as the first row inside the container */}
+          <div class="json-tree-add-row" part="add-row">
+            <span
+              class="json-tree-chevron json-tree-chevron--leaf"
+              part="chevron"
+              aria-hidden="true"
+            />
+            <Show when={typeName() === 'object'}>
+              <button
+                type="button"
+                class="json-tree-add-row__btn"
+                part="action"
+                title="Add property"
+                onClick={addProperty}
+              >
+                + key
+              </button>
+            </Show>
+            <Show when={typeName() === 'array'}>
+              <button
+                type="button"
+                class="json-tree-add-row__btn"
+                part="action"
+                title="Add item"
+                onClick={addItem}
+              >
+                + item
+              </button>
+            </Show>
+            <button
+              type="button"
+              class="json-tree-add-row__btn json-tree-add-row__btn--danger"
+              part="action"
+              title={
+                typeName() === 'array' ? 'Clear array' : 'Clear object'
+              }
+              disabled={childKeys().length === 0}
+              onClick={emptyContainer}
+            >
+              clear
+            </button>
+          </div>
+
           <For each={childKeys()}>
             {(key) => (
               <JsonTreeNode
@@ -351,11 +358,6 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
               />
             )}
           </For>
-          <Show when={childKeys().length === 0}>
-            <div class="json-tree-empty">
-              {typeName() === 'array' ? 'Empty array' : 'Empty object'}
-            </div>
-          </Show>
         </div>
       </Show>
     </div>
