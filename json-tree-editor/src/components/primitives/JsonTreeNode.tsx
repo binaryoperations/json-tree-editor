@@ -20,7 +20,6 @@ import {
 } from '../../lib/json-path';
 import { KeyEditor } from './KeyEditor';
 import { PrimitiveEditor } from './PrimitiveEditor';
-import { TypeBadge } from './TypeBadge';
 import { ROOT_JSON_TYPES, TypeSelect } from './TypeSelect';
 
 export type JsonTreeNodeProps = {
@@ -244,7 +243,12 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           />
         </Show>
 
-        <TypeBadge type={typeName()} />
+        {/* Badge-styled type select (no separate type label node). */}
+        <TypeSelect
+          type={typeName()}
+          onChange={changeType}
+          allowedTypes={props.isRoot ? ROOT_JSON_TYPES : undefined}
+        />
 
         <Show when={isContainer()}>
           <span class="json-tree-summary" part="summary">
@@ -280,13 +284,6 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
             </button>
           </Show>
         </div>
-
-        {/* Type select is always last (far right). */}
-        <TypeSelect
-          type={typeName()}
-          onChange={changeType}
-          allowedTypes={props.isRoot ? ROOT_JSON_TYPES : undefined}
-        />
       </div>
 
       <Show when={isContainer() && open()}>

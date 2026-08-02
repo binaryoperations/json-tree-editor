@@ -252,14 +252,14 @@ json-tree-editor::part(tree) { /* .json-tree root */ }
 json-tree-editor::part(row) { /* one tree row */ }
 json-tree-editor::part(key) { }
 json-tree-editor::part(value) { }
-json-tree-editor::part(type) { }
+json-tree-editor::part(type) { /* badge-styled type <select> */ }
 json-tree-editor::part(chevron) { }
 json-tree-editor::part(actions) { }
 json-tree-editor::part(input) { }
 json-tree-editor::part(disabled) { /* invalid-JSON state panel */ }
 ```
 
-Also available: `scroll`, `summary`, `type-select`, `action`, `null`.
+Also available: `scroll`, `summary`, `action`, `null`.
 
 </details>
 

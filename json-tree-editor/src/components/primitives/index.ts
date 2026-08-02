@@ -5,7 +5,6 @@ export {
   type ExpandProgress,
 } from './JsonTreeView';
 export { JsonTreeNode, type JsonTreeNodeProps } from './JsonTreeNode';
-export { TypeBadge, type TypeBadgeProps } from './TypeBadge';
 export {
   TypeSelect,
   type TypeSelectProps,

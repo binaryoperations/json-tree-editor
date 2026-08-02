@@ -452,31 +452,50 @@
   font-style: normal;
 }
 
+/* Type select reuses .json-tree-type / --string|number|… badge colors. */
 .json-tree-type-select {
-  flex-shrink: 0;
   appearance: none;
+  -webkit-appearance: none;
   font: inherit;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--jte-select-fg, #8b93a3);
-  background: var(--jte-surface-3, #161a22);
-  border: 1px solid var(--jte-border-strong, #2a2f3a);
-  border-radius: 4px;
-  padding: 0.12rem 0.35rem;
+  line-height: 1.2;
   cursor: pointer;
-  max-width: 5.2rem;
+  max-width: 5.5rem;
+  /* Room for native dropdown indicator without clipping the label */
+  padding-right: 1rem;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      currentColor 50%
+    ),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 0.55rem) 50%,
+    calc(100% - 0.3rem) 50%;
+  background-size:
+    0.28rem 0.28rem,
+    0.28rem 0.28rem;
+  background-repeat: no-repeat;
 }
 
 .json-tree-type-select:hover {
-  border-color: var(--jte-border-hover, #3a4254);
-  color: var(--jte-select-fg-hover, #c8d0dc);
+  filter: brightness(1.12);
 }
 
 .json-tree-type-select:focus-visible {
   outline: 2px solid var(--jte-focus-ring, #60a5fa);
   outline-offset: 1px;
+}
+
+.json-tree-type-select option {
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: normal;
+  color: var(--jte-fg, #e6e8ec);
+  background: var(--jte-surface, #12151c);
 }
 
 .json-tree-actions {

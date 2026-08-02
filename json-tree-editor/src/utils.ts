@@ -9,8 +9,6 @@
 export {
   JsonTreeNode,
   type JsonTreeNodeProps,
-  TypeBadge,
-  type TypeBadgeProps,
   TypeSelect,
   type TypeSelectProps,
   ROOT_JSON_TYPES,

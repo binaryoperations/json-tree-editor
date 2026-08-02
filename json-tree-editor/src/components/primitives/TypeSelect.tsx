@@ -25,14 +25,19 @@ export type TypeSelectProps = {
   allowedTypes?: readonly JsonTypeName[];
 };
 
+/**
+ * Type control styled like the old type badge (single node per row).
+ */
 export const TypeSelect: Component<TypeSelectProps> = (props) => {
   const options = () => props.allowedTypes ?? ALL_JSON_TYPES;
 
   return (
     <select
-      class="json-tree-type-select"
-      part="type-select"
+      class="json-tree-type json-tree-type-select"
+      classList={{ [`json-tree-type--${props.type}`]: true }}
+      part="type"
       title="Change type"
+      aria-label="JSON type"
       value={props.type}
       onChange={(e) => {
         props.onChange(e.currentTarget.value as JsonTypeName);
