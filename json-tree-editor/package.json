@@ -29,6 +29,12 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./utils": {
+      "types": "./src/utils.ts",
+      "solid": "./src/utils.ts",
+      "import": "./src/utils.ts",
+      "default": "./src/utils.ts"
+    },
     "./web-component": {
       "types": "./dist/web-component.d.ts",
       "import": "./dist/web-component.js",
@@ -37,24 +43,21 @@
     "./styles.css": "./src/styles.css",
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist",
-    "src",
-    "README.md"
-  ],
   "scripts": {
     "build": "vite build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "pnpm run build"
+    "package:restore": "node ./scripts/package-json-for-publish.mjs restore",
+    "prepack": "node ./scripts/prepack.mjs",
+    "postpack": "node ./scripts/package-json-for-publish.mjs restore"
   },
   "peerDependencies": {
     "solid-js": "^1.8.0"
   },
   "peerDependenciesMeta": {
     "solid-js": {
-      "optional": false
+      "optional": true
     }
   },
   "devDependencies": {

@@ -1,4 +1,4 @@
-import type { JsonValidity } from '../../../json-tree-editor/src';
+import type { JsonValidity } from '../../../json-tree-editor/src/utils';
 import { type Component, Show } from 'solid-js';
 
 export type JsonFormattedProps = {

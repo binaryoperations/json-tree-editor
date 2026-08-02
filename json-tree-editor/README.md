@@ -22,7 +22,8 @@ npm install solid-js
 
 | Import | What you get |
 | --- | --- |
-| `@binaryoperations/json-tree-editor` | Solid components + helpers (TypeScript source; peer `solid-js`) |
+| `@binaryoperations/json-tree-editor` | `JsonTreeView` + `JsonTreeViewProps` only (peer `solid-js`) |
+| `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, type utils, lower-level primitives |
 | `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` custom element (Solid bundled) |
 | `@binaryoperations/json-tree-editor/styles.css` | Styles for the Solid path (WC embeds styles in shadow DOM) |
 
@@ -110,10 +111,8 @@ import '@binaryoperations/json-tree-editor/styles.css';
 
 ```tsx
 import { createMemo, createSignal } from 'solid-js';
-import {
-  JsonTreeView,
-  parseJsonSource,
-} from '@binaryoperations/json-tree-editor';
+import { JsonTreeView } from '@binaryoperations/json-tree-editor';
+import { parseJsonSource } from '@binaryoperations/json-tree-editor/utils';
 import '@binaryoperations/json-tree-editor/styles.css';
 
 export function JsonPanel() {
@@ -136,13 +135,13 @@ export function JsonPanel() {
 
 ```tsx
 import { createMemo, createSignal } from 'solid-js';
+import { JsonTreeView } from '@binaryoperations/json-tree-editor';
 import {
-  JsonTreeView,
   collectContainerPathKeys,
   defaultExpandedPaths,
   parseJsonSource,
   ROOT_PATH_KEY,
-} from '@binaryoperations/json-tree-editor';
+} from '@binaryoperations/json-tree-editor/utils';
 
 const [source, setSource] = createSignal(myJson);
 const [expanded, setExpanded] = createSignal(defaultExpandedPaths());
@@ -181,7 +180,10 @@ function collapseAll() {
 ### Parsing
 
 ```ts
-import { parseJsonSource, type JsonValidity } from '@binaryoperations/json-tree-editor';
+import {
+  parseJsonSource,
+  type JsonValidity,
+} from '@binaryoperations/json-tree-editor/utils';
 
 const validity: JsonValidity = parseJsonSource(source);
 // { ok: true, pretty: string, value: object | array }
@@ -198,9 +200,9 @@ Keep the source string as document truth: parse for the tree, push tree edits ba
 - Syntax errors → error banner + previous valid tree (or `{}` if none yet)
 - Tree edits still call `onChange` with pretty JSON so the user can recover from the tree pane
 
-### Other Solid exports
+### Utils entry (`@binaryoperations/json-tree-editor/utils`)
 
-The package root also exports path helpers (`getAtPath`, `setAtPath`, …), type utilities, and lower-level primitives (`JsonTreeNode`, editors, badges). Most apps only need `JsonTreeView` and `parseJsonSource`.
+Path helpers (`getAtPath`, `setAtPath`, …), type utilities, parse helpers (`parseJsonSource`, `JsonValidity`), and lower-level primitives (`JsonTreeNode`, editors, badges) are exported from `/utils`. Most apps only need the package root plus `parseJsonSource` from utils.
 
 ---
 

@@ -386,6 +386,31 @@ describe('parseCompleteNumber', () => {
   });
 });
 
+describe('parseNullEditorDraft', () => {
+  it('keeps null on empty / whitespace', () => {
+    expect(parseNullEditorDraft('')).toBe(null);
+    expect(parseNullEditorDraft('   ')).toBe(null);
+    expect(parseNullEditorDraft('\n\t')).toBe(null);
+  });
+
+  it('uses JSON.parse when the draft is valid JSON', () => {
+    expect(parseNullEditorDraft('null')).toBe(null);
+    expect(parseNullEditorDraft('true')).toBe(true);
+    expect(parseNullEditorDraft('false')).toBe(false);
+    expect(parseNullEditorDraft('42')).toBe(42);
+    expect(parseNullEditorDraft('-3.5')).toBe(-3.5);
+    expect(parseNullEditorDraft('"hello"')).toBe('hello');
+    expect(parseNullEditorDraft('[1, 2]')).toEqual([1, 2]);
+    expect(parseNullEditorDraft('{"a":1}')).toEqual({ a: 1 });
+  });
+
+  it('falls back to number or string when JSON.parse fails', () => {
+    expect(parseNullEditorDraft('hello')).toBe('hello');
+    expect(parseNullEditorDraft('1.')).toBe('1.');
+    expect(parseNullEditorDraft('01')).toBe('01');
+  });
+});
+
 describe('jsonTypeOf', () => {
   it('classifies JSON values', () => {
     expect(jsonTypeOf(null)).toBe('null');

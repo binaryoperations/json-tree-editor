@@ -1,0 +1,20 @@
+# Pack everything needed for Solid source + WC dist; exclude tooling and tests.
+# (dist/ is gitignored, so it would be omitted without this allow-list approach
+# via negation — we ignore broad junk and keep src/dist/README.)
+
+# Tooling / monorepo
+node_modules/
+scripts/
+*.config.ts
+*.config.js
+tsconfig.json
+vitest.config.ts
+package.json.publish-backup
+
+# Tests and Vite env
+**/*.test.ts
+**/*.test.tsx
+src/vite-env.d.ts
+
+# Maps optional for install size (source maps stay if you remove this line)
+# dist/*.map

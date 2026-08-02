@@ -1,10 +1,10 @@
+import { JsonTreeView } from '../../json-tree-editor/src';
 import {
   collectContainerPathKeys,
   defaultExpandedPaths,
-  JsonTreeView,
   parseJsonSource,
   type JsonValidity,
-} from '../../json-tree-editor/src';
+} from '../../json-tree-editor/src/utils';
 import { type Component, createMemo, createSignal, onCleanup, Show } from 'solid-js';
 
 import { DemoHeader } from './components/DemoHeader';
