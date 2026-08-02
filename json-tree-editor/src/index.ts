@@ -18,6 +18,8 @@ export {
   type StringEditorProps,
   NumberEditor,
   type NumberEditorProps,
+  NullEditor,
+  type NullEditorProps,
 } from './components/primitives';
 
 // Parse / validity
@@ -51,6 +53,7 @@ export {
   addShapedPropertyAtPath,
   uniqueObjectKey,
   parseCompleteNumber,
+  parseNullEditorDraft,
   jsonTypeOf,
   convertJsonType,
   DEFAULT_OBJECT_KEY,

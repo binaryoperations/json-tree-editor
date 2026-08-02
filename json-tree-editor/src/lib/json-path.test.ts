@@ -14,6 +14,7 @@ import {
   getAtPath,
   jsonTypeOf,
   parseCompleteNumber,
+  parseNullEditorDraft,
   pathDomId,
   pathKey,
   renameKeyAtPath,
@@ -345,11 +346,12 @@ describe('jsonTypeOf', () => {
 });
 
 describe('convertJsonType', () => {
-  it('converts to string', () => {
-    expect(convertJsonType('keep', 'string')).toBe('keep');
+  it('converts to string (always empty)', () => {
+    expect(convertJsonType('keep', 'string')).toBe('');
     expect(convertJsonType(null, 'string')).toBe('');
-    expect(convertJsonType(true, 'string')).toBe('true');
-    expect(convertJsonType({ a: 1 }, 'string')).toBe('{"a":1}');
+    expect(convertJsonType(true, 'string')).toBe('');
+    expect(convertJsonType(42, 'string')).toBe('');
+    expect(convertJsonType({ a: 1 }, 'string')).toBe('');
   });
 
   it('converts to number', () => {
@@ -361,25 +363,29 @@ describe('convertJsonType', () => {
     expect(convertJsonType(null, 'number')).toBe(0);
   });
 
-  it('converts to boolean', () => {
-    expect(convertJsonType(true, 'boolean')).toBe(true);
+  it('converts to boolean (always false)', () => {
+    expect(convertJsonType(true, 'boolean')).toBe(false);
     expect(convertJsonType(0, 'boolean')).toBe(false);
-    expect(convertJsonType(2, 'boolean')).toBe(true);
-    expect(convertJsonType('', 'boolean')).toBe(false);
-    expect(convertJsonType('false', 'boolean')).toBe(false);
-    expect(convertJsonType('x', 'boolean')).toBe(true);
+    expect(convertJsonType(2, 'boolean')).toBe(false);
+    expect(convertJsonType('x', 'boolean')).toBe(false);
     expect(convertJsonType(null, 'boolean')).toBe(false);
+    expect(convertJsonType({ a: 1 }, 'boolean')).toBe(false);
   });
 
   it('converts to null / object / array defaults', () => {
     expect(convertJsonType(1, 'null')).toBe(null);
-    // Fresh containers seed one entry so the tree is immediately editable.
-    expect(convertJsonType(1, 'object')).toEqual({ key: null });
+    // Fresh containers seed one entry and keep the previous primitive value.
+    expect(convertJsonType(1, 'object')).toEqual({ key: 1 });
+    expect(convertJsonType('hi', 'object')).toEqual({ key: 'hi' });
+    expect(convertJsonType(true, 'object')).toEqual({ key: true });
     expect(convertJsonType(null, 'object')).toEqual({ key: null });
-    expect(convertJsonType([1], 'object')).toEqual({ key: null });
+    expect(convertJsonType([1, 2], 'object')).toEqual({ key: [1, 2] });
     expect(convertJsonType({ a: 1 }, 'object')).toEqual({ a: 1 });
-    expect(convertJsonType(1, 'array')).toEqual([null]);
-    expect(convertJsonType({ a: 1 }, 'array')).toEqual([null]);
+    expect(convertJsonType(1, 'array')).toEqual([1]);
+    expect(convertJsonType('hi', 'array')).toEqual(['hi']);
+    expect(convertJsonType(false, 'array')).toEqual([false]);
+    expect(convertJsonType(null, 'array')).toEqual([null]);
+    expect(convertJsonType({ a: 1 }, 'array')).toEqual([{ a: 1 }]);
     expect(convertJsonType([1], 'array')).toEqual([1]);
   });
 });

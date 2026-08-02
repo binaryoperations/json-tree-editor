@@ -1,6 +1,7 @@
 import { type Component, Show } from 'solid-js';
 
 import { jsonTypeOf } from '../../lib/json-path';
+import { NullEditor } from './NullEditor';
 import { NumberEditor } from './NumberEditor';
 import { StringEditor } from './StringEditor';
 
@@ -36,9 +37,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
       </Show>
 
       <Show when={kind() === 'null'}>
-        <span class="json-tree-null" part="null">
-          null
-        </span>
+        <NullEditor onCommit={props.onCommit} />
       </Show>
     </span>
   );

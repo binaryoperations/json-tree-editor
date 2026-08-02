@@ -424,6 +424,35 @@
   padding: 0 0.25rem;
 }
 
+.json-tree-null--editable {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  margin: 0;
+  border-radius: 4px;
+  font: inherit;
+  font-style: italic;
+  color: var(--jte-null, #9ca3af);
+  cursor: text;
+  text-align: left;
+}
+
+.json-tree-null--editable:hover {
+  border-color: var(--jte-border-hover, #3a4254);
+  background: var(--jte-surface-2, #1a1f2a);
+}
+
+.json-tree-null--editable:focus-visible {
+  outline: 2px solid var(--jte-focus-ring, #60a5fa);
+  outline-offset: 1px;
+}
+
+.json-tree-input--null {
+  min-width: 6rem;
+  font-style: normal;
+}
+
+
 .json-tree-type-select {
   flex-shrink: 0;
   appearance: none;

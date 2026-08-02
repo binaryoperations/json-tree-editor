@@ -324,6 +324,25 @@ export function parseCompleteNumber(text: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/**
+ * Interpret free-text typed over a `null` leaf into a JSON value.
+ *
+ * - empty / whitespace → `null` (keep null type)
+ * - `JSON.parse` succeeds → use the parsed value (object, array, number,
+ *   boolean, null, or quoted string)
+ * - `JSON.parse` fails → complete number if possible, otherwise a string
+ */
+export function parseNullEditorDraft(text: string): unknown {
+  if (text.trim().length === 0) return null;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    const n = parseCompleteNumber(text);
+    if (n !== undefined) return n;
+    return text;
+  }
+}
+
 export function jsonTypeOf(value: unknown): JsonTypeName {
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';
@@ -336,23 +355,30 @@ export function jsonTypeOf(value: unknown): JsonTypeName {
 /** Default property name used when seeding a new object. */
 export const DEFAULT_OBJECT_KEY = 'key';
 
-/** New object with a single editable key (value `null`). */
-export function defaultNewObject(): Record<string, unknown> {
-  return { [DEFAULT_OBJECT_KEY]: null };
+/**
+ * New object with a single key. When converting from a primitive (or null),
+ * that value is kept under the key — e.g. `42` → `{ key: 42 }`.
+ */
+export function defaultNewObject(
+  seed: unknown = null,
+): Record<string, unknown> {
+  return { [DEFAULT_OBJECT_KEY]: seed };
 }
 
-/** New array with a single `null` item. */
-export function defaultNewArray(): unknown[] {
-  return [null];
+/**
+ * New array with a single item. When converting from a primitive (or null),
+ * that value is the item — e.g. `42` → `[42]`.
+ */
+export function defaultNewArray(seed: unknown = null): unknown[] {
+  return [seed];
 }
 
 /** Convert a value to a different JSON type (best-effort). */
 export function convertJsonType(value: unknown, to: JsonTypeName): unknown {
   switch (to) {
     case 'string':
-      if (typeof value === 'string') return value;
-      if (value === null) return '';
-      return JSON.stringify(value);
+      // Always reset to empty when (re)typing as string.
+      return '';
     case 'number': {
       if (typeof value === 'number' && Number.isFinite(value)) return value;
       if (typeof value === 'boolean') return value ? 1 : 0;
@@ -363,22 +389,20 @@ export function convertJsonType(value: unknown, to: JsonTypeName): unknown {
       return 0;
     }
     case 'boolean':
-      if (typeof value === 'boolean') return value;
-      if (typeof value === 'number') return value !== 0;
-      if (typeof value === 'string') return value.length > 0 && value !== 'false';
-      return value != null;
+      // Always reset to false when (re)typing as boolean.
+      return false;
     case 'null':
       return null;
     case 'object':
       if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
         return value;
       }
-      // Fresh objects always start with one key so the tree is immediately useful.
-      return defaultNewObject();
+      // One key; keep the previous value (primitive, null, or whole array).
+      return defaultNewObject(value);
     case 'array':
       if (Array.isArray(value)) return value;
-      // Fresh arrays always start with one item.
-      return defaultNewArray();
+      // One item holding the previous value (primitive, null, or whole object).
+      return defaultNewArray(value);
     default:
       return value;
   }
