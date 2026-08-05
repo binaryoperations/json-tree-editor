@@ -17,24 +17,70 @@ export function pathKey(path: JsonPath): string {
  * Used by expand-all. Primitives are omitted — only containers need expand state.
  */
 export function collectContainerPathKeys(value: unknown): string[] {
+  return collectSubtreeContainerPathKeys(value, []);
+}
+
+/**
+ * Path keys for container nodes that are **direct children** of `parentPath`.
+ * Does not include the parent itself. Empty when the parent is missing or not
+ * a container, or when no child is an object/array.
+ */
+export function collectChildContainerPathKeys(
+  root: unknown,
+  parentPath: JsonPath,
+): string[] {
+  const parent = getAtPath(root, parentPath);
+  if (!isJsonContainer(parent)) return [];
+
+  const keys: string[] = [];
+  if (Array.isArray(parent)) {
+    for (let i = 0; i < parent.length; i += 1) {
+      const child = parent[i];
+      if (isJsonContainer(child)) {
+        keys.push(pathKey([...parentPath, i]));
+      }
+    }
+    return keys;
+  }
+
+  const obj = parent as Record<string, unknown>;
+  for (const k of Object.keys(obj)) {
+    const child = obj[k];
+    if (isJsonContainer(child)) {
+      keys.push(pathKey([...parentPath, k]));
+    }
+  }
+  return keys;
+}
+
+/**
+ * Path keys for every container in the subtree at `path` (DFS), including the
+ * node at `path` when it is a container. Empty when the value is missing or a
+ * primitive.
+ */
+export function collectSubtreeContainerPathKeys(
+  root: unknown,
+  path: JsonPath,
+): string[] {
+  const value = path.length === 0 ? root : getAtPath(root, path);
   const keys: string[] = [];
 
-  const walk = (v: unknown, path: JsonPath): void => {
-    if (v === null || typeof v !== 'object') return;
-    keys.push(pathKey(path));
+  const walk = (v: unknown, p: JsonPath): void => {
+    if (!isJsonContainer(v)) return;
+    keys.push(pathKey(p));
     if (Array.isArray(v)) {
       for (let i = 0; i < v.length; i += 1) {
-        walk(v[i], [...path, i]);
+        walk(v[i], [...p, i]);
       }
       return;
     }
     const obj = v as Record<string, unknown>;
     for (const k of Object.keys(obj)) {
-      walk(obj[k], [...path, k]);
+      walk(obj[k], [...p, k]);
     }
   };
 
-  walk(value, []);
+  walk(value, path);
   return keys;
 }
 
@@ -63,7 +109,7 @@ export function expandedPathsUpToDepth(
   const keys = new Set<string>();
 
   const walk = (v: unknown, path: JsonPath): void => {
-    if (v === null || typeof v !== 'object') return;
+    if (!isJsonContainer(v)) return;
     if (path.length <= depth) {
       keys.add(pathKey(path));
     }
@@ -99,7 +145,7 @@ export function collectVisiblePaths(
 
   const walk = (value: unknown, path: JsonPath): void => {
     paths.push(path);
-    if (value === null || typeof value !== 'object') return;
+    if (!isJsonContainer(value)) return;
     if (!expanded.has(pathKey(path))) return;
     if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i += 1) {
@@ -266,6 +312,7 @@ export function addItemAtPath(
  */
 export function cloneJsonShape(value: unknown): unknown {
   if (value === null) return null;
+  if (value instanceof Date) return '';
   if (typeof value === 'string') return '';
   if (typeof value === 'number') return 0;
   if (typeof value === 'boolean') return false;
@@ -396,6 +443,79 @@ export function duplicateKeyAtPath(
   return uniqueObjectKey(parent as Record<string, unknown>, oldKey);
 }
 
+/**
+ * Move an array item at `path` to a new index within the same array.
+ *
+ * `path` must end with a numeric array index. `toIndex` is clamped to
+ * `[0, length - 1]`. No-op when the path is invalid, the parent is not an
+ * array, or the item is already at the target index (returns the same root).
+ */
+export function moveArrayItemAtPath(
+  root: unknown,
+  path: JsonPath,
+  toIndex: number,
+): unknown {
+  if (path.length === 0) return root;
+  const last = path[path.length - 1];
+  if (typeof last !== 'number' || !Number.isInteger(last) || last < 0) {
+    return root;
+  }
+
+  const parentPath = path.slice(0, -1);
+  const parent = getAtPath(root, parentPath);
+  if (!Array.isArray(parent)) return root;
+  if (last >= parent.length) return root;
+
+  const len = parent.length;
+  if (len <= 1) return root;
+
+  const target =
+    typeof toIndex === 'number' && Number.isFinite(toIndex)
+      ? Math.max(0, Math.min(len - 1, Math.floor(toIndex)))
+      : last;
+  if (target === last) return root;
+
+  const next = parent.slice();
+  const [item] = next.splice(last, 1);
+  next.splice(target, 0, item);
+  return setAtPath(root, parentPath, next);
+}
+
+/**
+ * Move an array item at `path` by `delta` positions (−1 = up, +1 = down).
+ * No-op when the move would leave the array bounds or change nothing.
+ */
+export function moveArrayItemByDelta(
+  root: unknown,
+  path: JsonPath,
+  delta: number,
+): unknown {
+  if (path.length === 0) return root;
+  const last = path[path.length - 1];
+  if (typeof last !== 'number' || !Number.isInteger(last)) return root;
+  if (typeof delta !== 'number' || !Number.isFinite(delta) || delta === 0) {
+    return root;
+  }
+  return moveArrayItemAtPath(root, path, last + Math.trunc(delta));
+}
+
+/**
+ * Resolve the destination index for a drag-and-drop reorder.
+ *
+ * `overIndex` is the row under the pointer; `edge` is which half of that row
+ * (`before` = top, `after` = bottom). Accounts for the source index being
+ * removed before insert (same rules as a typical sortable list).
+ */
+export function arrayDropTargetIndex(
+  fromIndex: number,
+  overIndex: number,
+  edge: 'before' | 'after',
+): number {
+  let to = edge === 'before' ? overIndex : overIndex + 1;
+  if (fromIndex < to) to -= 1;
+  return to;
+}
+
 /** Generate a unique object key. */
 export function uniqueObjectKey(
   obj: Record<string, unknown>,
@@ -453,8 +573,30 @@ export function parseNullEditorDraft(text: string): unknown {
   }
 }
 
+/**
+ * True for object/array containers the tree can expand.
+ * `Date` is a leaf (JSON form is an ISO string), not a container.
+ */
+export function isJsonContainer(value: unknown): boolean {
+  if (value === null || typeof value !== 'object') return false;
+  if (value instanceof Date) return false;
+  return true;
+}
+
+/**
+ * ISO string for a Date, or `""` if invalid — matches JSON.stringify for valid
+ * dates (`toJSON`) and avoids putting a live Date into the tree UI.
+ */
+export function dateToJsonString(value: Date): string {
+  const t = value.getTime();
+  if (Number.isNaN(t)) return '';
+  return value.toISOString();
+}
+
 export function jsonTypeOf(value: unknown): JsonTypeName {
   if (value === null) return 'null';
+  // Date serializes to an ISO string — never treat as a JSON object.
+  if (value instanceof Date) return 'string';
   if (Array.isArray(value)) return 'array';
   const t = typeof value;
   if (t === 'string' || t === 'number' || t === 'boolean') return t;
@@ -487,7 +629,8 @@ export function defaultNewArray(seed: unknown = null): unknown[] {
 export function convertJsonType(value: unknown, to: JsonTypeName): unknown {
   switch (to) {
     case 'string':
-      // Always reset to empty when (re)typing as string.
+      // Date → ISO; otherwise always reset to empty when (re)typing as string.
+      if (value instanceof Date) return dateToJsonString(value);
       return '';
     case 'number': {
       if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -495,6 +638,10 @@ export function convertJsonType(value: unknown, to: JsonTypeName): unknown {
       if (typeof value === 'string') {
         const n = Number(value);
         return Number.isFinite(n) ? n : 0;
+      }
+      if (value instanceof Date) {
+        const t = value.getTime();
+        return Number.isNaN(t) ? 0 : t;
       }
       return 0;
     }
@@ -504,15 +651,24 @@ export function convertJsonType(value: unknown, to: JsonTypeName): unknown {
     case 'null':
       return null;
     case 'object':
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      if (
+        value !== null &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        !(value instanceof Date)
+      ) {
         return value;
       }
       // One key; keep the previous value (primitive, null, or whole array).
-      return defaultNewObject(value);
+      return defaultNewObject(
+        value instanceof Date ? dateToJsonString(value) : value,
+      );
     case 'array':
       if (Array.isArray(value)) return value;
       // One item holding the previous value (primitive, null, or whole object).
-      return defaultNewArray(value);
+      return defaultNewArray(
+        value instanceof Date ? dateToJsonString(value) : value,
+      );
     default:
       return value;
   }

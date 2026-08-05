@@ -6,7 +6,9 @@ import {
   addShapedItemAtPath,
   addShapedPropertyAtPath,
   cloneJsonShape,
+  collectChildContainerPathKeys,
   collectContainerPathKeys,
+  collectSubtreeContainerPathKeys,
   collectVisiblePaths,
   convertJsonType,
   defaultExpandedPaths,
@@ -16,6 +18,9 @@ import {
   duplicateAtPath,
   duplicateKeyAtPath,
   getAtPath,
+  arrayDropTargetIndex,
+  moveArrayItemAtPath,
+  moveArrayItemByDelta,
   jsonTypeOf,
   parseCompleteNumber,
   parseNullEditorDraft,
@@ -94,6 +99,47 @@ describe('collectContainerPathKeys', () => {
   it('returns only root for empty containers', () => {
     expect(collectContainerPathKeys({})).toEqual([ROOT_PATH_KEY]);
     expect(collectContainerPathKeys([])).toEqual([ROOT_PATH_KEY]);
+  });
+});
+
+describe('collectChildContainerPathKeys / collectSubtreeContainerPathKeys', () => {
+  const doc = {
+    a: 1,
+    nest: { b: true, deep: { c: 2 } },
+    list: [{ x: 1 }, 2, [3]],
+  };
+
+  it('lists only direct child containers under a path', () => {
+    expect(collectChildContainerPathKeys(doc, [])).toEqual([
+      pathKey(['nest']),
+      pathKey(['list']),
+    ]);
+    expect(collectChildContainerPathKeys(doc, ['nest'])).toEqual([
+      pathKey(['nest', 'deep']),
+    ]);
+    expect(collectChildContainerPathKeys(doc, ['list'])).toEqual([
+      pathKey(['list', 0]),
+      pathKey(['list', 2]),
+    ]);
+    expect(collectChildContainerPathKeys(doc, ['a'])).toEqual([]);
+    expect(collectChildContainerPathKeys(doc, ['missing'])).toEqual([]);
+  });
+
+  it('lists the full container subtree including the path node', () => {
+    expect(collectSubtreeContainerPathKeys(doc, ['nest'])).toEqual([
+      pathKey(['nest']),
+      pathKey(['nest', 'deep']),
+    ]);
+    expect(collectSubtreeContainerPathKeys(doc, ['list'])).toEqual([
+      pathKey(['list']),
+      pathKey(['list', 0]),
+      pathKey(['list', 2]),
+    ]);
+    expect(collectSubtreeContainerPathKeys(doc, ['a'])).toEqual([]);
+    // Root subtree matches full-document collect
+    expect(collectSubtreeContainerPathKeys(doc, [])).toEqual(
+      collectContainerPathKeys(doc),
+    );
   });
 });
 
@@ -376,6 +422,78 @@ describe('duplicateAtPath', () => {
   });
 });
 
+describe('moveArrayItemAtPath / moveArrayItemByDelta', () => {
+  it('moves an item to an absolute index within the same array', () => {
+    const root = { list: ['a', 'b', 'c', 'd'] };
+    const next = moveArrayItemAtPath(root, ['list', 1], 3) as typeof root;
+    expect(next.list).toEqual(['a', 'c', 'd', 'b']);
+    expect(next).not.toBe(root);
+    expect(next.list).not.toBe(root.list);
+  });
+
+  it('moves nested array items and clamps out-of-range targets', () => {
+    const root = { outer: [[1, 2, 3]] };
+    const up = moveArrayItemAtPath(root, ['outer', 0, 2], 0) as typeof root;
+    expect(up.outer[0]).toEqual([3, 1, 2]);
+
+    const clamped = moveArrayItemAtPath(root, ['outer', 0, 0], 99) as typeof root;
+    expect(clamped.outer[0]).toEqual([2, 3, 1]);
+  });
+
+  it('no-ops when already at target, single-item, invalid path, or non-array parent', () => {
+    const root = { list: ['a', 'b'], obj: { x: 1 } };
+    expect(moveArrayItemAtPath(root, ['list', 0], 0)).toBe(root);
+    expect(moveArrayItemAtPath(root, ['list', 0], -5)).toBe(root); // clamps to 0
+    expect(moveArrayItemAtPath({ one: [1] }, ['one', 0], 1)).toEqual({
+      one: [1],
+    });
+    // Same reference when length ≤ 1
+    const one = { one: [1] };
+    expect(moveArrayItemAtPath(one, ['one', 0], 0)).toBe(one);
+
+    expect(moveArrayItemAtPath(root, [], 0)).toBe(root);
+    expect(moveArrayItemAtPath(root, ['obj', 'x'], 0)).toBe(root);
+    expect(moveArrayItemAtPath(root, ['list', 9], 0)).toBe(root);
+    expect(moveArrayItemAtPath(root, ['missing', 0], 1)).toBe(root);
+  });
+
+  it('moveArrayItemByDelta shifts by relative steps', () => {
+    const root = { list: ['a', 'b', 'c'] };
+    expect(moveArrayItemByDelta(root, ['list', 2], -1)).toEqual({
+      list: ['a', 'c', 'b'],
+    });
+    expect(moveArrayItemByDelta(root, ['list', 0], 1)).toEqual({
+      list: ['b', 'a', 'c'],
+    });
+    // Out of bounds (clamped) is a no-op when already at edge
+    expect(moveArrayItemByDelta(root, ['list', 0], -1)).toBe(root);
+    expect(moveArrayItemByDelta(root, ['list', 2], 1)).toBe(root);
+    expect(moveArrayItemByDelta(root, ['list', 1], 0)).toBe(root);
+  });
+
+  it('works when the document root is an array', () => {
+    const root = ['x', 'y', 'z'];
+    expect(moveArrayItemByDelta(root, [1], -1)).toEqual(['y', 'x', 'z']);
+    expect(moveArrayItemAtPath(root, [0], 2)).toEqual(['y', 'z', 'x']);
+  });
+
+  it('arrayDropTargetIndex maps hover edge to final insert index', () => {
+    // Move first item after last row
+    expect(arrayDropTargetIndex(0, 3, 'after')).toBe(3);
+    // Move first item before last row
+    expect(arrayDropTargetIndex(0, 3, 'before')).toBe(2);
+    // Move last item before first
+    expect(arrayDropTargetIndex(3, 0, 'before')).toBe(0);
+    // Move last item after first
+    expect(arrayDropTargetIndex(3, 0, 'after')).toBe(1);
+    // No-op: drop on self
+    expect(arrayDropTargetIndex(1, 1, 'before')).toBe(1);
+    expect(arrayDropTargetIndex(1, 1, 'after')).toBe(1);
+    // Adjacent swap: item 2 onto top half of item 1
+    expect(arrayDropTargetIndex(2, 1, 'before')).toBe(1);
+  });
+});
+
 describe('uniqueObjectKey', () => {
   it('returns base when free, otherwise suffixes', () => {
     expect(uniqueObjectKey({})).toBe('key');
@@ -447,6 +565,12 @@ describe('jsonTypeOf', () => {
     expect(jsonTypeOf(true)).toBe('boolean');
     expect(jsonTypeOf([])).toBe('array');
     expect(jsonTypeOf({})).toBe('object');
+  });
+
+  it('treats Date as a string leaf (ISO), not an object', () => {
+    const d = new Date('2020-01-15T12:00:00.000Z');
+    expect(jsonTypeOf(d)).toBe('string');
+    expect(jsonTypeOf(d)).not.toBe('object');
   });
 });
 
