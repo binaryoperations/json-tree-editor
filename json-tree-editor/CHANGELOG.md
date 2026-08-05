@@ -5,6 +5,27 @@ All notable changes to `@binaryoperations/json-tree-editor` are documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Reorder array items** by dragging the handle on each item.
+- **Disable or replace reorder** with the `arrayReorder` prop on `JsonTreeView`.
+- **Expand / collapse** nested children from the toolbar inside each open object or array (**+ key** / **+ item** and **clear** stay on the right).
+- **Friendlier source parsing**: still accepts normal JSON, and also things like `{ a: 1 }`, `{ a: 1, }`, and `[1, 2,]`. `new Date(...)` becomes an ISO date string. Functions and similar non-JSON values are rejected.
+
+### New Exports
+
+From `@binaryoperations/json-tree-editor/utils`:
+
+- `HTML5_ARRAY_REORDER`, `NOOP_ARRAY_REORDER`, `resolveArrayReorderController`
+- `createHtml5ArrayReorderParent`, `createHtml5ArrayItemUi`, `ARRAY_REORDER_HANDLE_SELECTOR`
+- `ArrayDragEdge`, `ArrayDragState`, `ArrayReorderBinding`, `ArrayReorderParentContext`, `ArrayReorderParent`, `ArrayItemReorderUi`, `ArrayReorderController`
+- `moveArrayItemAtPath`, `moveArrayItemByDelta`, `arrayDropTargetIndex`
+- `collectChildContainerPathKeys`, `collectSubtreeContainerPathKeys`
+- `stringifyJsonDocument`, `assertJsonData`
+- `isJsonContainer`, `dateToJsonString`
+
 ## [1.0.5] - 2026-08-02
 
 ### Added
