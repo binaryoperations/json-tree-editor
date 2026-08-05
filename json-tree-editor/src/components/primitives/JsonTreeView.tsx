@@ -8,6 +8,7 @@ import {
 } from 'solid-js';
 
 import {
+  collectChildContainerPathKeys,
   collectContainerPathKeys,
   collectVisiblePaths,
   defaultExpandedPaths,
@@ -22,7 +23,12 @@ import {
   EMPTY_ROOT,
   type JsonRootValue,
   parseJsonSource,
+  stringifyJsonDocument,
 } from '../../lib/parse-json';
+import {
+  type ArrayReorderController,
+  resolveArrayReorderController,
+} from './array-reorder';
 import { JsonTreeNode } from './JsonTreeNode';
 
 /** Progress of a chunked {@link JsonTreeViewHandle.expandAll}. */
@@ -53,6 +59,16 @@ export type JsonTreeViewProps = {
    */
   defaultExpandedDepth?: number;
   /**
+   * Array sibling reorder strategy.
+   * - omit / `undefined` — HTML5 drag-and-drop (default)
+   * - `false` — disable reorder entirely
+   * - custom {@link ArrayReorderController} — replace parent session + item UI
+   *
+   * Keep the reference stable for the life of the tree (factories create
+   * signals once per node on mount).
+   */
+  arrayReorder?: ArrayReorderController | false;
+  /**
    * Fired once when {@link JsonTreeViewHandle.expandAll} finishes successfully.
    * Receives the full expanded path-key set.
    */
@@ -81,7 +97,8 @@ const EXPAND_CHUNK = 48;
 
 function emitPretty(value: unknown, onChange: (s: string) => void): void {
   // No trailing whitespace / newline — keep source clean for hosts that round-trip.
-  onChange(JSON.stringify(value, null, 2));
+  // Throws if any function slipped into the tree (never silently drop them).
+  onChange(stringifyJsonDocument(value));
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -147,6 +164,10 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   /** Roving tabindex: which visible row is the active treeitem. */
   const [focusedPathKey, setFocusedPathKey] =
     createSignal<string>(ROOT_PATH_KEY);
+  /** Resolved once on mount — keep `arrayReorder` prop stable for the tree life. */
+  const arrayReorderController = resolveArrayReorderController(
+    props.arrayReorder,
+  );
   /**
    * Last successfully parsed root. Used when the source has a syntax error so
    * the tree stays visible while the user fixes the document.
@@ -300,6 +321,51 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     const next = new Set(prev);
     next.add(k);
     applyExpanded(next);
+  };
+
+  /** Open every path key in `keys` (union with current expanded set). */
+  const expandPathKeys = (keys: string[]) => {
+    if (keys.length === 0) return;
+    const next = new Set(expanded());
+    let changed = false;
+    for (const k of keys) {
+      if (!next.has(k)) {
+        next.add(k);
+        changed = true;
+      }
+    }
+    if (changed) applyExpanded(next);
+  };
+
+  /** Expand direct child containers under `path` (one level). */
+  const expandChildren = (path: JsonPath) => {
+    expandPathKeys(collectChildContainerPathKeys(displayRoot(), path));
+  };
+
+  /**
+   * Collapse descendants under `path` while keeping this container open.
+   * Removes expand state for every nested container key (not the path itself).
+   */
+  const collapseChildren = (path: JsonPath) => {
+    const prefix = pathKey(path);
+    const sep = '\0';
+    const prev = expanded();
+    const next = new Set<string>();
+    let changed = false;
+    for (const k of prev) {
+      // Keep self; drop any key strictly under this path.
+      if (prefix === ROOT_PATH_KEY) {
+        if (k !== ROOT_PATH_KEY) {
+          changed = true;
+          continue;
+        }
+      } else if (k.startsWith(prefix + sep)) {
+        changed = true;
+        continue;
+      }
+      next.add(k);
+    }
+    if (changed) applyExpanded(next);
   };
 
   const collapsePath = (path: JsonPath) => {
@@ -497,9 +563,12 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
           isExpanded={isExpanded}
           onToggle={toggle}
           onExpand={expandPath}
+          onExpandChildren={expandChildren}
+          onCollapseChildren={collapseChildren}
           onCommit={commit}
           focusedPathKey={focusedPathKey}
           onFocusPath={onFocusPath}
+          arrayReorderController={arrayReorderController}
         />
       </div>
     </div>

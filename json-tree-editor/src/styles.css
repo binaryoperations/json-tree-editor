@@ -213,6 +213,51 @@
   opacity: 1;
 }
 
+/* Array-item drag handle (HTML5 DnD reorder among siblings). */
+.json-tree-drag-handle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.75rem;
+  height: 1.15rem;
+  margin: 0 -0.2rem 0 0; /* pull toward chevron/index; offsets row gap */
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--jte-muted, #5c6575);
+  font-size: 0.7rem;
+  line-height: 1;
+  letter-spacing: -0.18em;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.json-tree-drag-handle:hover {
+  color: var(--jte-fg, #e6e8ec);
+  background: var(--jte-surface-4, #232833);
+}
+
+.json-tree-drag-handle:active {
+  cursor: grabbing;
+}
+
+.json-tree-node--dragging > .json-tree-row {
+  opacity: 0.45;
+  background: var(--jte-surface-2, #1a1f2a);
+}
+
+.json-tree-node--drop-before > .json-tree-row {
+  box-shadow: inset 0 2px 0 0 var(--jte-focus-border, #3b82f6);
+}
+
+.json-tree-node--drop-after > .json-tree-row {
+  box-shadow: inset 0 -2px 0 0 var(--jte-focus-border, #3b82f6);
+}
+
 .json-tree-chevron {
   appearance: none;
   flex-shrink: 0;
@@ -563,14 +608,27 @@
   border-left: 1px solid var(--jte-border, #232833);
 }
 
-/* First row inside an expanded object/array: + key / + item */
+/* First row inside an expanded object/array: expand … | + key / clear */
 .json-tree-add-row {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: space-between;
+  gap: 0.5rem;
   min-height: 1.55rem;
   padding: 0.08rem 0.35rem;
   border-radius: 5px;
+}
+
+.json-tree-add-row__left,
+.json-tree-add-row__right {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.json-tree-add-row__right {
+  margin-left: auto;
 }
 
 .json-tree-add-row:hover {

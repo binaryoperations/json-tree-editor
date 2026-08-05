@@ -3,6 +3,7 @@ import { type Component, createSignal, For, Show } from 'solid-js';
 import {
   addShapedItemAtPath,
   addShapedPropertyAtPath,
+  collectChildContainerPathKeys,
   convertJsonType,
   DEFAULT_OBJECT_KEY,
   deleteAtPath,
@@ -18,6 +19,11 @@ import {
   setAtPath,
   uniqueObjectKey,
 } from '../../lib/json-path';
+import {
+  type ArrayReorderBinding,
+  type ArrayReorderController,
+  HTML5_ARRAY_REORDER,
+} from './array-reorder';
 import { KeyEditor } from './KeyEditor';
 import { PrimitiveEditor } from './PrimitiveEditor';
 import { ROOT_JSON_TYPES, TypeSelect } from './TypeSelect';
@@ -31,6 +37,10 @@ export type JsonTreeNodeProps = {
   isExpanded: (path: JsonPath) => boolean;
   onToggle: (path: JsonPath) => void;
   onExpand: (path: JsonPath) => void;
+  /** Expand direct child containers under this path (one level). */
+  onExpandChildren: (path: JsonPath) => void;
+  /** Collapse nested containers under this path (this node stays open). */
+  onCollapseChildren: (path: JsonPath) => void;
   onCommit: (nextRoot: unknown) => void;
   /** Path key of the roving-tabindex active row. */
   focusedPathKey: () => string;
@@ -43,6 +53,16 @@ export type JsonTreeNodeProps = {
    * (e.g. after duplicating a property).
    */
   onRequestEditKey?: (key: string) => void;
+  /**
+   * When this node is an element of a parent array, enables reorder among
+   * siblings (produced by the parent via {@link ArrayReorderController}).
+   */
+  arrayReorder?: ArrayReorderBinding;
+  /**
+   * Reorder strategy for array *children* of this node. Stable reference
+   * recommended; defaults to {@link HTML5_ARRAY_REORDER}.
+   */
+  arrayReorderController?: ArrayReorderController;
 };
 
 export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
@@ -55,6 +75,28 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
   const open = () => props.isExpanded(props.path);
   /** Child object key that should open in rename mode (after +key / type→object). */
   const [pendingEditKey, setPendingEditKey] = createSignal<string | null>(null);
+
+  // Capture once on mount (controller should be stable for the tree lifetime).
+  const reorderController =
+    props.arrayReorderController ?? HTML5_ARRAY_REORDER;
+
+  /** Parent-side reorder session for this node's array children (if any). */
+  const childReorderParent = reorderController.createParent({
+    path: () => props.path,
+    root: () => props.root(),
+    onCommit: (next) => props.onCommit(next),
+    onFocusPath: (path) => props.onFocusPath(path),
+    isArray: () => typeName() === 'array',
+    length: () => {
+      const v = value();
+      return Array.isArray(v) ? v.length : 0;
+    },
+  });
+
+  /** Item-side UI for when *this* node is an array element. */
+  const itemReorderUi = reorderController.createItemUi(
+    () => props.arrayReorder,
+  );
 
   /**
    * Primitive keys (string | number) so Solid <For> reconciles by value and
@@ -157,6 +199,10 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     props.path.length > 0 &&
     typeof props.path[props.path.length - 1] === 'number';
 
+  /** True when at least one direct child is an object/array. */
+  const canExpandChildren = () =>
+    collectChildContainerPathKeys(props.root(), props.path).length > 0;
+
   const tabIndex = () =>
     pathKey(props.path) === props.focusedPathKey() ? 0 : -1;
 
@@ -169,6 +215,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
     if (t.closest('button, input, select, textarea, a, label')) return;
+    if (t.closest(itemReorderUi.handleSelector)) return;
     // Defer so we don't fight focus moves into nested controls.
     const item = (e.currentTarget as HTMLElement).closest(
       '[role="treeitem"]',
@@ -191,14 +238,34 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
   return (
     <div
       class="json-tree-node"
-      classList={{ 'json-tree-node--root': !!props.isRoot }}
+      classList={{
+        'json-tree-node--root': !!props.isRoot,
+        ...itemReorderUi.nodeClassList(),
+      }}
       role="treeitem"
       aria-expanded={isContainer() ? open() : undefined}
       data-path={pathDomId(props.path)}
       tabIndex={tabIndex()}
       onFocusIn={onTreeItemFocusIn}
+      onDragOver={itemReorderUi.onNodeDragOver}
+      onDrop={itemReorderUi.onNodeDrop}
     >
       <div class="json-tree-row" part="row" onMouseDown={onRowMouseDown}>
+        <Show when={itemReorderUi.canDrag()}>
+          <span
+            class="json-tree-drag-handle"
+            part="drag-handle"
+            draggable={true}
+            title="Drag to reorder"
+            aria-label="Drag to reorder"
+            onDragStart={itemReorderUi.onHandleDragStart}
+            onDragEnd={itemReorderUi.onHandleDragEnd}
+            onMouseDown={itemReorderUi.onHandleMouseDown}
+          >
+            ⋮⋮
+          </span>
+        </Show>
+
         <Show
           when={isContainer()}
           fallback={
@@ -288,47 +355,66 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
 
       <Show when={isContainer() && open()}>
         <div class="json-tree-children" role="group">
-          {/* + add then empty as the first row inside the container */}
+          {/* Toolbar: expand | collapse …… + key/item | clear */}
           <div class="json-tree-add-row" part="add-row">
-            <span
-              class="json-tree-chevron json-tree-chevron--leaf"
-              part="chevron"
-              aria-hidden="true"
-            />
-            <Show when={typeName() === 'object'}>
+            <div class="json-tree-add-row__left">
               <button
                 type="button"
                 class="json-tree-add-row__btn"
                 part="action"
-                title="Add property"
-                onClick={addProperty}
+                title="Expand child objects and arrays"
+                disabled={!canExpandChildren()}
+                onClick={() => props.onExpandChildren(props.path)}
               >
-                + key
+                expand
               </button>
-            </Show>
-            <Show when={typeName() === 'array'}>
               <button
                 type="button"
                 class="json-tree-add-row__btn"
                 part="action"
-                title="Add item"
-                onClick={addItem}
+                title="Collapse nested objects and arrays"
+                disabled={!canExpandChildren()}
+                onClick={() => props.onCollapseChildren(props.path)}
               >
-                + item
+                collapse
               </button>
-            </Show>
-            <button
-              type="button"
-              class="json-tree-add-row__btn json-tree-add-row__btn--danger"
-              part="action"
-              title={
-                typeName() === 'array' ? 'Clear array' : 'Clear object'
-              }
-              disabled={childKeys().length === 0}
-              onClick={emptyContainer}
-            >
-              clear
-            </button>
+            </div>
+            <div class="json-tree-add-row__right">
+              <Show when={typeName() === 'object'}>
+                <button
+                  type="button"
+                  class="json-tree-add-row__btn"
+                  part="action"
+                  title="Add property"
+                  onClick={addProperty}
+                >
+                  + key
+                </button>
+              </Show>
+              <Show when={typeName() === 'array'}>
+                <button
+                  type="button"
+                  class="json-tree-add-row__btn"
+                  part="action"
+                  title="Add item"
+                  onClick={addItem}
+                >
+                  + item
+                </button>
+              </Show>
+              <button
+                type="button"
+                class="json-tree-add-row__btn json-tree-add-row__btn--danger"
+                part="action"
+                title={
+                  typeName() === 'array' ? 'Clear array' : 'Clear object'
+                }
+                disabled={childKeys().length === 0}
+                onClick={emptyContainer}
+              >
+                clear
+              </button>
+            </div>
           </div>
 
           <For each={childKeys()}>
@@ -340,6 +426,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 isExpanded={props.isExpanded}
                 onToggle={props.onToggle}
                 onExpand={props.onExpand}
+                onExpandChildren={props.onExpandChildren}
+                onCollapseChildren={props.onCollapseChildren}
                 onCommit={props.onCommit}
                 focusedPathKey={props.focusedPathKey}
                 onFocusPath={props.onFocusPath}
@@ -352,6 +440,12 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                     ? (k) => setPendingEditKey(k)
                     : undefined
                 }
+                arrayReorder={
+                  typeof key === 'number'
+                    ? childReorderParent.forChild(key)
+                    : undefined
+                }
+                arrayReorderController={props.arrayReorderController}
               />
             )}
           </For>
