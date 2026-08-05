@@ -5,7 +5,7 @@ All notable changes to `@binaryoperations/json-tree-editor` are documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.6] - 2026-08-06
 
 ### Added
 
@@ -92,6 +92,7 @@ From `@binaryoperations/json-tree-editor/utils`:
 
 ---
 
+[1.0.6]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.3...v1.0.5
 [1.0.3]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.1...v1.0.2
