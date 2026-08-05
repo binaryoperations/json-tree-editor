@@ -1,6 +1,6 @@
 import { type Component, Show } from 'solid-js';
 
-import { jsonTypeOf } from '../../lib/json-path';
+import { dateToJsonString, jsonTypeOf } from '../../lib/json-path';
 import { NullEditor } from './NullEditor';
 import { NumberEditor } from './NumberEditor';
 import { StringEditor } from './StringEditor';
@@ -10,13 +10,25 @@ export type PrimitiveEditorProps = {
   onCommit: (next: unknown) => void;
 };
 
+/** Display/edit value for string rows — coerce live `Date` to ISO. */
+function asStringValue(value: unknown): string {
+  if (value instanceof Date) return dateToJsonString(value);
+  return typeof value === 'string' ? value : String(value ?? '');
+}
+
 export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
   const kind = () => jsonTypeOf(props.value);
 
   return (
     <span class="json-tree-value" part="value">
       <Show when={kind() === 'string'}>
-        <StringEditor value={props.value as string} onCommit={props.onCommit} />
+        <StringEditor
+          value={asStringValue(props.value)}
+          onCommit={(next) => {
+            // Always store plain string (never leave a Date instance in the tree).
+            props.onCommit(next);
+          }}
+        />
       </Show>
 
       <Show when={kind() === 'number'}>

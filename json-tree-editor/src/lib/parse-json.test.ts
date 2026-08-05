@@ -93,6 +93,71 @@ describe('parseJsonSource', () => {
     }
   });
 
+  it('falls back to JS expression eval for non-strict object literals', () => {
+    const unquoted = parseJsonSource('{ a: 1, b: "x" }');
+    expect(unquoted).toMatchObject({ ok: true, value: { a: 1, b: 'x' } });
+
+    const trailing = parseJsonSource('{ a: 1, }');
+    expect(trailing).toMatchObject({ ok: true, value: { a: 1 } });
+
+    const arr = parseJsonSource('[1, 2,]');
+    expect(arr).toMatchObject({ ok: true, value: [1, 2] });
+  });
+
+  it('still rejects non-container roots after Function fallback', () => {
+    // Not valid JSON; Function would yield a number.
+    const result = parseJsonSource('1 + 1');
+    expect(result).toEqual({
+      ok: false,
+      error: 'Root must be an object or array (got number)',
+      value: EMPTY_ROOT,
+      reason: 'invalid-root',
+    });
+  });
+
+  it('rejects function values (no silent drop via JSON.stringify)', () => {
+    const named = parseJsonSource('{ a: function () { return 1; } }');
+    expect(named.ok).toBe(false);
+    if (!named.ok) {
+      expect(named.error).toMatch(/function/i);
+      expect(named.value).toBeUndefined();
+    }
+
+    const arrow = parseJsonSource('{ a: () => 1 }');
+    expect(arrow.ok).toBe(false);
+    if (!arrow.ok) {
+      expect(arrow.error).toMatch(/function/i);
+      expect(arrow.value).toBeUndefined();
+    }
+
+    const inArray = parseJsonSource('[function () {}]');
+    expect(inArray.ok).toBe(false);
+    if (!inArray.ok) {
+      expect(inArray.error).toMatch(/function/i);
+    }
+  });
+
+  it('allows Date values and normalizes them to ISO strings', () => {
+    const result = parseJsonSource(`{
+      "id": 7,
+      "email": "dev@example.com",
+      "date": new Date("2020-01-15T12:00:00.000Z")
+    }`);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value).toEqual({
+        id: 7,
+        email: 'dev@example.com',
+        date: '2020-01-15T12:00:00.000Z',
+      });
+      expect(result.pretty).toContain('2020-01-15T12:00:00.000Z');
+      // Tree value is plain JSON — not a live Date instance.
+      expect(
+        (result.value as { date: unknown }).date,
+      ).not.toBeInstanceOf(Date);
+    }
+  });
+
   it('trims source only for emptiness checks; parses full JSON body', () => {
     const result = parseJsonSource('  {"x": true}  ');
     expect(result.ok).toBe(true);
