@@ -11,11 +11,11 @@
  *   - attribute `value` — optional; reflected only for small values
  *   - property/attribute `default-expanded-depth` / `defaultExpandedDepth`
  *     (number, default `0` = root open only)
- *   - property/attribute `disabled` — blocks pointer edits; expandAll/collapseAll still work
- *   - methods `expandAll()`, `collapseAll()`, `getRoot()`, getter `isExpanding`
+ *   - property/attribute `disabled` — blocks pointer edits
+ *   - property/attribute `array-reorder` / `arrayReorder` — array drag-and-drop
+ *     (boolean, default `true`)
+ *   - method `getRoot()` — `.json-tree` in shadow DOM
  *   - events `change` / `json-change` — detail: `{ value: string }`
- *   - events `expand` / `collapse` — detail: `{ expanded: string[] }` (once each)
- *   - event `expand-progress` — detail: `{ done, total } | null`
  */
 
 import { createSignal } from 'solid-js';
@@ -23,7 +23,6 @@ import { render } from 'solid-js/web';
 
 import {
   JsonTreeView,
-  type ExpandProgress,
   type JsonTreeViewHandle,
 } from './components/primitives/JsonTreeView';
 import { HTML5_ARRAY_REORDER } from './dnd';
@@ -37,20 +36,12 @@ export type JsonTreeEditorChangeDetail = {
   value: string;
 };
 
-export type JsonTreeEditorExpandDetail = {
-  expanded: string[];
-};
-
-export type JsonTreeEditorExpandProgressDetail = ExpandProgress | null;
-
 export type JsonTreeEditorElement = InstanceType<typeof JsonTreeEditor>;
 
 type HostBridge = {
   setValue: (next: string) => void;
   setDisabled: (next: boolean) => void;
-  expandAll: () => void;
-  collapseAll: () => void;
-  isExpanding: () => boolean;
+  setArrayReorder: (next: boolean) => void;
   getRoot: () => HTMLDivElement | null;
 };
 
@@ -62,12 +53,14 @@ function parseDepth(raw: unknown): number {
 
 class JsonTreeEditor extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['value', 'disabled', 'default-expanded-depth'];
+    return ['value', 'disabled', 'default-expanded-depth', 'array-reorder'];
   }
 
   #value = '';
   #disabled = false;
   #defaultExpandedDepth = 0;
+  /** Array drag-and-drop; default on for the WC surface. */
+  #arrayReorder = true;
   #mounted = false;
   #bridge: HostBridge | null = null;
   #dispose: (() => void) | null = null;
@@ -116,18 +109,20 @@ class JsonTreeEditor extends HTMLElement {
     this.#syncDefaultExpandedDepthAttribute(d);
   }
 
-  /** Expand every object/array (chunked). Works even when `disabled`. */
-  expandAll(): void {
-    this.#bridge?.expandAll();
+  /**
+   * Enable HTML5 array drag-and-drop (default `true` for the web component).
+   * Reflects as the boolean attribute `array-reorder`.
+   */
+  get arrayReorder(): boolean {
+    return this.#arrayReorder;
   }
 
-  /** Collapse to root only. Works even when `disabled`. */
-  collapseAll(): void {
-    this.#bridge?.collapseAll();
-  }
-
-  get isExpanding(): boolean {
-    return this.#bridge?.isExpanding() ?? false;
+  set arrayReorder(next: boolean) {
+    const flag = Boolean(next);
+    if (flag === this.#arrayReorder) return;
+    this.#arrayReorder = flag;
+    this.#bridge?.setArrayReorder(flag);
+    this.#syncArrayReorderAttribute(flag);
   }
 
   /** The tree root element (`.json-tree` in shadow DOM), or `null` if unmounted. */
@@ -145,6 +140,10 @@ class JsonTreeEditor extends HTMLElement {
       if (attr != null) this.#value = attr;
     }
     this.#disabled = this.hasAttribute('disabled');
+    // Presence of attribute with value "false" disables; missing attribute keeps default true.
+    if (this.hasAttribute('array-reorder')) {
+      this.#arrayReorder = this.getAttribute('array-reorder') !== 'false';
+    }
 
     if (this.hasAttribute('default-expanded-depth')) {
       this.#defaultExpandedDepth = parseDepth(
@@ -177,18 +176,18 @@ class JsonTreeEditor extends HTMLElement {
     const initialValue = this.#value;
     const initialDisabled = this.#disabled;
     const initialDepth = this.#defaultExpandedDepth;
+    const initialArrayReorder = this.#arrayReorder;
 
     this.#dispose = render(() => {
       const [value, setValue] = createSignal(initialValue);
       const [disabled, setDisabled] = createSignal(initialDisabled);
+      const [arrayReorder, setArrayReorder] = createSignal(initialArrayReorder);
       let treeHandle: JsonTreeViewHandle | undefined;
 
       host.#bridge = {
         setValue: (next) => setValue(next),
         setDisabled: (next) => setDisabled(next),
-        expandAll: () => treeHandle?.expandAll(),
-        collapseAll: () => treeHandle?.collapseAll(),
-        isExpanding: () => treeHandle?.isExpanding() ?? false,
+        setArrayReorder: (next) => setArrayReorder(next),
         getRoot: () => treeHandle?.getRoot() ?? null,
       };
 
@@ -206,10 +205,7 @@ class JsonTreeEditor extends HTMLElement {
           style={{
             height: '100%',
             width: '100%',
-            'pointer-events': disabled() ? 'none' : undefined,
-            opacity: disabled() ? '0.6' : undefined,
           }}
-          aria-disabled={disabled() ? 'true' : undefined}
         >
           <JsonTreeView
             ref={(h) => {
@@ -218,16 +214,8 @@ class JsonTreeEditor extends HTMLElement {
             value={value()}
             onChange={onChange}
             defaultExpandedDepth={initialDepth}
-            arrayReorder={HTML5_ARRAY_REORDER}
-            onExpand={(keys) => {
-              host.#emitExpand([...keys]);
-            }}
-            onExpandProgress={(p) => {
-              host.#emitExpandProgress(p);
-            }}
-            onCollapse={(keys) => {
-              host.#emitCollapse([...keys]);
-            }}
+            disabled={disabled()}
+            arrayReorder={arrayReorder() ? HTML5_ARRAY_REORDER : false}
           />
         </div>
       );
@@ -261,6 +249,14 @@ class JsonTreeEditor extends HTMLElement {
       this.#bridge?.setDisabled(flag);
       return;
     }
+    if (name === 'array-reorder') {
+      // Reflect boolean attributes: present + not "false" → true.
+      const flag = next != null && next !== 'false';
+      if (flag === this.#arrayReorder) return;
+      this.#arrayReorder = flag;
+      this.#bridge?.setArrayReorder(flag);
+      return;
+    }
     if (name === 'default-expanded-depth') {
       this.#defaultExpandedDepth = parseDepth(next);
     }
@@ -290,6 +286,21 @@ class JsonTreeEditor extends HTMLElement {
     this.#reflecting = false;
   }
 
+  #syncArrayReorderAttribute(flag: boolean): void {
+    this.#reflecting = true;
+    if (flag) {
+      if (this.getAttribute('array-reorder') !== '') {
+        this.setAttribute('array-reorder', '');
+      }
+    } else if (this.hasAttribute('array-reorder')) {
+      // Keep attribute so hosts can see explicit off; value "false".
+      this.setAttribute('array-reorder', 'false');
+    } else {
+      this.setAttribute('array-reorder', 'false');
+    }
+    this.#reflecting = false;
+  }
+
   #emitChange(value: string): void {
     const detail: JsonTreeEditorChangeDetail = { value };
     this.dispatchEvent(
@@ -297,31 +308,6 @@ class JsonTreeEditor extends HTMLElement {
     );
     this.dispatchEvent(
       new CustomEvent('json-change', {
-        detail,
-        bubbles: true,
-        composed: true,
-      }),
-    );
-  }
-
-  #emitExpand(expanded: string[]): void {
-    const detail: JsonTreeEditorExpandDetail = { expanded };
-    this.dispatchEvent(
-      new CustomEvent('expand', { detail, bubbles: true, composed: true }),
-    );
-  }
-
-  #emitCollapse(expanded: string[]): void {
-    const detail: JsonTreeEditorExpandDetail = { expanded };
-    this.dispatchEvent(
-      new CustomEvent('collapse', { detail, bubbles: true, composed: true }),
-    );
-  }
-
-  #emitExpandProgress(progress: ExpandProgress | null): void {
-    const detail: JsonTreeEditorExpandProgressDetail = progress;
-    this.dispatchEvent(
-      new CustomEvent('expand-progress', {
         detail,
         bubbles: true,
         composed: true,

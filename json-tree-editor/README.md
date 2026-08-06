@@ -89,24 +89,11 @@ el.addEventListener('change', (event) => {
 | Attribute `value` | `string` | Optional; reflected only when length ≤ ~8KB |
 | Property `defaultExpandedDepth` | `number` | Nesting levels open on mount (`0` = root only). Default `0` |
 | Attribute `default-expanded-depth` | number string | Optional; e.g. `default-expanded-depth="1"` |
-| Property / attribute `disabled` | `boolean` | Disables pointer edits; **expandAll/collapseAll still work** |
-| Method `expandAll()` | `void` | Expand every object/array (chunked rAF) |
-| Method `collapseAll()` | `void` | Collapse to root only |
+| Property / attribute `disabled` | `boolean` | Read-only tree (browse/expand only; no mutations) |
+| Property / attribute `arrayReorder` / `array-reorder` | `boolean` | Array drag-and-drop (default `true`). Set `false` / `array-reorder="false"` to disable |
 | Method `getRoot()` | `HTMLDivElement \| null` | The `.json-tree` element in shadow DOM |
-| Getter `isExpanding` | `boolean` | True while a chunked expandAll is running |
 | Event `change` | `CustomEvent<{ value: string }>` | Fired after a tree edit with pretty-printed JSON |
 | Event `json-change` | same as `change` | Extra alias for hosts that prefer a namespaced event |
-| Event `expand-progress` | `CustomEvent<{ done, total } \| null>` | During expandAll; `null` when idle/done/cancelled |
-| Event `expand` | `CustomEvent<{ expanded: string[] }>` | **Once** when expandAll finishes (full key list) |
-| Event `collapse` | `CustomEvent<{ expanded: string[] }>` | **Once** when collapseAll finishes |
-
-```js
-const el = document.querySelector('json-tree-editor');
-el.addEventListener('expand', (e) => console.log(e.detail.expanded));
-el.addEventListener('expand-progress', (e) => console.log(e.detail));
-el.expandAll();
-el.collapseAll();
-```
 
 Styles live in an **open shadow DOM**. Theme tokens are defined on `:host`, so you can override them with a `style` attribute, CSS on the host element, or `::part` selectors (see [Theming](#theming)).
 
@@ -144,36 +131,6 @@ export function JsonPanel() {
 
 </details>
 
-<details>
-<summary>Expand / collapse-all via ref</summary>
-
-```tsx
-import { createSignal } from 'solid-js';
-import {
-  JsonTreeView,
-  type JsonTreeViewHandle,
-} from '@binaryoperations/json-tree-editor';
-
-const [source, setSource] = createSignal(myJson);
-let tree: JsonTreeViewHandle | undefined;
-
-<button type="button" onClick={() => tree?.expandAll()}>Expand all</button>
-<button type="button" onClick={() => tree?.collapseAll()}>Collapse all</button>
-
-<JsonTreeView
-  ref={(h) => { tree = h; }}
-  value={source()}
-  onChange={setSource}
-  onExpand={(keys) => console.log('expanded', keys.size)}
-  onExpandProgress={(p) => console.log(p)}
-  onCollapse={(keys) => console.log('collapsed', keys.size)}
-/>
-```
-
-`expandAll` is chunked (rAF) for large documents. Initial open depth is set with `defaultExpandedDepth` (no path keys required).
-
-</details>
-
 ### `JsonTreeView` props
 
 | Prop | Type | Required | Description |
@@ -182,18 +139,15 @@ let tree: JsonTreeViewHandle | undefined;
 | `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent, no trailing whitespace) |
 | `defaultExpandedDepth` | `number` | no | Nesting levels open on mount (`0` = root only, default). `1` opens root + direct child containers, etc. |
 | `arrayReorder` | `ArrayReorderController \| false` | no | Array drag-reorder. Omit / `false` = off. Pass `HTML5_ARRAY_REORDER` from `/dnd` to enable. Reacts to prop changes (no remount needed); keep identity stable during a drag. |
-| `onExpand` | `(keys: Set<string>) => void` | no | Once when `expandAll` finishes (full key set) |
-| `onExpandProgress` | `(p: { done, total } \| null) => void` | no | During `expandAll`; `null` when idle/done/cancelled |
-| `onCollapse` | `(keys: Set<string>) => void` | no | Once when `collapseAll` finishes |
+| `disabled` | `boolean` | no | Read-only: no edits/add/delete/reorder; expand, collapse, and navigation still work. |
 
 ### `JsonTreeView` ref handle
 
 | Method | Description |
 | --- | --- |
-| `expandAll()` | Expand every object/array (chunked) |
-| `collapseAll()` | Collapse to root only (cancels in-flight expand) |
-| `isExpanding()` | Whether a chunked expandAll is running |
 | `getRoot()` | The root `.json-tree` DOM element (or `null` before mount) |
+
+Open nested branches with the **expand** / **collapse** controls on each open object or array row.
 
 Keep the source string as document truth: pass it as `value`, push tree edits back via `onChange`.
 

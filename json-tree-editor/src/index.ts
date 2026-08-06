@@ -6,5 +6,4 @@ export {
   JsonTreeView,
   type JsonTreeViewProps,
   type JsonTreeViewHandle,
-  type ExpandProgress,
 } from './components/primitives/JsonTreeView';

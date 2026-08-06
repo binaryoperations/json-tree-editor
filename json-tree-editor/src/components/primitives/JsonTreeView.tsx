@@ -3,13 +3,11 @@ import {
   createEffect,
   createMemo,
   createSignal,
-  onCleanup,
   Show,
 } from 'solid-js';
 
 import {
   collectChildContainerPathKeys,
-  collectContainerPathKeys,
   collectVisiblePaths,
   defaultExpandedPaths,
   expandedPathsUpToDepth,
@@ -28,14 +26,8 @@ import {
 import type { ArrayReorderController } from './array-reorder';
 import { JsonTreeNode } from './JsonTreeNode';
 
-/** Progress of a chunked {@link JsonTreeViewHandle.expandAll}. */
-export type ExpandProgress = { done: number; total: number };
-
 /** Imperative handle exposed via Solid `ref` on {@link JsonTreeView}. */
 export type JsonTreeViewHandle = {
-  expandAll: () => void;
-  collapseAll: () => void;
-  isExpanding: () => boolean;
   /** The root `.json-tree` DOM element (or `null` before mount). */
   getRoot: () => HTMLDivElement | null;
 };
@@ -65,31 +57,13 @@ export type JsonTreeViewProps = {
    */
   arrayReorder?: ArrayReorderController | false;
   /**
-   * Fired once when {@link JsonTreeViewHandle.expandAll} finishes successfully.
-   * Receives the full expanded path-key set.
+   * When true, the tree is read-only: no value/key/type edits, add/delete, or
+   * drag-reorder. Expand/collapse and keyboard navigation still work.
    */
-  onExpand?: (expandedKeys: Set<string>) => void;
-  /**
-   * Fired during chunked expandAll; `null` when idle, finished, or cancelled.
-   */
-  onExpandProgress?: (progress: ExpandProgress | null) => void;
-  /**
-   * Fired once when {@link JsonTreeViewHandle.collapseAll} completes.
-   * Receives the resulting expand set (root-only).
-   */
-  onCollapse?: (expandedKeys: Set<string>) => void;
+  disabled?: boolean;
   /** Solid component ref (function form recommended). */
   ref?: JsonTreeViewHandle | ((handle: JsonTreeViewHandle) => void);
 };
-
-/**
- * expandAll scheduling:
- * rAF does not make work async — the callback still runs synchronously and
- * blocks input/paint until it returns. So we do at most one applyExpanded per
- * frame (EXPAND_CHUNK keys), then return and schedule the next rAF so the
- * browser can paint and handle events between batches.
- */
-const EXPAND_CHUNK = 48;
 
 function emitPretty(value: unknown, onChange: (s: string) => void): void {
   // No trailing whitespace / newline — keep source clean for hosts that round-trip.
@@ -140,8 +114,8 @@ function initialExpandedFromProps(
  * Interactive collapsible JSON tree. Pass document source as `value`; the view
  * parses internally and writes pretty JSON back through `onChange`.
  *
- * Expand-all / collapse-all are available on the Solid `ref` handle (chunked
- * rAF expand for large documents). Initial open depth is
+ * Per-container **expand** / **collapse** toolbar actions open or fold nested
+ * children. Initial open depth is
  * {@link JsonTreeViewProps.defaultExpandedDepth} (default `0` = root only).
  *
  * Always keeps a tree on screen:
@@ -167,11 +141,6 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   const [lastGoodRoot, setLastGoodRoot] = createSignal<JsonRootValue | null>(
     null,
   );
-  const [expandProgress, setExpandProgress] =
-    createSignal<ExpandProgress | null>(null);
-
-  /** Bumps to cancel an in-flight expand-all. */
-  let expandGeneration = 0;
 
   let treeRootEl: HTMLDivElement | undefined;
   let treeScrollEl: HTMLDivElement | undefined;
@@ -205,93 +174,12 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     setInternalExpanded(next);
   };
 
-  const reportProgress = (progress: ExpandProgress | null) => {
-    setExpandProgress(progress);
-    props.onExpandProgress?.(progress);
-  };
-
-  const cancelExpandAll = () => {
-    expandGeneration += 1;
-    if (expandProgress() !== null) {
-      reportProgress(null);
-    }
-  };
-
-  const collapseAll = () => {
-    cancelExpandAll();
-    const next = defaultExpandedPaths();
-    applyExpanded(next);
-    props.onCollapse?.(next);
-  };
-
-  /**
-   * Expand every object/array in DFS order. One Solid apply per animation
-   * frame, then yield — rAF only defers the next turn; it does not unblock
-   * work already running inside the callback.
-   */
-  const expandAll = () => {
-    cancelExpandAll();
-
-    const keys = collectContainerPathKeys(displayRoot());
-    const total = keys.length;
-    if (total === 0) {
-      const empty = new Set<string>();
-      applyExpanded(empty);
-      props.onExpand?.(empty);
-      return;
-    }
-
-    const token = ++expandGeneration;
-    let index = 0;
-    // Local accumulator so each chunk builds on the previous without lag.
-    const acc = new Set<string>();
-
-    // Start empty so we fill in document order (parents before deep children).
-    applyExpanded(new Set(acc));
-    reportProgress({ done: 0, total });
-
-    const step = () => {
-      if (token !== expandGeneration) return;
-
-      const end = Math.min(index + EXPAND_CHUNK, total);
-      while (index < end) {
-        acc.add(keys[index]);
-        index += 1;
-      }
-
-      // Single apply per frame — this is the expensive, blocking re-render.
-      applyExpanded(new Set(acc));
-      reportProgress({ done: index, total });
-
-      if (index < total) {
-        // Return from the callback so the browser can paint / handle input,
-        // then continue on the next frame.
-        requestAnimationFrame(step);
-        return;
-      }
-
-      reportProgress(null);
-      props.onExpand?.(new Set(acc));
-    };
-
-    requestAnimationFrame(step);
-  };
-
-  const isExpanding = () => expandProgress() !== null;
-
   const handle: JsonTreeViewHandle = {
-    expandAll,
-    collapseAll,
-    isExpanding,
     getRoot: () => treeRootEl ?? null,
   };
 
   createEffect(() => {
     assignRef(props.ref, handle);
-  });
-
-  onCleanup(() => {
-    expandGeneration += 1;
   });
 
   const isExpanded = (path: JsonPath) => expanded().has(pathKey(path));
@@ -370,6 +258,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   const commit = (nextRoot: unknown) => {
+    if (props.disabled) return;
     emitPretty(nextRoot, props.onChange);
   };
 
@@ -424,6 +313,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   const onTreeKeyDown = (e: KeyboardEvent) => {
+    // Allow navigation/expand when disabled; skip only if typing in an editor.
     if (isEditableTarget(e.target)) return;
 
     const key = e.key;
@@ -542,6 +432,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
         part="scroll"
         role="tree"
         aria-label="JSON tree"
+        aria-readonly={props.disabled ? 'true' : undefined}
         ref={(el) => {
           treeScrollEl = el;
         }}
@@ -560,7 +451,10 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
           onCommit={commit}
           focusedPathKey={focusedPathKey}
           onFocusPath={onFocusPath}
-          arrayReorderController={props.arrayReorder || undefined}
+          disabled={props.disabled}
+          arrayReorderController={
+            props.disabled ? undefined : props.arrayReorder || undefined
+          }
         />
       </div>
     </div>

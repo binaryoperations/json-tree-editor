@@ -2,7 +2,6 @@ export {
   JsonTreeView,
   type JsonTreeViewProps,
   type JsonTreeViewHandle,
-  type ExpandProgress,
 } from './JsonTreeView';
 export { JsonTreeNode, type JsonTreeNodeProps } from './JsonTreeNode';
 export {

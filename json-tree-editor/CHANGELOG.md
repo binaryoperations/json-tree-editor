@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `NOOP_ARRAY_REORDER`
   - `resolveArrayReorderController`
   - `ARRAY_REORDER_HANDLE_SELECTOR`
+  - `expandAll` / `collapseAll` / `isExpanding` on Solid `ref` and the web component
+  - Props `onExpand`, `onExpandProgress`, `onCollapse`
+  - Events `expand`, `collapse`, `expand-progress`
+  - Type `ExpandProgress`
 - Solid **`arrayReorder` default is off** (`undefined` / `false`). Pass a controller from `/dnd` to enable. Web component still enables HTML5 DnD by default.
 
 ### Refactor
@@ -24,7 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Split HTML5 DnD into `/dnd` so the core Solid entry can omit drag-and-drop code.
 - `arrayReorder` is reactive (toggle without remounting the tree).
 - Expand / collapse toolbar buttons enable from live expand state (not only structure).
-- Demo: DnD on/off toggle on the main page.
+- Removed global expand-all / collapse-all; use per-container expand / collapse on open objects and arrays.
+- Web component: `arrayReorder` property / `array-reorder` attribute (default on).
+- Solid **`disabled`** prop on `JsonTreeView` (read-only: browse/expand still work; no mutations).
 
 ### New Exports
 
