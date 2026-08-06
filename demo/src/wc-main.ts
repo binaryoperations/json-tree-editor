@@ -37,10 +37,12 @@ const source = document.querySelector<HTMLTextAreaElement>('#source')!;
 const tree = document.querySelector<
   HTMLElement & {
     value: string;
-    disabled: boolean;
+    readOnly: boolean;
+    arrayReorder: boolean;
   }
 >('#tree')!;
 const status = document.querySelector<HTMLElement>('#status')!;
+const btnDnd = document.querySelector<HTMLButtonElement>('#btn-dnd')!;
 
 let syncingFromTree = false;
 
@@ -48,9 +50,18 @@ function setStatus(msg: string) {
   status.textContent = msg;
 }
 
+function syncDndButton() {
+  const on = tree.arrayReorder;
+  btnDnd.textContent = on ? 'DnD: on' : 'DnD: off';
+  btnDnd.setAttribute('aria-pressed', on ? 'true' : 'false');
+  btnDnd.classList.toggle('btn--active', on);
+}
+
 // Property is preferred for value (especially large JSON).
 source.value = SAMPLE;
 tree.value = SAMPLE;
+// WC defaults arrayReorder to true; keep UI in sync.
+syncDndButton();
 
 source.addEventListener('input', () => {
   if (syncingFromTree) return;
@@ -81,7 +92,23 @@ document.querySelector('#btn-theme')!.addEventListener('click', () => {
   setStatus(tree.classList.contains('light') ? 'light theme' : 'dark theme');
 });
 
-document.querySelector('#btn-disabled')!.addEventListener('click', () => {
-  tree.disabled = !tree.disabled;
-  setStatus(tree.disabled ? 'disabled' : 'enabled');
+const btnReadOnly = document.querySelector<HTMLButtonElement>('#btn-readonly')!;
+function syncReadOnlyButton() {
+  const on = tree.readOnly;
+  btnReadOnly.textContent = on ? 'Read-only' : 'Editable';
+  btnReadOnly.setAttribute('aria-pressed', on ? 'true' : 'false');
+  btnReadOnly.classList.toggle('btn--active', on);
+}
+syncReadOnlyButton();
+
+btnReadOnly.addEventListener('click', () => {
+  tree.readOnly = !tree.readOnly;
+  syncReadOnlyButton();
+  setStatus(tree.readOnly ? 'tree read-only' : 'tree editable');
+});
+
+btnDnd.addEventListener('click', () => {
+  tree.arrayReorder = !tree.arrayReorder;
+  syncDndButton();
+  setStatus(tree.arrayReorder ? 'array reorder on' : 'array reorder off');
 });

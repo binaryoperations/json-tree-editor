@@ -1,32 +1,37 @@
-import {
-  JsonTreeView,
-  type ExpandProgress,
-  type JsonTreeViewHandle,
-} from '../../json-tree-editor/src';
+import { JsonTreeView } from '../../json-tree-editor/src';
 import { HTML5_ARRAY_REORDER } from '../../json-tree-editor/src/dnd';
 import {
   parseJsonSource,
   type JsonValidity,
 } from '../../json-tree-editor/src/utils';
-import { type Component, createMemo, createSignal, Show } from 'solid-js';
+import {
+  type Component,
+  createMemo,
+  createSignal,
+  onCleanup,
+  onMount,
+  Show,
+} from 'solid-js';
 
 import { DemoHeader } from './components/DemoHeader';
 import { JsonEditor } from './components/JsonEditor';
 import { JsonFormatted } from './components/JsonFormatted';
 import {
+  appendLargeJsonNodes,
   countJsonNodes,
   generateLargeJson,
   stringifyGenerated,
 } from './lib/generate-large-json';
 
 const TARGET_NODES = 5000;
+const ADD_NODES = 1000;
 const SEED = 42;
 
 /**
  * Large-tree stress demo.
  *
  * Default layout: **Tree + stats / formatted preview** (no CodeMirror).
- * Expand all is owned by JsonTreeView (chunked rAF) and driven via ref.
+ * Use per-container expand / collapse on the tree toolbar to open branches.
  */
 export const LargeApp: Component = () => {
   const generated = generateLargeJson({
@@ -37,10 +42,12 @@ export const LargeApp: Component = () => {
 
   const [source, setSource] = createSignal(initialSource);
   const [showSourceEditor, setShowSourceEditor] = createSignal(false);
-  const [expandProgress, setExpandProgress] = createSignal<ExpandProgress | null>(
-    null,
-  );
-  const [expandedCount, setExpandedCount] = createSignal(1);
+  const [arrayDnd, setArrayDnd] = createSignal(true);
+  const [treeReadOnly, setTreeReadOnly] = createSignal(false);
+  const [fps, setFps] = createSignal(0);
+  /** How many “add more” batches have been appended after the initial doc. */
+  const [batchIndex, setBatchIndex] = createSignal(0);
+  const [lastAppendMs, setLastAppendMs] = createSignal<number | null>(null);
   const [genInfo] = createSignal({
     nodeCount: generated.nodeCount,
     generationMs: generated.generationMs,
@@ -49,7 +56,23 @@ export const LargeApp: Component = () => {
     sourceChars: initialSource.length,
   });
 
-  let tree: JsonTreeViewHandle | undefined;
+  onMount(() => {
+    let frames = 0;
+    let last = performance.now();
+    let raf = 0;
+    const loop = (now: number) => {
+      frames += 1;
+      const elapsed = now - last;
+      if (elapsed >= 500) {
+        setFps(Math.round((frames * 1000) / elapsed));
+        frames = 0;
+        last = now;
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    onCleanup(() => cancelAnimationFrame(raf));
+  });
 
   const validity = createMemo(() => parseJsonSource(source()));
 
@@ -59,35 +82,22 @@ export const LargeApp: Component = () => {
     return countJsonNodes(v.value);
   });
 
-  const expanding = () => expandProgress() !== null;
-
   const onTreeChange = (pretty: string) => {
     setSource(pretty);
   };
 
-  const expandAll = () => {
-    tree?.expandAll();
-  };
-
-  const collapseAll = () => {
-    tree?.collapseAll();
-  };
-
-  const regenerate = () => {
-    tree?.collapseAll();
-    const next = generateLargeJson({
-      targetNodes: TARGET_NODES,
-      seed: SEED,
+  const addMoreNodes = () => {
+    const v = validity();
+    if (!v.ok) return;
+    const nextBatch = batchIndex();
+    const result = appendLargeJsonNodes(v.value, {
+      addNodes: ADD_NODES,
+      seed: SEED + 1 + nextBatch,
+      batchIndex: nextBatch,
     });
-    setSource(stringifyGenerated(next.value));
-    setExpandedCount(1);
-  };
-
-  const expandLabel = () => {
-    const p = expandProgress();
-    if (!p) return 'Expand all';
-    const pct = p.total === 0 ? 100 : Math.round((p.done / p.total) * 100);
-    return `Expanding… ${pct}%`;
+    setBatchIndex(nextBatch + 1);
+    setLastAppendMs(result.generationMs);
+    setSource(stringifyGenerated(result.value));
   };
 
   return (
@@ -99,49 +109,56 @@ export const LargeApp: Component = () => {
         >
           {liveNodeCount() ?? '—'} nodes
         </span>
+        <span
+          class="stat-pill"
+          classList={{ 'stat-pill--busy': fps() > 0 && fps() < 45 }}
+          title="Main-thread animation frame rate (requestAnimationFrame)"
+        >
+          {fps() || '—'} fps
+        </span>
         <span class="stat-pill stat-pill--muted">
           gen {genInfo().generationMs} ms · seed {genInfo().seed}
         </span>
         <span class="stat-pill stat-pill--muted">
           target {genInfo().targetNodes}
         </span>
-        <Show when={expandProgress()}>
-          {(p) => (
-            <span
-              class="stat-pill stat-pill--busy"
-              role="status"
-              aria-live="polite"
-            >
-              expand {p().done}/{p().total}
-            </span>
-          )}
-        </Show>
         <ValidityBadge validity={validity()} />
         <button
           type="button"
           class="btn"
-          onClick={expandAll}
-          disabled={!validity().ok || expanding()}
-          title="Open every object/array (chunked; may take 1–3s on ~5k nodes)"
+          classList={{ 'btn--active': arrayDnd() }}
+          aria-pressed={arrayDnd()}
+          title={
+            arrayDnd()
+              ? 'Array drag-and-drop is on'
+              : 'Array drag-and-drop is off'
+          }
+          onClick={() => setArrayDnd((on) => !on)}
         >
-          {expandLabel()}
+          {arrayDnd() ? 'DnD: on' : 'DnD: off'}
         </button>
         <button
           type="button"
           class="btn"
-          onClick={collapseAll}
+          classList={{ 'btn--active': treeReadOnly() }}
+          aria-pressed={treeReadOnly()}
+          title={
+            treeReadOnly()
+              ? 'Tree is read-only (browse/expand only)'
+              : 'Tree is editable'
+          }
+          onClick={() => setTreeReadOnly((d) => !d)}
+        >
+          {treeReadOnly() ? 'Read-only' : 'Editable'}
+        </button>
+        <button
+          type="button"
+          class="btn"
+          onClick={addMoreNodes}
           disabled={!validity().ok}
-          title="Collapse to root only"
+          title={`Append ~${ADD_NODES} more nodes (new department batch)`}
         >
-          Collapse all
-        </button>
-        <button
-          type="button"
-          class="btn"
-          onClick={regenerate}
-          title="Regenerate the same seeded document"
-        >
-          Regenerate
+          Add more nodes
         </button>
         <button
           type="button"
@@ -177,26 +194,18 @@ export const LargeApp: Component = () => {
           <div class="pane-header">
             <span>Tree</span>
             <span>
-              {expanding()
-                ? 'expanding containers…'
-                : 'root expanded · Expand all is chunked'}
+              {treeReadOnly()
+                ? 'read-only'
+                : 'expand / collapse on containers'}
+              {!treeReadOnly() && arrayDnd() ? ' · drag reorder' : ''}
             </span>
           </div>
-          <div
-            class="pane-body"
-            classList={{ 'pane-body--busy': expanding() }}
-            aria-busy={expanding() ? 'true' : 'false'}
-          >
+          <div class="pane-body">
             <JsonTreeView
-              ref={(h) => {
-                tree = h;
-              }}
               value={source()}
               onChange={onTreeChange}
-              arrayReorder={HTML5_ARRAY_REORDER}
-              onExpandProgress={setExpandProgress}
-              onExpand={(keys) => setExpandedCount(keys.size)}
-              onCollapse={(keys) => setExpandedCount(keys.size)}
+              readOnly={treeReadOnly()}
+              arrayReorder={arrayDnd() ? HTML5_ARRAY_REORDER : false}
             />
           </div>
         </section>
@@ -220,9 +229,15 @@ export const LargeApp: Component = () => {
                 <dd>{genInfo().nodeCount}</dd>
                 <dt>Live nodes</dt>
                 <dd>{liveNodeCount() ?? 'invalid'}</dd>
-                <dt>Expanded paths</dt>
-                <dd>{expandedCount()}</dd>
-                <dt>Generation</dt>
+                <dt>Frame rate</dt>
+                <dd>{fps() ? `${fps()} fps` : '—'}</dd>
+                <dt>Append batches</dt>
+                <dd>{batchIndex()}</dd>
+                <dt>Last append</dt>
+                <dd>
+                  {lastAppendMs() != null ? `${lastAppendMs()} ms` : '—'}
+                </dd>
+                <dt>Initial generation</dt>
                 <dd>{genInfo().generationMs} ms</dd>
                 <dt>Seed</dt>
                 <dd>{genInfo().seed}</dd>
@@ -241,8 +256,8 @@ export const LargeApp: Component = () => {
                 </dd>
               </dl>
               <p class="large-stats__hint">
-                Expand all is owned by JsonTreeView (rAF-chunked). Collapse all
-                resets to root only via the tree ref.
+                Open branches with the expand control on each container row.
+                Collapse folds nested opens under that node.
               </p>
             </div>
             <div class="large-preview">
@@ -263,11 +278,9 @@ export const LargeApp: Component = () => {
           {validity().ok ? '● valid' : '● invalid'}
         </span>
         <span class="status-bar__msg">
-          {expanding()
-            ? `Expanding containers… ${expandProgress()!.done}/${expandProgress()!.total}`
-            : validity().ok
-              ? `Stress demo · ~${liveNodeCount()} nodes · tree editable`
-              : (validity() as { error: string }).error}
+          {validity().ok
+            ? `Stress demo · ~${liveNodeCount()} nodes · tree editable`
+            : (validity() as { error: string }).error}
         </span>
         <span class="status-bar__meta">
           <a class="nav-link nav-link--footer" href="/">

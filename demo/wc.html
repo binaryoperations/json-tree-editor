@@ -59,6 +59,12 @@
         outline: 2px solid #60a5fa;
         outline-offset: 2px;
       }
+      .toolbar button[aria-pressed='true'],
+      .toolbar button.btn--active {
+        background: #1e3a5f;
+        border-color: #3b82f6;
+        color: #bfdbfe;
+      }
       .panes {
         flex: 1;
         min-height: 0;
@@ -176,9 +182,10 @@
     <template id="wc-header-actions">
       <div class="toolbar">
         <span id="status">idle</span>
+        <button type="button" id="btn-dnd" aria-pressed="true">DnD: on</button>
         <button type="button" id="btn-sample">Load sample</button>
         <button type="button" id="btn-theme">Toggle light theme</button>
-        <button type="button" id="btn-disabled">Toggle disabled</button>
+        <button type="button" id="btn-readonly" aria-pressed="false">Editable</button>
         <span class="meta">vanilla · no Solid host required</span>
       </div>
     </template>

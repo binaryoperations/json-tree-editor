@@ -234,3 +234,95 @@ export function generateLargeJson(
 export function stringifyGenerated(value: unknown): string {
   return JSON.stringify(value, null, 2) + '\n';
 }
+
+export type AppendLargeJsonOptions = {
+  /** Approximate nodes to append (default 1000). */
+  addNodes?: number;
+  /** Seed for the new batch (required for determinism). */
+  seed: number;
+  /** Offset for department/employee ids so they stay unique across batches. */
+  batchIndex?: number;
+};
+
+/**
+ * Append another generated department batch onto an existing large-tree document.
+ * Expects the usual shape `{ meta, departments: [...] }`; falls back to wrapping
+ * non-matching roots so the tree stays usable.
+ */
+export function appendLargeJsonNodes(
+  current: unknown,
+  options: AppendLargeJsonOptions,
+): {
+  value: unknown;
+  addedNodes: number;
+  totalNodes: number;
+  generationMs: number;
+} {
+  const addNodes = options.addNodes ?? 1000;
+  const batchIndex = options.batchIndex ?? 0;
+  const t0 =
+    typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+  const batch = generateLargeJson({
+    targetNodes: addNodes,
+    seed: options.seed,
+  });
+  const batchRoot = batch.value as {
+    departments?: Array<Record<string, unknown>>;
+  };
+  const newDepts = (batchRoot.departments ?? []).map((dept, i) => ({
+    ...dept,
+    id: `dept_b${batchIndex}_${String(i).padStart(2, '0')}`,
+    name:
+      typeof dept.name === 'string'
+        ? `${dept.name} (batch ${batchIndex + 1})`
+        : `Batch ${batchIndex + 1} dept ${i}`,
+  }));
+
+  let value: unknown;
+  if (
+    current !== null &&
+    typeof current === 'object' &&
+    !Array.isArray(current)
+  ) {
+    const obj = current as Record<string, unknown>;
+    const prevDepts = Array.isArray(obj.departments)
+      ? (obj.departments as unknown[])
+      : [];
+    const meta =
+      obj.meta !== null && typeof obj.meta === 'object' && !Array.isArray(obj.meta)
+        ? { ...(obj.meta as Record<string, unknown>) }
+        : {};
+    value = {
+      ...obj,
+      meta: {
+        ...meta,
+        batches: batchIndex + 1,
+        lastAppendSeed: options.seed,
+        lastAppendNodes: batch.nodeCount,
+      },
+      departments: [...prevDepts, ...newDepts],
+    };
+  } else {
+    value = {
+      meta: {
+        title: 'Large tree stress document (wrapped)',
+        batches: batchIndex + 1,
+      },
+      previous: current,
+      departments: newDepts,
+    };
+  }
+
+  const t1 =
+    typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const totalNodes = countJsonNodes(value);
+  const before = countJsonNodes(current);
+
+  return {
+    value,
+    addedNodes: Math.max(0, totalNodes - before),
+    totalNodes,
+    generationMs: Math.round((t1 - t0) * 100) / 100,
+  };
+}

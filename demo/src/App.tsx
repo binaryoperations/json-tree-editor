@@ -35,6 +35,8 @@ export const App: Component = () => {
   const [source, setSource] = createSignal(STARTER_JSON);
   /** Opt-in array drag-and-drop (`/dnd` entry). Off by default in the library. */
   const [arrayDnd, setArrayDnd] = createSignal(true);
+  /** Tree browseable read-only — mirrors WC `readOnly` / `readonly`. */
+  const [treeReadOnly, setTreeReadOnly] = createSignal(false);
   const validity = createMemo(() => parseJsonSource(source()));
 
   const prettyPrint = () => {
@@ -69,6 +71,20 @@ export const App: Component = () => {
         <button
           type="button"
           class="btn"
+          classList={{ 'btn--active': treeReadOnly() }}
+          aria-pressed={treeReadOnly()}
+          title={
+            treeReadOnly()
+              ? 'Tree is read-only (browse/expand only)'
+              : 'Tree is editable'
+          }
+          onClick={() => setTreeReadOnly((d) => !d)}
+        >
+          {treeReadOnly() ? 'Read-only' : 'Editable'}
+        </button>
+        <button
+          type="button"
+          class="btn"
           onClick={prettyPrint}
           disabled={!validity().ok}
           title={
@@ -97,14 +113,15 @@ export const App: Component = () => {
           <div class="pane-header">
             <span>Tree</span>
             <span>
-              edit · add · remove · types
-              {arrayDnd() ? ' · drag reorder' : ''}
+              {treeReadOnly() ? 'read-only' : 'edit · add · remove · types'}
+              {!treeReadOnly() && arrayDnd() ? ' · drag reorder' : ''}
             </span>
           </div>
           <div class="pane-body">
             <JsonTreeView
               value={source()}
               onChange={onTreeChange}
+              readOnly={treeReadOnly()}
               arrayReorder={arrayDnd() ? HTML5_ARRAY_REORDER : false}
             />
           </div>
