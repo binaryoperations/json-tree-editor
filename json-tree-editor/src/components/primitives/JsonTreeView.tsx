@@ -25,10 +25,7 @@ import {
   parseJsonSource,
   stringifyJsonDocument,
 } from '../../lib/parse-json';
-import {
-  type ArrayReorderController,
-  resolveArrayReorderController,
-} from './array-reorder';
+import type { ArrayReorderController } from './array-reorder';
 import { JsonTreeNode } from './JsonTreeNode';
 
 /** Progress of a chunked {@link JsonTreeViewHandle.expandAll}. */
@@ -60,12 +57,11 @@ export type JsonTreeViewProps = {
   defaultExpandedDepth?: number;
   /**
    * Array sibling reorder strategy.
-   * - omit / `undefined` — HTML5 drag-and-drop (default)
-   * - `false` — disable reorder entirely
-   * - custom {@link ArrayReorderController} — replace parent session + item UI
+   * - omit / `undefined` / `false` — off (no DnD code path)
+   * - {@link ArrayReorderController} — e.g. `HTML5_ARRAY_REORDER` from `/dnd`
    *
-   * Keep the reference stable for the life of the tree (factories create
-   * signals once per node on mount).
+   * Reacts to prop changes (toggle on/off without remounting). Prefer a stable
+   * controller identity while a drag is in progress.
    */
   arrayReorder?: ArrayReorderController | false;
   /**
@@ -164,10 +160,6 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   /** Roving tabindex: which visible row is the active treeitem. */
   const [focusedPathKey, setFocusedPathKey] =
     createSignal<string>(ROOT_PATH_KEY);
-  /** Resolved once on mount — keep `arrayReorder` prop stable for the tree life. */
-  const arrayReorderController = resolveArrayReorderController(
-    props.arrayReorder,
-  );
   /**
    * Last successfully parsed root. Used when the source has a syntax error so
    * the tree stays visible while the user fixes the document.
@@ -568,7 +560,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
           onCommit={commit}
           focusedPathKey={focusedPathKey}
           onFocusPath={onFocusPath}
-          arrayReorderController={arrayReorderController}
+          arrayReorderController={props.arrayReorder || undefined}
         />
       </div>
     </div>

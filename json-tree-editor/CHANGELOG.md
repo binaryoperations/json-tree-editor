@@ -5,6 +5,39 @@ All notable changes to `@binaryoperations/json-tree-editor` are documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Breaking Changes
+
+- **Moved** these exports from `@binaryoperations/json-tree-editor/utils` to `@binaryoperations/json-tree-editor/dnd`:
+  - `HTML5_ARRAY_REORDER`
+  - `createHtml5ArrayReorderParent`, `createHtml5ArrayItemUi`
+  - Reorder types (`ArrayReorderController`, `ArrayReorderBinding`, `ArrayDragState`, …)
+- **Deleted**
+  - `NOOP_ARRAY_REORDER`
+  - `resolveArrayReorderController`
+  - `ARRAY_REORDER_HANDLE_SELECTOR`
+- Solid **`arrayReorder` default is off** (`undefined` / `false`). Pass a controller from `/dnd` to enable. Web component still enables HTML5 DnD by default.
+
+### Refactor
+
+- Split HTML5 DnD into `/dnd` so the core Solid entry can omit drag-and-drop code.
+- `arrayReorder` is reactive (toggle without remounting the tree).
+- Expand / collapse toolbar buttons enable from live expand state (not only structure).
+- Demo: DnD on/off toggle on the main page.
+
+### New Exports
+
+From `@binaryoperations/json-tree-editor/dnd`:
+
+- `HTML5_ARRAY_REORDER`, `createHtml5ArrayReorderParent`, `createHtml5ArrayItemUi`
+- Reorder types
+- `moveArrayItemAtPath`, `moveArrayItemByDelta`, `arrayDropTargetIndex` (also still on `/utils`)
+
+From `@binaryoperations/json-tree-editor/utils`:
+
+- `collectChildContainerPaths`, `collectDescendantContainerPaths` (and related path helpers)
+
 ## [1.0.6] - 2026-08-06
 
 ### Added

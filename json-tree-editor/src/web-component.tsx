@@ -26,6 +26,7 @@ import {
   type ExpandProgress,
   type JsonTreeViewHandle,
 } from './components/primitives/JsonTreeView';
+import { HTML5_ARRAY_REORDER } from './dnd';
 import styles from './styles.css?inline';
 
 const TAG = 'json-tree-editor';
@@ -217,6 +218,7 @@ class JsonTreeEditor extends HTMLElement {
             value={value()}
             onChange={onChange}
             defaultExpandedDepth={initialDepth}
+            arrayReorder={HTML5_ARRAY_REORDER}
             onExpand={(keys) => {
               host.#emitExpand([...keys]);
             }}

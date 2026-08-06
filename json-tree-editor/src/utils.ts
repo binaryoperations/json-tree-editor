@@ -23,20 +23,6 @@ export {
   type NumberEditorProps,
   NullEditor,
   type NullEditorProps,
-  // Array reorder controller surface
-  HTML5_ARRAY_REORDER,
-  NOOP_ARRAY_REORDER,
-  resolveArrayReorderController,
-  createHtml5ArrayReorderParent,
-  createHtml5ArrayItemUi,
-  ARRAY_REORDER_HANDLE_SELECTOR,
-  type ArrayDragEdge,
-  type ArrayDragState,
-  type ArrayReorderBinding,
-  type ArrayReorderParentContext,
-  type ArrayReorderParent,
-  type ArrayItemReorderUi,
-  type ArrayReorderController,
 } from './components/primitives';
 
 // Parse / validity
@@ -57,8 +43,11 @@ export {
   ROOT_PATH_KEY,
   pathKey,
   collectContainerPathKeys,
+  collectChildContainerPaths,
   collectChildContainerPathKeys,
+  collectSubtreeContainerPaths,
   collectSubtreeContainerPathKeys,
+  collectDescendantContainerPaths,
   collectVisiblePaths,
   pathDomId,
   defaultExpandedPaths,

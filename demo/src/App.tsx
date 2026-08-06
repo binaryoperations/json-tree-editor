@@ -1,4 +1,5 @@
 import { JsonTreeView } from '../../json-tree-editor/src';
+import { HTML5_ARRAY_REORDER } from '../../json-tree-editor/src/dnd';
 import {
   parseJsonSource,
   type JsonValidity,
@@ -32,6 +33,8 @@ const STARTER_JSON = `{
 
 export const App: Component = () => {
   const [source, setSource] = createSignal(STARTER_JSON);
+  /** Opt-in array drag-and-drop (`/dnd` entry). Off by default in the library. */
+  const [arrayDnd, setArrayDnd] = createSignal(true);
   const validity = createMemo(() => parseJsonSource(source()));
 
   const prettyPrint = () => {
@@ -49,6 +52,20 @@ export const App: Component = () => {
     <div class="app">
       <DemoHeader page="main">
         <ValidityBadge validity={validity()} />
+        <button
+          type="button"
+          class="btn"
+          classList={{ 'btn--active': arrayDnd() }}
+          aria-pressed={arrayDnd()}
+          title={
+            arrayDnd()
+              ? 'Array drag-and-drop is on (HTML5_ARRAY_REORDER from /dnd)'
+              : 'Array drag-and-drop is off (no arrayReorder prop)'
+          }
+          onClick={() => setArrayDnd((on) => !on)}
+        >
+          {arrayDnd() ? 'DnD: on' : 'DnD: off'}
+        </button>
         <button
           type="button"
           class="btn"
@@ -79,10 +96,17 @@ export const App: Component = () => {
         <section class="pane" aria-label="JSON tree editor">
           <div class="pane-header">
             <span>Tree</span>
-            <span>edit · add · remove · types</span>
+            <span>
+              edit · add · remove · types
+              {arrayDnd() ? ' · drag reorder' : ''}
+            </span>
           </div>
           <div class="pane-body">
-            <JsonTreeView value={source()} onChange={onTreeChange} />
+            <JsonTreeView
+              value={source()}
+              onChange={onTreeChange}
+              arrayReorder={arrayDnd() ? HTML5_ARRAY_REORDER : false}
+            />
           </div>
         </section>
 

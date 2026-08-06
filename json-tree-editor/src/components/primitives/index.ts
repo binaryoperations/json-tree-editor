@@ -6,21 +6,6 @@ export {
 } from './JsonTreeView';
 export { JsonTreeNode, type JsonTreeNodeProps } from './JsonTreeNode';
 export {
-  HTML5_ARRAY_REORDER,
-  NOOP_ARRAY_REORDER,
-  resolveArrayReorderController,
-  createHtml5ArrayReorderParent,
-  createHtml5ArrayItemUi,
-  ARRAY_REORDER_HANDLE_SELECTOR,
-  type ArrayDragEdge,
-  type ArrayDragState,
-  type ArrayReorderBinding,
-  type ArrayReorderParentContext,
-  type ArrayReorderParent,
-  type ArrayItemReorderUi,
-  type ArrayReorderController,
-} from './array-reorder';
-export {
   TypeSelect,
   type TypeSelectProps,
   ROOT_JSON_TYPES,

@@ -1,9 +1,10 @@
-import { type Component, createSignal, For, Show } from 'solid-js';
+import { type Component, createMemo, createSignal, For, Show } from 'solid-js';
 
 import {
   addShapedItemAtPath,
   addShapedPropertyAtPath,
-  collectChildContainerPathKeys,
+  collectChildContainerPaths,
+  collectDescendantContainerPaths,
   convertJsonType,
   DEFAULT_OBJECT_KEY,
   deleteAtPath,
@@ -19,10 +20,9 @@ import {
   setAtPath,
   uniqueObjectKey,
 } from '../../lib/json-path';
-import {
-  type ArrayReorderBinding,
-  type ArrayReorderController,
-  HTML5_ARRAY_REORDER,
+import type {
+  ArrayReorderBinding,
+  ArrayReorderController,
 } from './array-reorder';
 import { KeyEditor } from './KeyEditor';
 import { PrimitiveEditor } from './PrimitiveEditor';
@@ -59,8 +59,9 @@ export type JsonTreeNodeProps = {
    */
   arrayReorder?: ArrayReorderBinding;
   /**
-   * Reorder strategy for array *children* of this node. Stable reference
-   * recommended; defaults to {@link HTML5_ARRAY_REORDER}.
+   * Reorder strategy for array *children* of this node. Omit / undefined =
+   * no DnD. Pass a controller from `/dnd` (e.g. HTML5_ARRAY_REORDER).
+   * Rebuilds parent/item sessions when the controller identity changes.
    */
   arrayReorderController?: ArrayReorderController;
 };
@@ -76,27 +77,31 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
   /** Child object key that should open in rename mode (after +key / type→object). */
   const [pendingEditKey, setPendingEditKey] = createSignal<string | null>(null);
 
-  // Capture once on mount (controller should be stable for the tree lifetime).
-  const reorderController =
-    props.arrayReorderController ?? HTML5_ARRAY_REORDER;
-
+  // undefined / omitted → no DnD (no no-op controller object).
+  // Rebuild when controller identity changes so hosts can toggle without remount.
   /** Parent-side reorder session for this node's array children (if any). */
-  const childReorderParent = reorderController.createParent({
-    path: () => props.path,
-    root: () => props.root(),
-    onCommit: (next) => props.onCommit(next),
-    onFocusPath: (path) => props.onFocusPath(path),
-    isArray: () => typeName() === 'array',
-    length: () => {
-      const v = value();
-      return Array.isArray(v) ? v.length : 0;
-    },
+  const childReorderParent = createMemo(() => {
+    const ctrl = props.arrayReorderController;
+    if (!ctrl) return undefined;
+    return ctrl.createParent({
+      path: () => props.path,
+      root: () => props.root(),
+      onCommit: (next) => props.onCommit(next),
+      onFocusPath: (path) => props.onFocusPath(path),
+      isArray: () => typeName() === 'array',
+      length: () => {
+        const v = value();
+        return Array.isArray(v) ? v.length : 0;
+      },
+    });
   });
 
-  /** Item-side UI for when *this* node is an array element. */
-  const itemReorderUi = reorderController.createItemUi(
-    () => props.arrayReorder,
-  );
+  /** Item-side UI for when *this* node is an array element (if DnD enabled). */
+  const itemReorderUi = createMemo(() => {
+    const ctrl = props.arrayReorderController;
+    if (!ctrl) return undefined;
+    return ctrl.createItemUi(() => props.arrayReorder);
+  });
 
   /**
    * Primitive keys (string | number) so Solid <For> reconciles by value and
@@ -199,9 +204,23 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     props.path.length > 0 &&
     typeof props.path[props.path.length - 1] === 'number';
 
-  /** True when at least one direct child is an object/array. */
+  /**
+   * Expand is useful when a direct child container is still collapsed.
+   * (Matches expandChildren — one level only.)
+   */
   const canExpandChildren = () =>
-    collectChildContainerPathKeys(props.root(), props.path).length > 0;
+    collectChildContainerPaths(props.root(), props.path).some(
+      (p) => !props.isExpanded(p),
+    );
+
+  /**
+   * Collapse is useful when any nested container under this path is open.
+   * (Matches collapseChildren — all descendants, self stays open.)
+   */
+  const canCollapseChildren = () =>
+    collectDescendantContainerPaths(props.root(), props.path).some((p) =>
+      props.isExpanded(p),
+    );
 
   const tabIndex = () =>
     pathKey(props.path) === props.focusedPathKey() ? 0 : -1;
@@ -215,7 +234,9 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     const t = e.target;
     if (!(t instanceof Element)) return;
     if (t.closest('button, input, select, textarea, a, label')) return;
-    if (t.closest(itemReorderUi.handleSelector)) return;
+    // Hardcoded (same class as the grip in JSX) — avoids a shared runtime
+    // constant module with /dnd just for this selector string.
+    if (t.closest('.json-tree-drag-handle')) return;
     // Defer so we don't fight focus moves into nested controls.
     const item = (e.currentTarget as HTMLElement).closest(
       '[role="treeitem"]',
@@ -240,27 +261,27 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
       class="json-tree-node"
       classList={{
         'json-tree-node--root': !!props.isRoot,
-        ...itemReorderUi.nodeClassList(),
+        ...(itemReorderUi()?.nodeClassList() ?? {}),
       }}
       role="treeitem"
       aria-expanded={isContainer() ? open() : undefined}
       data-path={pathDomId(props.path)}
       tabIndex={tabIndex()}
       onFocusIn={onTreeItemFocusIn}
-      onDragOver={itemReorderUi.onNodeDragOver}
-      onDrop={itemReorderUi.onNodeDrop}
+      onDragOver={itemReorderUi()?.onNodeDragOver}
+      onDrop={itemReorderUi()?.onNodeDrop}
     >
       <div class="json-tree-row" part="row" onMouseDown={onRowMouseDown}>
-        <Show when={itemReorderUi.canDrag()}>
+        <Show when={itemReorderUi()?.canDrag()}>
           <span
             class="json-tree-drag-handle"
             part="drag-handle"
             draggable={true}
             title="Drag to reorder"
             aria-label="Drag to reorder"
-            onDragStart={itemReorderUi.onHandleDragStart}
-            onDragEnd={itemReorderUi.onHandleDragEnd}
-            onMouseDown={itemReorderUi.onHandleMouseDown}
+            onDragStart={itemReorderUi()!.onDragStart}
+            onDragEnd={itemReorderUi()!.onDragEnd}
+            onMouseDown={itemReorderUi()!.onMouseDown}
           >
             ⋮⋮
           </span>
@@ -373,7 +394,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 class="json-tree-add-row__btn"
                 part="action"
                 title="Collapse nested objects and arrays"
-                disabled={!canExpandChildren()}
+                disabled={!canCollapseChildren()}
                 onClick={() => props.onCollapseChildren(props.path)}
               >
                 collapse
@@ -442,7 +463,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 }
                 arrayReorder={
                   typeof key === 'number'
-                    ? childReorderParent.forChild(key)
+                    ? childReorderParent()?.forChild(key)
                     : undefined
                 }
                 arrayReorderController={props.arrayReorderController}

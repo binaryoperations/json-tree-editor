@@ -21,6 +21,37 @@ export function collectContainerPathKeys(value: unknown): string[] {
 }
 
 /**
+ * Paths of container nodes that are **direct children** of `parentPath`.
+ * Does not include the parent itself. Empty when the parent is missing or not
+ * a container, or when no child is an object/array.
+ */
+export function collectChildContainerPaths(
+  root: unknown,
+  parentPath: JsonPath,
+): JsonPath[] {
+  const parent = getAtPath(root, parentPath);
+  if (!isJsonContainer(parent)) return [];
+
+  const paths: JsonPath[] = [];
+  if (Array.isArray(parent)) {
+    for (let i = 0; i < parent.length; i += 1) {
+      if (isJsonContainer(parent[i])) {
+        paths.push([...parentPath, i]);
+      }
+    }
+    return paths;
+  }
+
+  const obj = parent as Record<string, unknown>;
+  for (const k of Object.keys(obj)) {
+    if (isJsonContainer(obj[k])) {
+      paths.push([...parentPath, k]);
+    }
+  }
+  return paths;
+}
+
+/**
  * Path keys for container nodes that are **direct children** of `parentPath`.
  * Does not include the parent itself. Empty when the parent is missing or not
  * a container, or when no child is an object/array.
@@ -29,45 +60,24 @@ export function collectChildContainerPathKeys(
   root: unknown,
   parentPath: JsonPath,
 ): string[] {
-  const parent = getAtPath(root, parentPath);
-  if (!isJsonContainer(parent)) return [];
-
-  const keys: string[] = [];
-  if (Array.isArray(parent)) {
-    for (let i = 0; i < parent.length; i += 1) {
-      const child = parent[i];
-      if (isJsonContainer(child)) {
-        keys.push(pathKey([...parentPath, i]));
-      }
-    }
-    return keys;
-  }
-
-  const obj = parent as Record<string, unknown>;
-  for (const k of Object.keys(obj)) {
-    const child = obj[k];
-    if (isJsonContainer(child)) {
-      keys.push(pathKey([...parentPath, k]));
-    }
-  }
-  return keys;
+  return collectChildContainerPaths(root, parentPath).map(pathKey);
 }
 
 /**
- * Path keys for every container in the subtree at `path` (DFS), including the
+ * Paths for every container in the subtree at `path` (DFS), including the
  * node at `path` when it is a container. Empty when the value is missing or a
  * primitive.
  */
-export function collectSubtreeContainerPathKeys(
+export function collectSubtreeContainerPaths(
   root: unknown,
   path: JsonPath,
-): string[] {
+): JsonPath[] {
   const value = path.length === 0 ? root : getAtPath(root, path);
-  const keys: string[] = [];
+  const paths: JsonPath[] = [];
 
   const walk = (v: unknown, p: JsonPath): void => {
     if (!isJsonContainer(v)) return;
-    keys.push(pathKey(p));
+    paths.push(p);
     if (Array.isArray(v)) {
       for (let i = 0; i < v.length; i += 1) {
         walk(v[i], [...p, i]);
@@ -81,7 +91,32 @@ export function collectSubtreeContainerPathKeys(
   };
 
   walk(value, path);
-  return keys;
+  return paths;
+}
+
+/**
+ * Path keys for every container in the subtree at `path` (DFS), including the
+ * node at `path` when it is a container. Empty when the value is missing or a
+ * primitive.
+ */
+export function collectSubtreeContainerPathKeys(
+  root: unknown,
+  path: JsonPath,
+): string[] {
+  return collectSubtreeContainerPaths(root, path).map(pathKey);
+}
+
+/**
+ * Container paths under `path` **excluding** `path` itself (nested only).
+ * Used for collapse enablement: any expanded descendant can be collapsed.
+ */
+export function collectDescendantContainerPaths(
+  root: unknown,
+  path: JsonPath,
+): JsonPath[] {
+  return collectSubtreeContainerPaths(root, path).filter(
+    (p) => p.length > path.length,
+  );
 }
 
 /** Default expanded set: only the root container is open. */

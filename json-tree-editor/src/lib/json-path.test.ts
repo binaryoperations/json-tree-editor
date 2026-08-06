@@ -7,8 +7,11 @@ import {
   addShapedPropertyAtPath,
   cloneJsonShape,
   collectChildContainerPathKeys,
+  collectChildContainerPaths,
   collectContainerPathKeys,
+  collectDescendantContainerPaths,
   collectSubtreeContainerPathKeys,
+  collectSubtreeContainerPaths,
   collectVisiblePaths,
   convertJsonType,
   defaultExpandedPaths,
@@ -140,6 +143,26 @@ describe('collectChildContainerPathKeys / collectSubtreeContainerPathKeys', () =
     expect(collectSubtreeContainerPathKeys(doc, [])).toEqual(
       collectContainerPathKeys(doc),
     );
+  });
+
+  it('lists child / subtree / descendant as JsonPath arrays', () => {
+    expect(collectChildContainerPaths(doc, [])).toEqual([['nest'], ['list']]);
+    expect(collectSubtreeContainerPaths(doc, ['nest'])).toEqual([
+      ['nest'],
+      ['nest', 'deep'],
+    ]);
+    // Descendants exclude self
+    expect(collectDescendantContainerPaths(doc, ['nest'])).toEqual([
+      ['nest', 'deep'],
+    ]);
+    expect(collectDescendantContainerPaths(doc, [])).toEqual([
+      ['nest'],
+      ['nest', 'deep'],
+      ['list'],
+      ['list', 0],
+      ['list', 2],
+    ]);
+    expect(collectDescendantContainerPaths(doc, ['a'])).toEqual([]);
   });
 });
 

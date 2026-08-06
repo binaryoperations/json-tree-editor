@@ -35,6 +35,12 @@
       "import": "./src/utils.ts",
       "default": "./src/utils.ts"
     },
+    "./dnd": {
+      "types": "./src/dnd.ts",
+      "solid": "./src/dnd.ts",
+      "import": "./src/dnd.ts",
+      "default": "./src/dnd.ts"
+    },
     "./web-component": {
       "types": "./dist/web-component.d.ts",
       "import": "./dist/web-component.js",

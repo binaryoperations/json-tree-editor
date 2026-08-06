@@ -8,7 +8,6 @@ const libSrc = resolve(__dirname, '../json-tree-editor/src');
 export default defineConfig({
   plugins: [solid()],
   server: {
-    port: 5176,
     strictPort: false,
   },
   build: {

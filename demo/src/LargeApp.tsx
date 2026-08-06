@@ -3,6 +3,7 @@ import {
   type ExpandProgress,
   type JsonTreeViewHandle,
 } from '../../json-tree-editor/src';
+import { HTML5_ARRAY_REORDER } from '../../json-tree-editor/src/dnd';
 import {
   parseJsonSource,
   type JsonValidity,
@@ -192,6 +193,7 @@ export const LargeApp: Component = () => {
               }}
               value={source()}
               onChange={onTreeChange}
+              arrayReorder={HTML5_ARRAY_REORDER}
               onExpandProgress={setExpandProgress}
               onExpand={(keys) => setExpandedCount(keys.size)}
               onCollapse={(keys) => setExpandedCount(keys.size)}

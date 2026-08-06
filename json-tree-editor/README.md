@@ -23,8 +23,9 @@ npm install solid-js
 | Import | What you get |
 | --- | --- |
 | `@binaryoperations/json-tree-editor` | `JsonTreeView` + `JsonTreeViewProps` only (peer `solid-js`) |
+| `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, path move helpers) — opt-in |
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, type utils, lower-level primitives |
-| `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` custom element (Solid bundled) |
+| `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` custom element (Solid bundled; DnD on) |
 | `@binaryoperations/json-tree-editor/styles.css` | Styles for the Solid path (WC embeds styles in shadow DOM) |
 
 ---
@@ -180,6 +181,7 @@ let tree: JsonTreeViewHandle | undefined;
 | `value` | `string` | yes | JSON document source (parsed internally) |
 | `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent, no trailing whitespace) |
 | `defaultExpandedDepth` | `number` | no | Nesting levels open on mount (`0` = root only, default). `1` opens root + direct child containers, etc. |
+| `arrayReorder` | `ArrayReorderController \| false` | no | Array drag-reorder. Omit / `false` = off. Pass `HTML5_ARRAY_REORDER` from `/dnd` to enable. Reacts to prop changes (no remount needed); keep identity stable during a drag. |
 | `onExpand` | `(keys: Set<string>) => void` | no | Once when `expandAll` finishes (full key set) |
 | `onExpandProgress` | `(p: { done, total } \| null) => void` | no | During `expandAll`; `null` when idle/done/cancelled |
 | `onCollapse` | `(keys: Set<string>) => void` | no | Once when `collapseAll` finishes |
@@ -203,9 +205,26 @@ Keep the source string as document truth: pass it as `value`, push tree edits ba
 - Syntax errors → error banner + previous valid tree (or `{}` if none yet)
 - Tree edits still call `onChange` with pretty JSON so the user can recover from the tree pane
 
+### DnD entry (`@binaryoperations/json-tree-editor/dnd`)
+
+Array reorder is **opt-in** so the core Solid entry stays smaller:
+
+```ts
+import { JsonTreeView } from '@binaryoperations/json-tree-editor';
+import { HTML5_ARRAY_REORDER } from '@binaryoperations/json-tree-editor/dnd';
+
+<JsonTreeView
+  value={source()}
+  onChange={setSource}
+  arrayReorder={HTML5_ARRAY_REORDER}
+/>
+```
+
+Also exports types, factories, and path helpers (`moveArrayItemAtPath`, …) for custom controllers. The web component enables HTML5 DnD by default.
+
 ### Utils entry (`@binaryoperations/json-tree-editor/utils`)
 
-Path helpers (`getAtPath`, `setAtPath`, …), type utilities, parse helpers (`parseJsonSource`, `JsonValidity`), and lower-level primitives (`JsonTreeNode`, editors, badges) are exported from `/utils`. Most apps only need the package root (`JsonTreeView`); use utils when the host needs validity for its own UI or expand-all helpers.
+Path helpers (`getAtPath`, `setAtPath`, …), type utilities, parse helpers (`parseJsonSource`, `JsonValidity`), and lower-level primitives (`JsonTreeNode`, editors) are exported from `/utils`. Most apps only need the package root (`JsonTreeView`); use utils when the host needs validity for its own UI or expand-all helpers.
 
 ---
 
