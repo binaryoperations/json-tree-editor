@@ -109,7 +109,9 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding: 0.5rem 0.55rem 1.25rem;
+  /* No padding here — it fights position:sticky on container rows.
+   * Inset lives on the root node instead (see .json-tree-node--root). */
+  padding: 0;
   font-family: var(
     --jte-font-mono,
     ui-monospace,
@@ -188,8 +190,29 @@
   box-shadow: inset 0 0 0 1px var(--jte-focus-border, #3b82f6);
 }
 
+/* Scroll inset lives on the root node (not the scroller) so sticky
+ * container rows can sit flush at top: 0 without a padding gap. */
+.json-tree-node--root {
+  padding: 0.5rem 0.55rem 1.25rem;
+  box-sizing: border-box;
+}
+
 .json-tree-node--root > .json-tree-row {
   padding-left: 0.15rem;
+}
+
+/*
+ * Sticky container labels (object / array rows).
+ * Constrained by the node box so the header unsticks when the whole
+ * branch scrolls away. Nested depth raises z-index so inner labels
+ * cover outer ones when both are stuck at top: 0.
+ */
+.json-tree-node--container[aria-expanded='true'] > .json-tree-row {
+  position: sticky;
+  top: 0;
+  z-index: calc(5 + var(--jte-depth, 0));
+  background: var(--jte-bg, #0c0e12);
+  border-radius: 0;
 }
 
 .json-tree-row {
@@ -203,6 +226,11 @@
 }
 
 .json-tree-row:hover {
+  background: var(--jte-row-hover, #151922);
+}
+
+/* Sticky rows need an opaque hover fill (not just the transparent default). */
+.json-tree-node--container[aria-expanded='true'] > .json-tree-row:hover {
   background: var(--jte-row-hover, #151922);
 }
 
@@ -247,11 +275,15 @@
   background: var(--jte-surface-2, #1a1f2a);
 }
 
-.json-tree-node--drop-before > .json-tree-row {
+.json-tree-node--drop-before > .json-tree-row,
+.json-tree-node--container[aria-expanded='true'].json-tree-node--drop-before
+  > .json-tree-row {
   box-shadow: inset 0 2px 0 0 var(--jte-focus-border, #3b82f6);
 }
 
-.json-tree-node--drop-after > .json-tree-row {
+.json-tree-node--drop-after > .json-tree-row,
+.json-tree-node--container[aria-expanded='true'].json-tree-node--drop-after
+  > .json-tree-row {
   box-shadow: inset 0 -2px 0 0 var(--jte-focus-border, #3b82f6);
 }
 

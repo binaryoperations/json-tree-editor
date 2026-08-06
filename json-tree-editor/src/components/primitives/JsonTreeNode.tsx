@@ -263,11 +263,13 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
       class="json-tree-node"
       classList={{
         'json-tree-node--root': !!props.isRoot,
+        'json-tree-node--container': isContainer(),
         ...(itemReorderUi()?.nodeClassList() ?? {}),
       }}
       role="treeitem"
       aria-expanded={isContainer() ? open() : undefined}
       data-path={pathDomId(props.path)}
+      style={{ '--jte-depth': String(props.path.length) }}
       tabIndex={tabIndex()}
       onFocusIn={onTreeItemFocusIn}
       onDragOver={itemReorderUi()?.onNodeDragOver}
