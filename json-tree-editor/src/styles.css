@@ -90,10 +90,7 @@
   --jte-line-height: 1.45;
 }
 
-:host([disabled]) {
-  opacity: 0.6;
-  pointer-events: none;
-}
+/* readOnly = browseable read-only tree; do not dim or block pointer (expand still works). */
 
 .json-tree {
   height: 100%;
@@ -436,11 +433,11 @@
   padding: 0.15rem 0.4rem;
 }
 
-.json-tree-input:hover {
+.json-tree-input:hover:not(.json-tree-input--readonly):not(:disabled) {
   border-color: var(--jte-border-hover, #3a4254);
 }
 
-.json-tree-input:focus {
+.json-tree-input:focus:not(.json-tree-input--readonly) {
   outline: none;
   border-color: var(--jte-focus-border, #3b82f6);
   box-shadow: 0 0 0 2px var(--jte-focus-glow-soft, rgba(59, 130, 246, 0.25));
@@ -461,6 +458,20 @@
   width: auto;
   max-width: 6rem;
   cursor: pointer;
+}
+
+.json-tree-input--readonly {
+  display: inline-block;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0.12rem 0.3rem;
+  cursor: default;
+  user-select: text;
+  max-width: 24rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .json-tree-null {

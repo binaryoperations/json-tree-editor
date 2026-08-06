@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expand / collapse toolbar buttons enable from live expand state (not only structure).
 - Removed global expand-all / collapse-all; use per-container expand / collapse on open objects and arrays.
 - Web component: `arrayReorder` property / `array-reorder` attribute (default on).
-- Solid **`disabled`** prop on `JsonTreeView` (read-only: browse/expand still work; no mutations).
+- Solid **`readOnly`** prop on `JsonTreeView` (browse/expand still work; no mutations). Web component: property `readOnly` / attribute `readonly`.
 
 ### New Exports
 

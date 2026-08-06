@@ -11,7 +11,7 @@
  *   - attribute `value` — optional; reflected only for small values
  *   - property/attribute `default-expanded-depth` / `defaultExpandedDepth`
  *     (number, default `0` = root open only)
- *   - property/attribute `disabled` — blocks pointer edits
+ *   - property/attribute `readOnly` / `readonly` — browseable read-only tree
  *   - property/attribute `array-reorder` / `arrayReorder` — array drag-and-drop
  *     (boolean, default `true`)
  *   - method `getRoot()` — `.json-tree` in shadow DOM
@@ -40,7 +40,7 @@ export type JsonTreeEditorElement = InstanceType<typeof JsonTreeEditor>;
 
 type HostBridge = {
   setValue: (next: string) => void;
-  setDisabled: (next: boolean) => void;
+  setReadOnly: (next: boolean) => void;
   setArrayReorder: (next: boolean) => void;
   getRoot: () => HTMLDivElement | null;
 };
@@ -53,11 +53,11 @@ function parseDepth(raw: unknown): number {
 
 class JsonTreeEditor extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['value', 'disabled', 'default-expanded-depth', 'array-reorder'];
+    return ['value', 'readonly', 'default-expanded-depth', 'array-reorder'];
   }
 
   #value = '';
-  #disabled = false;
+  #readOnly = false;
   #defaultExpandedDepth = 0;
   /** Array drag-and-drop; default on for the WC surface. */
   #arrayReorder = true;
@@ -79,18 +79,18 @@ class JsonTreeEditor extends HTMLElement {
     this.#syncValueAttribute(str);
   }
 
-  get disabled(): boolean {
-    return this.#disabled;
+  get readOnly(): boolean {
+    return this.#readOnly;
   }
 
-  set disabled(next: boolean) {
+  set readOnly(next: boolean) {
     const flag = Boolean(next);
-    if (flag === this.#disabled) return;
-    this.#disabled = flag;
-    this.#bridge?.setDisabled(flag);
+    if (flag === this.#readOnly) return;
+    this.#readOnly = flag;
+    this.#bridge?.setReadOnly(flag);
     this.#reflecting = true;
-    if (flag) this.setAttribute('disabled', '');
-    else this.removeAttribute('disabled');
+    if (flag) this.setAttribute('readonly', '');
+    else this.removeAttribute('readonly');
     this.#reflecting = false;
   }
 
@@ -139,7 +139,7 @@ class JsonTreeEditor extends HTMLElement {
       const attr = this.getAttribute('value');
       if (attr != null) this.#value = attr;
     }
-    this.#disabled = this.hasAttribute('disabled');
+    this.#readOnly = this.hasAttribute('readonly');
     // Presence of attribute with value "false" disables; missing attribute keeps default true.
     if (this.hasAttribute('array-reorder')) {
       this.#arrayReorder = this.getAttribute('array-reorder') !== 'false';
@@ -174,25 +174,25 @@ class JsonTreeEditor extends HTMLElement {
 
     const host = this;
     const initialValue = this.#value;
-    const initialDisabled = this.#disabled;
+    const initialReadOnly = this.#readOnly;
     const initialDepth = this.#defaultExpandedDepth;
     const initialArrayReorder = this.#arrayReorder;
 
     this.#dispose = render(() => {
       const [value, setValue] = createSignal(initialValue);
-      const [disabled, setDisabled] = createSignal(initialDisabled);
+      const [readOnly, setReadOnly] = createSignal(initialReadOnly);
       const [arrayReorder, setArrayReorder] = createSignal(initialArrayReorder);
       let treeHandle: JsonTreeViewHandle | undefined;
 
       host.#bridge = {
         setValue: (next) => setValue(next),
-        setDisabled: (next) => setDisabled(next),
+        setReadOnly: (next) => setReadOnly(next),
         setArrayReorder: (next) => setArrayReorder(next),
         getRoot: () => treeHandle?.getRoot() ?? null,
       };
 
       const onChange = (pretty: string) => {
-        if (disabled()) return;
+        if (readOnly()) return;
         if (pretty === host.#value) return;
         host.#value = pretty;
         setValue(pretty);
@@ -214,7 +214,7 @@ class JsonTreeEditor extends HTMLElement {
             value={value()}
             onChange={onChange}
             defaultExpandedDepth={initialDepth}
-            disabled={disabled()}
+            readOnly={readOnly()}
             arrayReorder={arrayReorder() ? HTML5_ARRAY_REORDER : false}
           />
         </div>
@@ -242,11 +242,11 @@ class JsonTreeEditor extends HTMLElement {
       this.#bridge?.setValue(str);
       return;
     }
-    if (name === 'disabled') {
+    if (name === 'readonly') {
       const flag = next != null;
-      if (flag === this.#disabled) return;
-      this.#disabled = flag;
-      this.#bridge?.setDisabled(flag);
+      if (flag === this.#readOnly) return;
+      this.#readOnly = flag;
+      this.#bridge?.setReadOnly(flag);
       return;
     }
     if (name === 'array-reorder') {

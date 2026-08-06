@@ -89,7 +89,7 @@ el.addEventListener('change', (event) => {
 | Attribute `value` | `string` | Optional; reflected only when length ≤ ~8KB |
 | Property `defaultExpandedDepth` | `number` | Nesting levels open on mount (`0` = root only). Default `0` |
 | Attribute `default-expanded-depth` | number string | Optional; e.g. `default-expanded-depth="1"` |
-| Property / attribute `disabled` | `boolean` | Read-only tree (browse/expand only; no mutations) |
+| Property / attribute `readOnly` / `readonly` | `boolean` | Read-only tree (browse/expand only; no mutations) |
 | Property / attribute `arrayReorder` / `array-reorder` | `boolean` | Array drag-and-drop (default `true`). Set `false` / `array-reorder="false"` to disable |
 | Method `getRoot()` | `HTMLDivElement \| null` | The `.json-tree` element in shadow DOM |
 | Event `change` | `CustomEvent<{ value: string }>` | Fired after a tree edit with pretty-printed JSON |
@@ -139,7 +139,7 @@ export function JsonPanel() {
 | `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent, no trailing whitespace) |
 | `defaultExpandedDepth` | `number` | no | Nesting levels open on mount (`0` = root only, default). `1` opens root + direct child containers, etc. |
 | `arrayReorder` | `ArrayReorderController \| false` | no | Array drag-reorder. Omit / `false` = off. Pass `HTML5_ARRAY_REORDER` from `/dnd` to enable. Reacts to prop changes (no remount needed); keep identity stable during a drag. |
-| `disabled` | `boolean` | no | Read-only: no edits/add/delete/reorder; expand, collapse, and navigation still work. |
+| `readOnly` | `boolean` | no | Read-only: no edits/add/delete/reorder; expand, collapse, and navigation still work. |
 
 ### `JsonTreeView` ref handle
 

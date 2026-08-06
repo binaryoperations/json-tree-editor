@@ -1,4 +1,4 @@
-import { type Component, For } from 'solid-js';
+import { type Component, For, Show } from 'solid-js';
 
 import type { JsonTypeName } from '../../lib/json-path';
 
@@ -23,6 +23,8 @@ export type TypeSelectProps = {
    * Pass {@link ROOT_JSON_TYPES} for the document root.
    */
   allowedTypes?: readonly JsonTypeName[];
+  /** When true, show type as a static badge (no select). */
+  disabled?: boolean;
 };
 
 /**
@@ -32,20 +34,34 @@ export const TypeSelect: Component<TypeSelectProps> = (props) => {
   const options = () => props.allowedTypes ?? ALL_JSON_TYPES;
 
   return (
-    <select
-      class="json-tree-type json-tree-type-select"
-      classList={{ [`json-tree-type--${props.type}`]: true }}
-      part="type"
-      title="Change type"
-      aria-label="JSON type"
-      value={props.type}
-      onChange={(e) => {
-        props.onChange(e.currentTarget.value as JsonTypeName);
-      }}
+    <Show
+      when={!props.disabled}
+      fallback={
+        <span
+          class="json-tree-type"
+          classList={{ [`json-tree-type--${props.type}`]: true }}
+          part="type"
+          aria-label={`JSON type: ${props.type}`}
+        >
+          {props.type}
+        </span>
+      }
     >
-      <For each={[...options()]}>
-        {(t) => <option value={t}>{t}</option>}
-      </For>
-    </select>
+      <select
+        class="json-tree-type json-tree-type-select"
+        classList={{ [`json-tree-type--${props.type}`]: true }}
+        part="type"
+        title="Change type"
+        aria-label="JSON type"
+        value={props.type}
+        onChange={(e) => {
+          props.onChange(e.currentTarget.value as JsonTypeName);
+        }}
+      >
+        <For each={[...options()]}>
+          {(t) => <option value={t}>{t}</option>}
+        </For>
+      </select>
+    </Show>
   );
 };

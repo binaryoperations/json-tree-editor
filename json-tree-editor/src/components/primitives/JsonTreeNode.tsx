@@ -64,6 +64,8 @@ export type JsonTreeNodeProps = {
    * Rebuilds parent/item sessions when the controller identity changes.
    */
   arrayReorderController?: ArrayReorderController;
+  /** Read-only: no edits; expand/collapse still work. */
+  readOnly?: boolean;
 };
 
 export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
@@ -309,7 +311,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
         </Show>
 
         <Show
-          when={!props.isRoot && !isArrayIndex()}
+          when={!props.isRoot && !isArrayIndex() && !props.readOnly}
           fallback={
             <span
               class="json-tree-key"
@@ -336,6 +338,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           type={typeName()}
           onChange={changeType}
           allowedTypes={props.isRoot ? ROOT_JSON_TYPES : undefined}
+          disabled={props.readOnly}
         />
 
         <Show when={isContainer()}>
@@ -345,33 +348,39 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
         </Show>
 
         <Show when={!isContainer()}>
-          <PrimitiveEditor value={value()} onCommit={setValue} />
+          <PrimitiveEditor
+            value={value()}
+            onCommit={setValue}
+            readOnly={props.readOnly}
+          />
         </Show>
 
-        <div class="json-tree-actions" part="actions">
-          <Show when={!props.isRoot && isContainer()}>
-            <button
-              type="button"
-              class="json-tree-action"
-              part="action"
-              title="Duplicate"
-              onClick={duplicateSelf}
-            >
-              duplicate
-            </button>
-          </Show>
-          <Show when={!props.isRoot}>
-            <button
-              type="button"
-              class="json-tree-action json-tree-action--danger"
-              part="action"
-              title="Delete"
-              onClick={remove}
-            >
-              ×
-            </button>
-          </Show>
-        </div>
+        <Show when={!props.readOnly}>
+          <div class="json-tree-actions" part="actions">
+            <Show when={!props.isRoot && isContainer()}>
+              <button
+                type="button"
+                class="json-tree-action"
+                part="action"
+                title="Duplicate"
+                onClick={duplicateSelf}
+              >
+                duplicate
+              </button>
+            </Show>
+            <Show when={!props.isRoot}>
+              <button
+                type="button"
+                class="json-tree-action json-tree-action--danger"
+                part="action"
+                title="Delete"
+                onClick={remove}
+              >
+                ×
+              </button>
+            </Show>
+          </div>
+        </Show>
       </div>
 
       <Show when={isContainer() && open()}>
@@ -400,42 +409,44 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 collapse
               </button>
             </div>
-            <div class="json-tree-add-row__right">
-              <Show when={typeName() === 'object'}>
+            <Show when={!props.readOnly}>
+              <div class="json-tree-add-row__right">
+                <Show when={typeName() === 'object'}>
+                  <button
+                    type="button"
+                    class="json-tree-add-row__btn"
+                    part="action"
+                    title="Add property"
+                    onClick={addProperty}
+                  >
+                    + key
+                  </button>
+                </Show>
+                <Show when={typeName() === 'array'}>
+                  <button
+                    type="button"
+                    class="json-tree-add-row__btn"
+                    part="action"
+                    title="Add item"
+                    onClick={addItem}
+                  >
+                    + item
+                  </button>
+                </Show>
                 <button
                   type="button"
-                  class="json-tree-add-row__btn"
+                  class="json-tree-add-row__btn json-tree-add-row__btn--danger"
                   part="action"
-                  title="Add property"
-                  onClick={addProperty}
+                  title={
+                    typeName() === 'array' ? 'Clear array' : 'Clear object'
+                  }
+                  disabled={childKeys().length === 0}
+                  onClick={emptyContainer}
                 >
-                  + key
+                  clear
                 </button>
-              </Show>
-              <Show when={typeName() === 'array'}>
-                <button
-                  type="button"
-                  class="json-tree-add-row__btn"
-                  part="action"
-                  title="Add item"
-                  onClick={addItem}
-                >
-                  + item
-                </button>
-              </Show>
-              <button
-                type="button"
-                class="json-tree-add-row__btn json-tree-add-row__btn--danger"
-                part="action"
-                title={
-                  typeName() === 'array' ? 'Clear array' : 'Clear object'
-                }
-                disabled={childKeys().length === 0}
-                onClick={emptyContainer}
-              >
-                clear
-              </button>
-            </div>
+              </div>
+            </Show>
           </div>
 
           <For each={childKeys()}>
@@ -452,12 +463,15 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 onCommit={props.onCommit}
                 focusedPathKey={props.focusedPathKey}
                 onFocusPath={props.onFocusPath}
+                readOnly={props.readOnly}
                 autoEditKey={
-                  typeof key === 'string' && pendingEditKey() === key
+                  typeof key === 'string' &&
+                  !props.readOnly &&
+                  pendingEditKey() === key
                 }
                 onAutoEditKeyStart={() => setPendingEditKey(null)}
                 onRequestEditKey={
-                  typeName() === 'object'
+                  typeName() === 'object' && !props.readOnly
                     ? (k) => setPendingEditKey(k)
                     : undefined
                 }

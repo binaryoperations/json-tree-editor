@@ -60,7 +60,7 @@ export type JsonTreeViewProps = {
    * When true, the tree is read-only: no value/key/type edits, add/delete, or
    * drag-reorder. Expand/collapse and keyboard navigation still work.
    */
-  disabled?: boolean;
+  readOnly?: boolean;
   /** Solid component ref (function form recommended). */
   ref?: JsonTreeViewHandle | ((handle: JsonTreeViewHandle) => void);
 };
@@ -258,7 +258,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   const commit = (nextRoot: unknown) => {
-    if (props.disabled) return;
+    if (props.readOnly) return;
     emitPretty(nextRoot, props.onChange);
   };
 
@@ -313,7 +313,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   const onTreeKeyDown = (e: KeyboardEvent) => {
-    // Allow navigation/expand when disabled; skip only if typing in an editor.
+    // Allow navigation/expand when read-only; skip only if typing in an editor.
     if (isEditableTarget(e.target)) return;
 
     const key = e.key;
@@ -432,7 +432,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
         part="scroll"
         role="tree"
         aria-label="JSON tree"
-        aria-readonly={props.disabled ? 'true' : undefined}
+        aria-readonly={props.readOnly ? 'true' : undefined}
         ref={(el) => {
           treeScrollEl = el;
         }}
@@ -451,9 +451,9 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
           onCommit={commit}
           focusedPathKey={focusedPathKey}
           onFocusPath={onFocusPath}
-          disabled={props.disabled}
+          readOnly={props.readOnly}
           arrayReorderController={
-            props.disabled ? undefined : props.arrayReorder || undefined
+            props.readOnly ? undefined : props.arrayReorder || undefined
           }
         />
       </div>
