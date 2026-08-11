@@ -1,9 +1,12 @@
 import { type Component, createSignal, Show } from 'solid-js';
 
 import { parseNullEditorDraft } from '../../lib/json-path';
+import { HighlightText } from './HighlightText';
 
 export type NullEditorProps = {
   onCommit: (next: unknown) => void;
+  highlightQuery?: string;
+  activeHighlight?: boolean;
 };
 
 /**
@@ -46,7 +49,11 @@ export const NullEditor: Component<NullEditorProps> = (props) => {
           onFocus={open}
           onClick={open}
         >
-          null
+          <HighlightText
+            text="null"
+            query={props.highlightQuery ?? ''}
+            active={props.activeHighlight}
+          />
         </button>
       }
     >

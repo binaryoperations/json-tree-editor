@@ -91,6 +91,7 @@ el.addEventListener('change', (event) => {
 | Attribute `default-expanded-depth` | number string | Optional; e.g. `default-expanded-depth="1"` |
 | Property / attribute `readOnly` / `readonly` | `boolean` | Read-only tree (browse/expand only; no mutations) |
 | Property / attribute `arrayReorder` / `array-reorder` | `boolean` | Array drag-and-drop (default `true`). Set `false` / `array-reorder="false"` to disable |
+| Property / attribute `search` | `boolean` | In-tree find (Cmd/Ctrl+F; default `true`). Set `false` / `search="false"` to disable |
 | Method `getRoot()` | `HTMLDivElement \| null` | The `.json-tree` element in shadow DOM |
 | Event `change` | `CustomEvent<{ value: string }>` | Fired after a tree edit with pretty-printed JSON |
 | Event `json-change` | same as `change` | Extra alias for hosts that prefer a namespaced event |
@@ -140,6 +141,7 @@ export function JsonPanel() {
 | `defaultExpandedDepth` | `number` | no | Nesting levels open on mount (`0` = root only, default). `1` opens root + direct child containers, etc. |
 | `arrayReorder` | `ArrayReorderController \| false` | no | Array drag-reorder. Omit / `false` = off. Pass `HTML5_ARRAY_REORDER` from `/dnd` to enable. Reacts to prop changes (no remount needed); keep identity stable during a drag. |
 | `readOnly` | `boolean` | no | Read-only: no edits/add/delete/reorder; expand, collapse, and navigation still work. |
+| `search` | `boolean` | no | In-tree search (Cmd/Ctrl+F). Default `true`. Set `false` to disable the find bar and shortcut. |
 
 ### `JsonTreeView` ref handle
 

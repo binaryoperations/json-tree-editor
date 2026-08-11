@@ -3,6 +3,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  onCleanup,
   Show,
 } from 'solid-js';
 
@@ -23,8 +24,15 @@ import {
   parseJsonSource,
   stringifyJsonDocument,
 } from '../../lib/parse-json';
+import {
+  ancestorPathKeys,
+  collectSearchMatches,
+  type SearchMatch,
+} from '../../lib/search';
+import { scrollTreeItemIntoView } from '../../lib/scroll-into-view';
 import type { ArrayReorderController } from './array-reorder';
 import { JsonTreeNode } from './JsonTreeNode';
+import { TreeSearchBar } from './TreeSearchBar';
 
 /** Imperative handle exposed via Solid `ref` on {@link JsonTreeView}. */
 export type JsonTreeViewHandle = {
@@ -61,9 +69,16 @@ export type JsonTreeViewProps = {
    * drag-reorder. Expand/collapse and keyboard navigation still work.
    */
   readOnly?: boolean;
+  /**
+   * In-tree search (Cmd/Ctrl+F). Default `true`. Set `false` to disable the
+   * shortcut, find bar, and match highlighting.
+   */
+  search?: boolean;
   /** Solid component ref (function form recommended). */
   ref?: JsonTreeViewHandle | ((handle: JsonTreeViewHandle) => void);
 };
+
+const SEARCH_DEBOUNCE_MS = 200;
 
 function emitPretty(value: unknown, onChange: (s: string) => void): void {
   // No trailing whitespace / newline — keep source clean for hosts that round-trip.
@@ -126,6 +141,7 @@ function initialExpandedFromProps(
  * Keyboard (ARIA tree-style, when focus is not in an input/select/textarea):
  * ArrowUp/Down move among visible rows; ArrowRight expands or enters a child;
  * ArrowLeft collapses or moves to the parent; Home/End jump to first/last row.
+ * Ctrl/Cmd+F opens in-tree search (keys + values).
  */
 export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   const [internalExpanded, setInternalExpanded] = createSignal<Set<string>>(
@@ -142,8 +158,17 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     null,
   );
 
+  const [searchOpen, setSearchOpen] = createSignal(false);
+  const [searchDraft, setSearchDraft] = createSignal('');
+  const [searchQuery, setSearchQuery] = createSignal('');
+  const [activeMatchIndex, setActiveMatchIndex] = createSignal(0);
+
   let treeRootEl: HTMLDivElement | undefined;
   let treeScrollEl: HTMLDivElement | undefined;
+  let searchInputEl: HTMLInputElement | undefined;
+
+  /** Search is on by default; only an explicit `search={false}` disables it. */
+  const searchEnabled = () => props.search !== false;
 
   const validity = createMemo(() => parseJsonSource(props.value));
 
@@ -152,6 +177,16 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     if (v.ok) {
       setLastGoodRoot(v.value);
     }
+  });
+
+  // Tear down find UI if the host disables search while it is open.
+  createEffect(() => {
+    if (searchEnabled()) return;
+    if (!searchOpen() && !searchDraft() && !searchQuery()) return;
+    setSearchOpen(false);
+    setSearchDraft('');
+    setSearchQuery('');
+    setActiveMatchIndex(0);
   });
 
   /**
@@ -181,6 +216,49 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   createEffect(() => {
     assignRef(props.ref, handle);
   });
+
+  // Debounce search draft → applied query.
+  createEffect(() => {
+    const draft = searchDraft();
+    const timer = window.setTimeout(() => {
+      setSearchQuery(draft);
+      setActiveMatchIndex(0);
+    }, SEARCH_DEBOUNCE_MS);
+    onCleanup(() => window.clearTimeout(timer));
+  });
+
+  const matches = createMemo((): SearchMatch[] => {
+    if (!searchEnabled()) return [];
+    return collectSearchMatches(displayRoot(), searchQuery());
+  });
+
+  // Auto-expand ancestors of every match so highlights are visible.
+  createEffect(() => {
+    const list = matches();
+    if (list.length === 0) return;
+    const keys: string[] = [];
+    for (const m of list) {
+      keys.push(...ancestorPathKeys(m.path));
+    }
+    expandPathKeys(keys);
+  });
+
+  // Clamp active index when match list shrinks.
+  createEffect(() => {
+    const n = matches().length;
+    if (n === 0) {
+      if (activeMatchIndex() !== 0) setActiveMatchIndex(0);
+      return;
+    }
+    if (activeMatchIndex() >= n) setActiveMatchIndex(0);
+  });
+
+  const activeMatch = (): SearchMatch | null => {
+    const list = matches();
+    if (list.length === 0) return null;
+    const i = activeMatchIndex();
+    return list[i] ?? list[0] ?? null;
+  };
 
   const isExpanded = (path: JsonPath) => expanded().has(pathKey(path));
 
@@ -273,6 +351,22 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     return null;
   };
 
+  /**
+   * Scroll a treeitem into the scroller viewport, clearing sticky parent
+   * headers (`top: 0` container rows). Falls back to native scrollIntoView
+   * only when the scroller ref is missing.
+   */
+  const scrollItemIntoView = (item: HTMLElement) => {
+    const scroller = treeScrollEl;
+    if (scroller) {
+      scrollTreeItemIntoView(scroller, item);
+      return;
+    }
+    if (typeof item.scrollIntoView === 'function') {
+      item.scrollIntoView({ block: 'nearest' });
+    }
+  };
+
   const focusPath = (path: JsonPath) => {
     setFocusedPathKey(pathKey(path));
     const tryFocus = (): boolean => {
@@ -281,14 +375,39 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       if (document.activeElement !== item) {
         item.focus({ preventScroll: true });
       }
-      item.scrollIntoView({ block: 'nearest' });
+      scrollItemIntoView(item);
       return true;
     };
     if (!tryFocus()) {
       requestAnimationFrame(() => {
-        if (!tryFocus()) requestAnimationFrame(() => {
-          tryFocus();
-        });
+        if (!tryFocus()) {
+          requestAnimationFrame(() => {
+            tryFocus();
+          });
+        }
+      });
+    }
+  };
+
+  /** After expand/layout, scroll match into view (optionally keep search focused). */
+  const revealPath = (path: JsonPath, opts?: { keepSearchFocus?: boolean }) => {
+    const run = () => {
+      const item = findTreeItem(path);
+      if (!item) return false;
+      setFocusedPathKey(pathKey(path));
+      scrollItemIntoView(item);
+      if (opts?.keepSearchFocus) {
+        focusSearchInput();
+      }
+      return true;
+    };
+    if (!run()) {
+      requestAnimationFrame(() => {
+        if (!run()) {
+          requestAnimationFrame(() => {
+            run();
+          });
+        }
       });
     }
   };
@@ -309,6 +428,98 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       return parsed as JsonPath;
     } catch {
       return null;
+    }
+  };
+
+  const focusSearchInput = () => {
+    const el = searchInputEl;
+    if (!el) return;
+    el.focus();
+    el.select();
+  };
+
+  const openSearch = () => {
+    if (!searchEnabled()) return;
+    setSearchOpen(true);
+    // Focus after the bar mounts.
+    requestAnimationFrame(() => {
+      focusSearchInput();
+    });
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchDraft('');
+    setSearchQuery('');
+    setActiveMatchIndex(0);
+    // Restore focus to the last focused tree row.
+    const k = focusedPathKey();
+    const root = displayRoot();
+    const visible = collectVisiblePaths(root, expanded());
+    const path = visible.find((p) => pathKey(p) === k) ?? visible[0];
+    if (path) {
+      requestAnimationFrame(() => focusPath(path));
+    }
+  };
+
+  const goToMatch = (index: number) => {
+    const list = matches();
+    if (list.length === 0) return;
+    const next = ((index % list.length) + list.length) % list.length;
+    setActiveMatchIndex(next);
+    const m = list[next];
+    // Expand ancestors of this match (also covered by bulk expand effect).
+    expandPathKeys(ancestorPathKeys(m.path));
+    // Double rAF: wait for expand layout, then sticky-aware scroll.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        revealPath(m.path, { keepSearchFocus: true });
+      });
+    });
+  };
+
+  const goNextMatch = () => {
+    const list = matches();
+    if (list.length === 0) return;
+    goToMatch(activeMatchIndex() + 1);
+  };
+
+  const goPrevMatch = () => {
+    const list = matches();
+    if (list.length === 0) return;
+    goToMatch(activeMatchIndex() - 1);
+  };
+
+  // Jump to first match when debounced query yields results (index 0).
+  createEffect(() => {
+    const list = matches();
+    const q = searchQuery().trim();
+    if (!searchOpen() || !q || list.length === 0) return;
+    // Only auto-scroll when index is 0 after a query change (set in debounce).
+    if (activeMatchIndex() !== 0) return;
+    const m = list[0];
+    expandPathKeys(ancestorPathKeys(m.path));
+    // Don't steal focus from the search input — just scroll the row into view.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const item = findTreeItem(m.path);
+        if (item) scrollItemIntoView(item);
+      });
+    });
+  });
+
+  const onTreeRootKeyDown = (e: KeyboardEvent) => {
+    if (!searchEnabled()) return;
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (searchOpen()) {
+        focusSearchInput();
+      } else {
+        openSearch();
+      }
+      return;
     }
   };
 
@@ -407,6 +618,12 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       : 'Showing empty object. Fix JSON syntax in the source editor.';
   };
 
+  const matchCountDisplay = () => {
+    const n = matches().length;
+    if (n === 0) return { active: 0, total: 0 };
+    return { active: activeMatchIndex() + 1, total: n };
+  };
+
   return (
     <div
       class="json-tree"
@@ -414,6 +631,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       ref={(el) => {
         treeRootEl = el;
       }}
+      onKeyDown={onTreeRootKeyDown}
     >
       <Show when={errorMessage()}>
         {(msg) => (
@@ -425,6 +643,21 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
             </Show>
           </div>
         )}
+      </Show>
+
+      <Show when={searchEnabled() && searchOpen()}>
+        <TreeSearchBar
+          value={searchDraft()}
+          onInput={setSearchDraft}
+          activeIndex={matchCountDisplay().active}
+          matchCount={matchCountDisplay().total}
+          onPrev={goPrevMatch}
+          onNext={goNextMatch}
+          onClose={closeSearch}
+          inputRef={(el) => {
+            searchInputEl = el;
+          }}
+        />
       </Show>
 
       <div
@@ -452,6 +685,8 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
           focusedPathKey={focusedPathKey}
           onFocusPath={onFocusPath}
           readOnly={props.readOnly}
+          highlightQuery={searchEnabled() ? searchQuery : undefined}
+          activeMatch={searchEnabled() ? activeMatch : undefined}
           arrayReorderController={
             props.readOnly ? undefined : props.arrayReorder || undefined
           }

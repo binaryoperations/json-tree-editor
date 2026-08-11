@@ -1,10 +1,14 @@
-import { type Component, createEffect, createSignal } from 'solid-js';
+import { type Component, createEffect, createSignal, Show } from 'solid-js';
 
 import { parseCompleteNumber } from '../../lib/json-path';
+import { HighlightText } from './HighlightText';
 
 export type NumberEditorProps = {
   value: number;
   onCommit: (next: number) => void;
+  /** Debounced search query; when set and unfocused, show `<mark>` highlights. */
+  highlightQuery?: string;
+  activeHighlight?: boolean;
 };
 
 /**
@@ -49,28 +53,62 @@ export const NumberEditor: Component<NumberEditorProps> = (props) => {
     setFocused(false);
   };
 
+  const showHighlight = () =>
+    !focused() && (props.highlightQuery?.trim().length ?? 0) > 0;
+
   return (
-    <input
-      class="json-tree-input json-tree-input--number"
-      part="input"
-      type="text"
-      inputMode="decimal"
-      value={draft()}
-      aria-label="Number value"
-      onFocus={() => setFocused(true)}
-      onInput={(e) => {
-        const text = e.currentTarget.value;
-        setDraft(text);
-        // Live-commit only complete numbers; leave draft free for in-progress text.
-        // tryCommit(text, false);
-      }}
-      onBlur={commitDraft}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          (e.currentTarget as HTMLInputElement).blur();
-        }
-      }}
-    />
+    <Show
+      when={showHighlight()}
+      fallback={
+        <input
+          class="json-tree-input json-tree-input--number"
+          part="input"
+          type="text"
+          inputMode="decimal"
+          value={draft()}
+          aria-label="Number value"
+          ref={(el) => {
+            if (focused()) {
+              queueMicrotask(() => el.focus());
+            }
+          }}
+          onFocus={() => setFocused(true)}
+          onInput={(e) => {
+            const text = e.currentTarget.value;
+            setDraft(text);
+            // Live-commit only complete numbers; leave draft free for in-progress text.
+            // tryCommit(text, false);
+          }}
+          onBlur={commitDraft}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              (e.currentTarget as HTMLInputElement).blur();
+            }
+          }}
+        />
+      }
+    >
+      <span
+        class="json-tree-input json-tree-input--number json-tree-input--readonly json-tree-input--search-display"
+        part="value"
+        role="textbox"
+        tabindex={0}
+        aria-label="Number value"
+        onClick={() => setFocused(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setFocused(true);
+          }
+        }}
+      >
+        <HighlightText
+          text={String(props.value)}
+          query={props.highlightQuery ?? ''}
+          active={props.activeHighlight}
+        />
+      </span>
+    </Show>
   );
 };

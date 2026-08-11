@@ -1,5 +1,7 @@
 import { type Component, createEffect, createSignal, Show } from 'solid-js';
 
+import { HighlightText } from './HighlightText';
+
 export type KeyEditorProps = {
   label: string;
   onRename: (newKey: string) => void;
@@ -10,6 +12,10 @@ export type KeyEditorProps = {
   autoEdit?: boolean;
   /** Called once after auto-edit mode is entered so the parent can clear the flag. */
   onAutoEditStart?: () => void;
+  /** Debounced search query for `<mark>` highlights (display mode only). */
+  highlightQuery?: string;
+  /** Stronger mark when this key is the active search match. */
+  activeHighlight?: boolean;
 };
 
 export const KeyEditor: Component<KeyEditorProps> = (props) => {
@@ -59,7 +65,11 @@ export const KeyEditor: Component<KeyEditorProps> = (props) => {
             setEditing(true);
           }}
         >
-          {props.label}
+          <HighlightText
+            text={props.label}
+            query={props.highlightQuery ?? ''}
+            active={props.activeHighlight}
+          />
         </button>
       }
     >

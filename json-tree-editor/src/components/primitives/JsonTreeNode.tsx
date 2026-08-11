@@ -20,10 +20,12 @@ import {
   setAtPath,
   uniqueObjectKey,
 } from '../../lib/json-path';
+import type { SearchMatch } from '../../lib/search';
 import type {
   ArrayReorderBinding,
   ArrayReorderController,
 } from './array-reorder';
+import { HighlightText } from './HighlightText';
 import { KeyEditor } from './KeyEditor';
 import { PrimitiveEditor } from './PrimitiveEditor';
 import { ROOT_JSON_TYPES, TypeSelect } from './TypeSelect';
@@ -66,6 +68,10 @@ export type JsonTreeNodeProps = {
   arrayReorderController?: ArrayReorderController;
   /** Read-only: no edits; expand/collapse still work. */
   readOnly?: boolean;
+  /** Debounced search query for key/value `<mark>` highlights. */
+  highlightQuery?: () => string;
+  /** Currently active search match (for stronger mark + row accent). */
+  activeMatch?: () => SearchMatch | null;
 };
 
 export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
@@ -227,6 +233,26 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
   const tabIndex = () =>
     pathKey(props.path) === props.focusedPathKey() ? 0 : -1;
 
+  const highlightQuery = () => props.highlightQuery?.() ?? '';
+
+  const pathMatchesActive = (field: 'key' | 'value') => {
+    const m = props.activeMatch?.();
+    if (!m || m.field !== field) return false;
+    return pathKey(m.path) === pathKey(props.path);
+  };
+
+  const isSearchActiveRow = () => {
+    const m = props.activeMatch?.();
+    if (!m) return false;
+    return pathKey(m.path) === pathKey(props.path);
+  };
+
+  /** Object keys only — never array indices or root. */
+  const canHighlightKey = () =>
+    !props.isRoot &&
+    props.path.length > 0 &&
+    typeof props.path[props.path.length - 1] === 'string';
+
   const focusRow = () => {
     props.onFocusPath(props.path);
   };
@@ -275,7 +301,12 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
       onDragOver={itemReorderUi()?.onNodeDragOver}
       onDrop={itemReorderUi()?.onNodeDrop}
     >
-      <div class="json-tree-row" part="row" onMouseDown={onRowMouseDown}>
+      <div
+        class="json-tree-row"
+        classList={{ 'json-tree-row--search-active': isSearchActiveRow() }}
+        part="row"
+        onMouseDown={onRowMouseDown}
+      >
         <Show when={itemReorderUi()?.canDrag()}>
           <span
             class="json-tree-drag-handle"
@@ -323,7 +354,16 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 'json-tree-key--index': isArrayIndex(),
               }}
             >
-              {props.keyLabel}
+              <Show
+                when={canHighlightKey()}
+                fallback={props.keyLabel}
+              >
+                <HighlightText
+                  text={props.keyLabel}
+                  query={highlightQuery()}
+                  active={pathMatchesActive('key')}
+                />
+              </Show>
             </span>
           }
         >
@@ -332,6 +372,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
             onRename={renameKey}
             autoEdit={props.autoEditKey}
             onAutoEditStart={props.onAutoEditKeyStart}
+            highlightQuery={highlightQuery()}
+            activeHighlight={pathMatchesActive('key')}
           />
         </Show>
 
@@ -354,6 +396,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
             value={value()}
             onCommit={setValue}
             readOnly={props.readOnly}
+            highlightQuery={highlightQuery()}
+            activeHighlight={pathMatchesActive('value')}
           />
         </Show>
 
@@ -466,6 +510,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 focusedPathKey={props.focusedPathKey}
                 onFocusPath={props.onFocusPath}
                 readOnly={props.readOnly}
+                highlightQuery={props.highlightQuery}
+                activeMatch={props.activeMatch}
                 autoEditKey={
                   typeof key === 'string' &&
                   !props.readOnly &&

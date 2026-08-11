@@ -14,6 +14,8 @@
  *   - property/attribute `readOnly` / `readonly` — browseable read-only tree
  *   - property/attribute `array-reorder` / `arrayReorder` — array drag-and-drop
  *     (boolean, default `true`)
+ *   - property/attribute `search` — in-tree find (default `true`).
+ *     Set `false` / `search="false"` to disable
  *   - method `getRoot()` — `.json-tree` in shadow DOM
  *   - events `change` / `json-change` — detail: `{ value: string }`
  */
@@ -42,6 +44,7 @@ type HostBridge = {
   setValue: (next: string) => void;
   setReadOnly: (next: boolean) => void;
   setArrayReorder: (next: boolean) => void;
+  setSearch: (next: boolean) => void;
   getRoot: () => HTMLDivElement | null;
 };
 
@@ -53,7 +56,13 @@ function parseDepth(raw: unknown): number {
 
 class JsonTreeEditor extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ['value', 'readonly', 'default-expanded-depth', 'array-reorder'];
+    return [
+      'value',
+      'readonly',
+      'default-expanded-depth',
+      'array-reorder',
+      'search',
+    ];
   }
 
   #value = '';
@@ -61,6 +70,8 @@ class JsonTreeEditor extends HTMLElement {
   #defaultExpandedDepth = 0;
   /** Array drag-and-drop; default on for the WC surface. */
   #arrayReorder = true;
+  /** In-tree search (Cmd/Ctrl+F); default on. */
+  #search = true;
   #mounted = false;
   #bridge: HostBridge | null = null;
   #dispose: (() => void) | null = null;
@@ -125,6 +136,22 @@ class JsonTreeEditor extends HTMLElement {
     this.#syncArrayReorderAttribute(flag);
   }
 
+  /**
+   * In-tree search / find (default `true`). Reflects as attribute `search`.
+   * Set `false` or `search="false"` to disable Cmd/Ctrl+F.
+   */
+  get search(): boolean {
+    return this.#search;
+  }
+
+  set search(next: boolean) {
+    const flag = Boolean(next);
+    if (flag === this.#search) return;
+    this.#search = flag;
+    this.#bridge?.setSearch(flag);
+    this.#syncSearchAttribute(flag);
+  }
+
   /** The tree root element (`.json-tree` in shadow DOM), or `null` if unmounted. */
   getRoot(): HTMLDivElement | null {
     return this.#bridge?.getRoot() ?? null;
@@ -143,6 +170,9 @@ class JsonTreeEditor extends HTMLElement {
     // Presence of attribute with value "false" disables; missing attribute keeps default true.
     if (this.hasAttribute('array-reorder')) {
       this.#arrayReorder = this.getAttribute('array-reorder') !== 'false';
+    }
+    if (this.hasAttribute('search')) {
+      this.#search = this.getAttribute('search') !== 'false';
     }
 
     if (this.hasAttribute('default-expanded-depth')) {
@@ -177,17 +207,20 @@ class JsonTreeEditor extends HTMLElement {
     const initialReadOnly = this.#readOnly;
     const initialDepth = this.#defaultExpandedDepth;
     const initialArrayReorder = this.#arrayReorder;
+    const initialSearch = this.#search;
 
     this.#dispose = render(() => {
       const [value, setValue] = createSignal(initialValue);
       const [readOnly, setReadOnly] = createSignal(initialReadOnly);
       const [arrayReorder, setArrayReorder] = createSignal(initialArrayReorder);
+      const [search, setSearch] = createSignal(initialSearch);
       let treeHandle: JsonTreeViewHandle | undefined;
 
       host.#bridge = {
         setValue: (next) => setValue(next),
         setReadOnly: (next) => setReadOnly(next),
         setArrayReorder: (next) => setArrayReorder(next),
+        setSearch: (next) => setSearch(next),
         getRoot: () => treeHandle?.getRoot() ?? null,
       };
 
@@ -215,6 +248,7 @@ class JsonTreeEditor extends HTMLElement {
             onChange={onChange}
             defaultExpandedDepth={initialDepth}
             readOnly={readOnly()}
+            search={search()}
             arrayReorder={arrayReorder() ? HTML5_ARRAY_REORDER : false}
           />
         </div>
@@ -257,6 +291,16 @@ class JsonTreeEditor extends HTMLElement {
       this.#bridge?.setArrayReorder(flag);
       return;
     }
+    if (name === 'search') {
+      // Missing attribute → leave property as-is (connected seeds default true).
+      // Present + not "false" → true; "false" → false.
+      if (next == null) return;
+      const flag = next !== 'false';
+      if (flag === this.#search) return;
+      this.#search = flag;
+      this.#bridge?.setSearch(flag);
+      return;
+    }
     if (name === 'default-expanded-depth') {
       this.#defaultExpandedDepth = parseDepth(next);
     }
@@ -297,6 +341,17 @@ class JsonTreeEditor extends HTMLElement {
       this.setAttribute('array-reorder', 'false');
     } else {
       this.setAttribute('array-reorder', 'false');
+    }
+    this.#reflecting = false;
+  }
+
+  #syncSearchAttribute(flag: boolean): void {
+    this.#reflecting = true;
+    if (flag) {
+      // Default is on — drop the attribute when enabled so markup stays clean.
+      if (this.hasAttribute('search')) this.removeAttribute('search');
+    } else {
+      this.setAttribute('search', 'false');
     }
     this.#reflecting = false;
   }
