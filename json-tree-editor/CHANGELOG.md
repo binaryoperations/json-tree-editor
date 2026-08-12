@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Plugin system foundation** — thin editor runtime with a single document `dispatch` funnel, `lastEmitted` echo/external classification, plugin host (identity by `name`), and first-wins command registry (master/subordinate; exclusive subordinate → `console.error`; no promote-on-teardown).
+  - Solid: `plugins?: JsonTreeEditorPlugin[]` prop; handle `use` / `callCommand` / `hasCommand` (plus existing `getRoot`).
+  - Web component: property `plugins`, methods `use` / `callCommand` / `hasCommand` (queued until mount; disposed on disconnect).
+  - Public types + `definePlugin` from package root and `@binaryoperations/json-tree-editor/plugin`.
+  - Structural UI commits annotate `kind` + `path` (+ `coalesceKey` for leaf set-value). History / collab plugins are **not** included (separate PRs).
+
 ### Breaking Changes
 
 - **Moved** these exports from `@binaryoperations/json-tree-editor/utils` to `@binaryoperations/json-tree-editor/dnd`:

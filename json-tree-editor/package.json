@@ -41,6 +41,12 @@
       "import": "./src/dnd.ts",
       "default": "./src/dnd.ts"
     },
+    "./plugin": {
+      "types": "./src/plugin.ts",
+      "solid": "./src/plugin.ts",
+      "import": "./src/plugin.ts",
+      "default": "./src/plugin.ts"
+    },
     "./web-component": {
       "types": "./dist/web-component.d.ts",
       "import": "./dist/web-component.js",

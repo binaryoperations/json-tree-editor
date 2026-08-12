@@ -4,20 +4,17 @@ Ideas to take up as a separate project later. Captured from product notes (2026-
 
 ## Highest priority — foundation
 
-### 1. Plugin system + editor state
+### 1. Plugin system + editor state — **SHIPPED (foundation P0–P4)**
 
-The editor needs a **plugin system**. Features should not be hard-wired into the core tree; they register as plugins and **manage their own state**.
+Foundation is in core: document-only `dispatch` funnel, `lastEmitted` echo/external classification, plugin host (identity by `name`), first-wins command registry, Solid `plugins` / handle `use` / WC parity. UI chrome (search, DnD, expand/focus) stays core.
 
-Architectural direction:
-
-- **Editor state** — central surface the core owns (document, focus path, expand set, read-only, …) plus a transaction/update path.
 - **Plugins** own private state; core does not know about undo stacks or CRDT docs.
 - Register on Solid `JsonTreeView` and the web component (`use(plugin)` / `plugins` API).
 - **Commands** are a shared registry. Overlapping registrations follow the **master / subordinate** rule below.
 
 → **PRD (frozen):** [plans/PRD-plugin-system.md](./plans/PRD-plugin-system.md)  
 → **Architecture:** [plans/ARCHITECTURE-plugin-system.md](./plans/ARCHITECTURE-plugin-system.md)  
-→ Early notes: [plans/plugin-system.md](./plans/plugin-system.md)
+→ Types: `@binaryoperations/json-tree-editor/plugin`
 
 ### 2. Conflict rule (general): master / subordinate
 
@@ -75,7 +72,7 @@ Show current node path; click segments to navigate.
 
 ## Suggested build order
 
-1. **Plugin API + command registry** (master / subordinate)
+1. ~~**Plugin API + command registry** (master / subordinate)~~ — done (foundation)
 2. **History plugin** (`undo` / `redo` / `canUndo` / `canRedo` / `readHistory`)
 3. **Breadcrumb**
 4. **Collab packages** (Yjs + Loro adapters; history composition)

@@ -16,7 +16,8 @@
  *     (boolean, default `true`)
  *   - property/attribute `search` — in-tree find (default `true`).
  *     Set `false` / `search="false"` to disable
- *   - method `getRoot()` — `.json-tree` in shadow DOM
+ *   - property `plugins` / method `use(plugin)` — document plugins (no HTML attrs)
+ *   - methods `callCommand` / `hasCommand` / `getRoot`
  *   - events `change` / `json-change` — detail: `{ value: string }`
  */
 
@@ -28,6 +29,7 @@ import {
   type JsonTreeViewHandle,
 } from './components/primitives/JsonTreeView';
 import { HTML5_ARRAY_REORDER } from './dnd';
+import type { JsonTreeEditorPlugin } from './lib/editor-runtime/types';
 import styles from './styles.css?inline';
 
 const TAG = 'json-tree-editor';
@@ -45,6 +47,10 @@ type HostBridge = {
   setReadOnly: (next: boolean) => void;
   setArrayReorder: (next: boolean) => void;
   setSearch: (next: boolean) => void;
+  setPlugins: (next: JsonTreeEditorPlugin[]) => void;
+  use: (plugin: JsonTreeEditorPlugin) => () => void;
+  callCommand: <T = unknown>(name: string, ...args: unknown[]) => T | undefined;
+  hasCommand: (name: string) => boolean;
   getRoot: () => HTMLDivElement | null;
 };
 
@@ -72,6 +78,18 @@ class JsonTreeEditor extends HTMLElement {
   #arrayReorder = true;
   /** In-tree search (Cmd/Ctrl+F); default on. */
   #search = true;
+  /** Plugin list property (not reflected as HTML attributes). */
+  #plugins: JsonTreeEditorPlugin[] = [];
+  /**
+   * `use(plugin)` calls made before the Solid bridge is ready.
+   * Each entry stores the plugin + a shared dispose slot filled after mount.
+   */
+  #queuedUses: Array<{
+    plugin: JsonTreeEditorPlugin;
+    dispose: (() => void) | null;
+  }> = [];
+  /** Disposers for plugins registered via `use()` after (or flushed at) mount. */
+  #useDisposers = new Set<() => void>();
   #mounted = false;
   #bridge: HostBridge | null = null;
   #dispose: (() => void) | null = null;
@@ -157,6 +175,58 @@ class JsonTreeEditor extends HTMLElement {
     return this.#bridge?.getRoot() ?? null;
   }
 
+  /**
+   * Document plugins (history, collab, …). Property only — no HTML attribute.
+   * Replaces the previous list by plugin `name` (same identity rules as Solid).
+   */
+  get plugins(): JsonTreeEditorPlugin[] {
+    return this.#plugins;
+  }
+
+  set plugins(next: JsonTreeEditorPlugin[] | null | undefined) {
+    const list = Array.isArray(next) ? next : [];
+    this.#plugins = list;
+    this.#bridge?.setPlugins(list);
+  }
+
+  /**
+   * Register a plugin. Queues until connected; returns a dispose function.
+   * After disconnect, disposed plugins are not auto-revived — re-register.
+   */
+  use(plugin: JsonTreeEditorPlugin): () => void {
+    if (this.#bridge) {
+      const dispose = this.#bridge.use(plugin);
+      this.#useDisposers.add(dispose);
+      return () => {
+        dispose();
+        this.#useDisposers.delete(dispose);
+      };
+    }
+    const entry: {
+      plugin: JsonTreeEditorPlugin;
+      dispose: (() => void) | null;
+    } = { plugin, dispose: null };
+    this.#queuedUses.push(entry);
+    return () => {
+      if (entry.dispose) {
+        entry.dispose();
+        this.#useDisposers.delete(entry.dispose);
+        entry.dispose = null;
+        return;
+      }
+      // Still queued — drop before mount.
+      this.#queuedUses = this.#queuedUses.filter((e) => e !== entry);
+    };
+  }
+
+  callCommand<T = unknown>(name: string, ...args: unknown[]): T | undefined {
+    return this.#bridge?.callCommand<T>(name, ...args);
+  }
+
+  hasCommand(name: string): boolean {
+    return this.#bridge?.hasCommand(name) ?? false;
+  }
+
   connectedCallback(): void {
     if (this.#mounted) return;
     this.#mounted = true;
@@ -208,12 +278,16 @@ class JsonTreeEditor extends HTMLElement {
     const initialDepth = this.#defaultExpandedDepth;
     const initialArrayReorder = this.#arrayReorder;
     const initialSearch = this.#search;
+    const initialPlugins = this.#plugins;
 
     this.#dispose = render(() => {
       const [value, setValue] = createSignal(initialValue);
       const [readOnly, setReadOnly] = createSignal(initialReadOnly);
       const [arrayReorder, setArrayReorder] = createSignal(initialArrayReorder);
       const [search, setSearch] = createSignal(initialSearch);
+      const [plugins, setPlugins] = createSignal<JsonTreeEditorPlugin[]>(
+        initialPlugins,
+      );
       let treeHandle: JsonTreeViewHandle | undefined;
 
       host.#bridge = {
@@ -221,6 +295,33 @@ class JsonTreeEditor extends HTMLElement {
         setReadOnly: (next) => setReadOnly(next),
         setArrayReorder: (next) => setArrayReorder(next),
         setSearch: (next) => setSearch(next),
+        setPlugins: (next) => setPlugins(next),
+        use: (plugin) => {
+          if (!treeHandle) {
+            // Same-frame mount race: queue like pre-connect `use()`.
+            const entry: {
+              plugin: JsonTreeEditorPlugin;
+              dispose: (() => void) | null;
+            } = { plugin, dispose: null };
+            host.#queuedUses.push(entry);
+            return () => {
+              if (entry.dispose) {
+                entry.dispose();
+                host.#useDisposers.delete(entry.dispose);
+                entry.dispose = null;
+              }
+              host.#queuedUses = host.#queuedUses.filter((e) => e !== entry);
+            };
+          }
+          const dispose = treeHandle.use(plugin);
+          host.#useDisposers.add(dispose);
+          return () => {
+            dispose();
+            host.#useDisposers.delete(dispose);
+          };
+        },
+        callCommand: (name, ...args) => treeHandle?.callCommand(name, ...args),
+        hasCommand: (name) => treeHandle?.hasCommand(name) ?? false,
         getRoot: () => treeHandle?.getRoot() ?? null,
       };
 
@@ -243,6 +344,8 @@ class JsonTreeEditor extends HTMLElement {
           <JsonTreeView
             ref={(h) => {
               treeHandle = h;
+              // Flush pre-connect use() queue once the handle exists.
+              host.#flushQueuedUses(h);
             }}
             value={value()}
             onChange={onChange}
@@ -250,6 +353,7 @@ class JsonTreeEditor extends HTMLElement {
             readOnly={readOnly()}
             search={search()}
             arrayReorder={arrayReorder() ? HTML5_ARRAY_REORDER : false}
+            plugins={plugins()}
           />
         </div>
       );
@@ -257,10 +361,33 @@ class JsonTreeEditor extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    // Dispose use()-registered plugins first (Solid unmount also tears down
+    // plugins prop installs via runtime.dispose).
+    for (const dispose of this.#useDisposers) {
+      try {
+        dispose();
+      } catch {
+        /* isolate */
+      }
+    }
+    this.#useDisposers.clear();
+    this.#queuedUses = [];
+
     this.#dispose?.();
     this.#dispose = null;
     this.#bridge = null;
     this.#mounted = false;
+  }
+
+  #flushQueuedUses(handle: JsonTreeViewHandle): void {
+    if (this.#queuedUses.length === 0) return;
+    const queued = this.#queuedUses;
+    this.#queuedUses = [];
+    for (const entry of queued) {
+      const dispose = handle.use(entry.plugin);
+      entry.dispose = dispose;
+      this.#useDisposers.add(dispose);
+    }
   }
 
   attributeChangedCallback(

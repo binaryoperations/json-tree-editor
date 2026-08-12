@@ -7,6 +7,11 @@ import {
   Show,
 } from 'solid-js';
 
+import { createEditorRuntime } from '../../lib/editor-runtime/create-editor-runtime';
+import type {
+  EditorCommitMeta,
+  JsonTreeEditorPlugin,
+} from '../../lib/editor-runtime/types';
 import {
   collectChildContainerPathKeys,
   collectVisiblePaths,
@@ -22,7 +27,6 @@ import {
   EMPTY_ROOT,
   type JsonRootValue,
   parseJsonSource,
-  stringifyJsonDocument,
 } from '../../lib/parse-json';
 import {
   ancestorPathKeys,
@@ -38,6 +42,12 @@ import { TreeSearchBar } from './TreeSearchBar';
 export type JsonTreeViewHandle = {
   /** The root `.json-tree` DOM element (or `null` before mount). */
   getRoot: () => HTMLDivElement | null;
+  /** Register a plugin; returns a dispose function. */
+  use: (plugin: JsonTreeEditorPlugin) => () => void;
+  /** Invoke a registered command (master only). Missing → `undefined`. */
+  callCommand: <T = unknown>(name: string, ...args: unknown[]) => T | undefined;
+  /** Whether a master command is currently registered. */
+  hasCommand: (name: string) => boolean;
 };
 
 export type JsonTreeViewProps = {
@@ -74,17 +84,17 @@ export type JsonTreeViewProps = {
    * shortcut, find bar, and match highlighting.
    */
   search?: boolean;
+  /**
+   * Document-lifecycle plugins (history, collab, …). Identity is by
+   * `plugin.name` only — same name across re-renders does not re-run setup.
+   * Prefer a stable array / stable plugin instances.
+   */
+  plugins?: JsonTreeEditorPlugin[];
   /** Solid component ref (function form recommended). */
   ref?: JsonTreeViewHandle | ((handle: JsonTreeViewHandle) => void);
 };
 
 const SEARCH_DEBOUNCE_MS = 200;
-
-function emitPretty(value: unknown, onChange: (s: string) => void): void {
-  // No trailing whitespace / newline — keep source clean for hosts that round-trip.
-  // Throws if any function slipped into the tree (never silently drop them).
-  onChange(stringifyJsonDocument(value));
-}
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -170,6 +180,35 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   /** Search is on by default; only an explicit `search={false}` disables it. */
   const searchEnabled = () => props.search !== false;
 
+  // ── Document runtime (lastEmitted, dispatch, plugins) ──
+  // Created once per component instance. Thin until first plugin registration.
+  const runtime = createEditorRuntime({
+    initialValue: props.value,
+    // Solid props proxy — always reads the current host callback.
+    onChange: (pretty) => props.onChange(pretty),
+    readOnly: props.readOnly,
+  });
+
+  onCleanup(() => {
+    runtime.dispose();
+  });
+
+  createEffect(() => {
+    runtime.setReadOnly(!!props.readOnly);
+  });
+
+  createEffect(() => {
+    runtime.handleHostValue(props.value);
+  });
+
+  // Only sync when the host passes `plugins` explicitly. `undefined` leaves
+  // imperative `use()` installs alone (does not wipe them with `[]`).
+  createEffect(() => {
+    const list = props.plugins;
+    if (list === undefined) return;
+    runtime.setPlugins(list);
+  });
+
   const validity = createMemo(() => parseJsonSource(props.value));
 
   createEffect(() => {
@@ -203,6 +242,15 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     return lastGoodRoot() ?? EMPTY_ROOT;
   };
 
+  // Snapshot providers for plugins (display root / validity stay view-owned).
+  createEffect(() => {
+    // Track validity + lastGood so providers stay current.
+    void validity();
+    void lastGoodRoot();
+    runtime.setRootProvider(() => displayRoot());
+    runtime.setValidityProvider(() => validity());
+  });
+
   const expanded = (): Set<string> => internalExpanded();
 
   const applyExpanded = (next: Set<string>) => {
@@ -211,6 +259,9 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
 
   const handle: JsonTreeViewHandle = {
     getRoot: () => treeRootEl ?? null,
+    use: (plugin) => runtime.use(plugin),
+    callCommand: (name, ...args) => runtime.callCommand(name, ...args),
+    hasCommand: (name) => runtime.hasCommand(name),
   };
 
   createEffect(() => {
@@ -335,9 +386,13 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     applyExpanded(next);
   };
 
-  const commit = (nextRoot: unknown) => {
-    if (props.readOnly) return;
-    emitPretty(nextRoot, props.onChange);
+  const commit = (
+    nextRoot: unknown,
+    meta?: Partial<
+      Pick<EditorCommitMeta, 'kind' | 'path' | 'coalesceKey' | 'skipHistory'>
+    >,
+  ) => {
+    runtime.commitUi(nextRoot, meta ?? {});
   };
 
   const findTreeItem = (path: JsonPath): HTMLElement | null => {
