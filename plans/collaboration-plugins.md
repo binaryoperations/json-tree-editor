@@ -1,12 +1,46 @@
 # Collaboration, plugins & follow-user — notes
 
-> Status: **high interest** — backlog only (not planned in depth). Companion to [FUTURE.md](../FUTURE.md).
+> Status: **high interest** — backlog only (not planned in depth). Companion to [FUTURE.md](../FUTURE.md).  
+> Foundation: [plugin-system.md](./plugin-system.md). History API & ownership: [history.md](./history.md).
 
 ## Goals
 
-1. **RT collaboration** with **Yjs** and **Loro** — both first-class via adapters.
-2. **Plugin API** on the web component (and Solid surface) so collab and future features don’t hard-wire into core.
-3. **Follow another user** — presence + viewport/focus tracking, built on collab awareness.
+1. **RT collaboration** with **Yjs** and **Loro** — both first-class as **adapter plugins**.
+2. **Plugin API** on the web component (and Solid surface) so collab and future features don’t hard-wire into core — see [plugin-system.md](./plugin-system.md).
+3. **History as a separate concern** — collab does not own the only definition of undo; it composes via master/subordinate (below).
+4. **Follow another user** — presence + viewport/focus tracking, built on collab awareness.
+
+## Separation of concerns
+
+| Concern | Owner |
+|---|---|
+| Document editing UI | Core editor |
+| Undo / redo public API | History **command master** (`undo`, `redo`, `canUndo`, `canRedo`, `readHistory`) |
+| Multiplayer sync / CRDT | Collab plugin + Yjs or Loro adapter |
+| Presence / follow | Collab-adjacent (awareness) |
+
+Collab and history must not be fused into one inseparable module in the architecture story. Install ergonomics may still **package** history with collab for convenience.
+
+## Master / subordinate with history
+
+Conflict rule (general): **first registrant is master**; later registrants are **subordinates**. Subordinates do not replace the master; they may attach as backend/delegate if the master allows. Full detail: [plugin-system.md](./plugin-system.md).
+
+For collab specifically:
+
+| Packaging | Result |
+|---|---|
+| Collab **packages/installs history** and registers first | Collab-supplied history is **master**; same public history commands |
+| History plugin loads first; collab loads later | History stays **master**; collab is **subordinate** and may supply a **CRDT backend** (`YjsUndo` / `LoroUndo`) if history allows |
+| Both try to own commands without backend attach | Master serves commands; subordinate stays passive (warn if exclusive) |
+
+**Same public history commands** in all cases — callers never branch on “local vs collab undo.”
+
+Ideal shape:
+
+```
+HistoryMaster
+  └── backend: LocalStack | YjsUndo | LoroUndo   ← collab adapters plug in here
+```
 
 ## Sketch (for a later design pass)
 
@@ -24,36 +58,30 @@ interface CollabSession {
   onRemoteChange(cb: (value: string) => void): () => void;
   applyLocalChange(value: string, meta?: { path?: JsonPath }): void;
   awareness: AwarenessChannel; // peers, colors, focused paths
+  /** Optional: expose CRDT-native undo for history master backend. */
+  getHistoryBackend?(): HistoryBackend;
   destroy(): void;
 }
 ```
 
-- Host chooses `YjsCollabAdapter` or `LoroCollabAdapter` (and their providers: WebSocket, WebRTC, etc.).
+- Host chooses **Yjs** or **Loro** adapter plugins (and their providers: WebSocket, WebRTC, etc.).
 - Tree remains controlled/`value`+`onChange` oriented; adapter bridges CRDT ↔ string/JSON root.
-- History: decide later whether local undo is CRDT-native, editor-stack, or both (see [history.md](./history.md)).
+- History integration: prefer pluggable backend under history master ([history.md](./history.md)); do not invent a second public undo API.
 
-### Plugin API (web component first)
+### Plugin registration
 
 ```ts
-// Conceptual
-interface JsonTreeEditorPlugin {
-  name: string;
-  setup(ctx: PluginContext): void | (() => void);
-}
-
-interface PluginContext {
-  getValue(): string;
-  setValue(value: string): void;
-  onChange(cb: (value: string) => void): () => void;
-  onFocusPathChange?(cb: (path: JsonPath) => void): () => void;
-  // chrome slots, commands, etc.
-  registerCollabAdapter?(adapter: CollabAdapter): void;
-}
+// Conceptual — not implemented
+// Order matters: first registrant for a command name is master.
+plugins={[
+  historyPlugin(),                           // master for undo/…
+  collabPlugin({ adapter: yjsAdapter() }), // subordinate; may attach YjsUndo
+]}
 ```
 
-- WC: `editor.use(plugin)` or `plugins` property / register method.
-- Solid: optional `plugins` prop or same imperative handle.
-- Version the context so plugins can declare compatibility.
+Or collab-only install that packages history so the packaged history registers first.
+
+`PluginContext.registerCommand` returns `{ role: 'master' | 'subordinate', master? }` — see [plugin-system.md](./plugin-system.md).
 
 ### Follow user
 
@@ -68,7 +96,10 @@ interface PluginContext {
 - Auth / rooms / permissions
 - Conflict UX beyond CRDT automatic merge
 - Full plugin marketplace — only the extension points
+- Exact shape of `HistoryBackend` for Yjs/Loro
 
 ## When ready
 
-Run a dedicated design/plan pass (similar to breadcrumb + history) before coding.
+1. Land plugin API + command registry ([plugin-system.md](./plugin-system.md)).
+2. Land history plugin + local backend ([history.md](./history.md)).
+3. Dedicated collab design pass (Yjs + Loro adapters, backend attach, presence/follow) before coding.

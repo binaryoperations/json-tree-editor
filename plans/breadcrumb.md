@@ -1,6 +1,7 @@
 # Breadcrumb / Path Bar — Implementation Plan
 
-> Status: planned (not started). Companion to [FUTURE.md](../FUTURE.md).
+> Status: planned (not started). Companion to [FUTURE.md](../FUTURE.md).  
+> Builds after plugin foundation notes: [plugin-system.md](./plugin-system.md) (breadcrumb may later register as a plugin; v1 plan below can still land as core chrome).
 
 ## Current state (findings)
 
