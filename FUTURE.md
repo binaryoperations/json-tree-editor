@@ -15,7 +15,9 @@ Architectural direction:
 - Register on Solid `JsonTreeView` and the web component (`use(plugin)` / `plugins` API).
 - **Commands** are a shared registry. Overlapping registrations follow the **master / subordinate** rule below.
 
-→ Notes: [plans/plugin-system.md](./plans/plugin-system.md)
+→ **PRD (frozen):** [plans/PRD-plugin-system.md](./plans/PRD-plugin-system.md)  
+→ **Architecture:** [plans/ARCHITECTURE-plugin-system.md](./plans/ARCHITECTURE-plugin-system.md)  
+→ Early notes: [plans/plugin-system.md](./plans/plugin-system.md)
 
 ### 2. Conflict rule (general): master / subordinate
 
