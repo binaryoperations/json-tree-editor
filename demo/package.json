@@ -8,6 +8,7 @@
     "dev:large": "vite dev --open /large.html",
     "dev:history": "vite dev --open /history.html",
     "dev:wc": "vite dev --open /wc.html",
+    "dev:wc-history": "vite dev --open /wc-history.html",
     "prebuild": "pnpm --filter @binaryoperations/json-tree-editor build",
     "build": "vite build",
     "preview": "vite preview"

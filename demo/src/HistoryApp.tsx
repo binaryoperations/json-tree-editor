@@ -4,6 +4,7 @@ import {
 } from '../../json-tree-editor/src';
 import {
   historyPlugin,
+  type HistoryEntryMeta,
   type HistoryReadSnapshot,
 } from '../../json-tree-editor/src/history';
 import {
@@ -14,7 +15,7 @@ import {
   type Component,
   createMemo,
   createSignal,
-  For,
+  Index,
   Show,
 } from 'solid-js';
 
@@ -31,6 +32,7 @@ const STARTER_JSON = `{
   "name": "History demo",
   "active": true,
   "score": 10,
+  "notes": null,
   "tags": ["undo", "redo", "path-scoped"],
   "meta": {
     "author": "dev@example.com",
@@ -41,6 +43,25 @@ const STARTER_JSON = `{
     { "sku": "B-200", "qty": 1 }
   ]
 }
+`;
+
+/** Copy-friendly Solid bootstrap snippet shown in the demo pane. */
+const SOLID_BOOTSTRAP = `import { JsonTreeView } from '@binaryoperations/json-tree-editor';
+import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
+
+const plugins = [historyPlugin({ maxDepth: 50 })];
+
+<JsonTreeView
+  value={json}
+  onChange={setJson}
+  plugins={plugins}
+  ref={setHandle}
+/>
+
+// Undo / inspect
+handle.callCommand('undo');
+handle.callCommand('canUndo');
+handle.callCommand('readHistory');
 `;
 
 /**
@@ -59,8 +80,19 @@ export const HistoryApp: Component = () => {
   );
   /** Bump after tree/host mutations so canUndo/canRedo/readHistory recompute. */
   const [historyTick, setHistoryTick] = createSignal(0);
+  const [bootstrapCopied, setBootstrapCopied] = createSignal(false);
 
   const bumpHistory = () => setHistoryTick((n) => n + 1);
+
+  const copyBootstrap = async () => {
+    try {
+      await navigator.clipboard.writeText(SOLID_BOOTSTRAP);
+      setBootstrapCopied(true);
+      window.setTimeout(() => setBootstrapCopied(false), 1600);
+    } catch {
+      /* ignore clipboard errors in non-secure contexts */
+    }
+  };
 
   const validity = createMemo(() => parseJsonSource(source()));
 
@@ -83,6 +115,16 @@ export const HistoryApp: Component = () => {
       (handle.callCommand('readHistory') as HistoryReadSnapshot | undefined) ??
       null
     );
+  });
+
+  /**
+   * Undo stack newest-first (index 0 = next Undo target).
+   * `readHistory.entries` is oldest→newest; reverse for display.
+   */
+  const undoEntriesNewestFirst = createMemo((): HistoryEntryMeta[] => {
+    const entries = historySnap()?.entries ?? [];
+    if (entries.length === 0) return [];
+    return [...entries].reverse();
   });
 
   const onTreeChange = (pretty: string) => {
@@ -232,69 +274,142 @@ export const HistoryApp: Component = () => {
 
         <section class="pane" aria-label="History stack and notes">
           <div class="pane-header">
-            <span>History</span>
-            <span>readHistory · policy</span>
+            <span>History stack</span>
+            <span>readHistory · live</span>
           </div>
           <div class="pane-body pane-body--stack">
             <div class="large-stats history-panel" role="status">
-              <div>
-                <strong>Path-scoped stack</strong>
-                <p>
-                  Entries store subtree deltas only — never full-document
-                  copies. Commands:{' '}
-                  <code>undo</code>, <code>redo</code>, <code>canUndo</code>,{' '}
-                  <code>canRedo</code>, <code>readHistory</code>,{' '}
-                  <code>clearHistory</code>.
-                </p>
+              <div class="history-depths" aria-label="Stack depths">
+                <div
+                  class="history-depths__card"
+                  classList={{
+                    'history-depths__card--active':
+                      (historySnap()?.undoDepth ?? 0) > 0,
+                  }}
+                >
+                  <span class="history-depths__label">Undo</span>
+                  <span class="history-depths__value">
+                    {historySnap()?.undoDepth ?? 0}
+                  </span>
+                </div>
+                <div
+                  class="history-depths__card"
+                  classList={{
+                    'history-depths__card--active':
+                      (historySnap()?.redoDepth ?? 0) > 0,
+                  }}
+                >
+                  <span class="history-depths__label">Redo</span>
+                  <span class="history-depths__value">
+                    {historySnap()?.redoDepth ?? 0}
+                  </span>
+                </div>
+                <div class="history-depths__card history-depths__card--meta">
+                  <span class="history-depths__label">~bytes</span>
+                  <span class="history-depths__value history-depths__value--sm">
+                    {historySnap() != null
+                      ? historySnap()!.approxBytes.toLocaleString()
+                      : '—'}
+                  </span>
+                </div>
               </div>
-              <dl class="large-stats__grid">
+
+              <dl class="large-stats__grid history-panel__meta">
                 <dt>Backend</dt>
                 <dd>{historySnap()?.backend ?? '—'}</dd>
-                <dt>Undo depth</dt>
-                <dd>{historySnap()?.undoDepth ?? 0}</dd>
-                <dt>Redo depth</dt>
-                <dd>{historySnap()?.redoDepth ?? 0}</dd>
-                <dt>Approx bytes</dt>
-                <dd>
-                  {historySnap() != null
-                    ? historySnap()!.approxBytes.toLocaleString()
-                    : '—'}
-                </dd>
+                <dt>Scope</dt>
+                <dd>path deltas (not full doc)</dd>
               </dl>
-              <div class="history-entries">
-                <strong>Recent entries (newest first)</strong>
-                <Show
-                  when={(historySnap()?.entries.length ?? 0) > 0}
-                  fallback={
-                    <p class="large-stats__hint">
-                      Edit a key, value, or type in the tree to record history.
+
+              <div class="history-stack">
+                <div class="history-stack__section">
+                  <strong class="history-stack__heading">
+                    Undo stack
+                    <span class="history-stack__heading-hint">
+                      newest first · top = next Undo
+                    </span>
+                  </strong>
+                  <Show
+                    when={undoEntriesNewestFirst().length > 0}
+                    fallback={
+                      <p class="history-stack__empty">
+                        Stack empty — edit a key, value, or type in the tree to
+                        push an entry.
+                      </p>
+                    }
+                  >
+                    <ol class="history-stack__list" aria-label="Undo stack">
+                      <Index each={undoEntriesNewestFirst()}>
+                        {(entry, index) => (
+                          <HistoryStackRow
+                            entry={entry()}
+                            index={index}
+                            isTop={index === 0}
+                            stackLabel="undo"
+                          />
+                        )}
+                      </Index>
+                    </ol>
+                  </Show>
+                </div>
+
+                <div class="history-stack__section">
+                  <strong class="history-stack__heading">
+                    Redo stack
+                    <span class="history-stack__heading-hint">
+                      filled after Undo
+                    </span>
+                  </strong>
+                  <Show
+                    when={(historySnap()?.redoDepth ?? 0) > 0}
+                    fallback={
+                      <p class="history-stack__empty">
+                        No redo entries. Undo first, then Redo to re-apply.
+                      </p>
+                    }
+                  >
+                    <p class="history-stack__redo-summary">
+                      <span class="history-stack__redo-count">
+                        {historySnap()!.redoDepth}
+                      </span>{' '}
+                      {(historySnap()!.redoDepth === 1
+                        ? 'entry'
+                        : 'entries') + ' '}
+                      waiting — use header <strong>Redo</strong>. Meta list is
+                      undo-only from <code>readHistory</code>.
                     </p>
-                  }
-                >
-                  <ol class="history-entries__list">
-                    <For each={[...(historySnap()?.entries ?? [])].reverse()}>
-                      {(entry) => (
-                        <li>
-                          <span class="history-entries__kind">{entry.kind}</span>
-                          <span class="history-entries__meta">
-                            {entry.commitKind}
-                            {entry.pathHint.length
-                              ? ` · ${formatPathHint(entry.pathHint)}`
-                              : ''}
-                          </span>
-                        </li>
-                      )}
-                    </For>
-                  </ol>
-                </Show>
+                  </Show>
+                </div>
               </div>
-              <p class="large-stats__hint">
-                <strong>Dual-pane note:</strong> tree undo is tree-local. Opening
-                the source pane and editing there is a host whole-document write
-                (<code>externalPolicy: &apos;clear&apos;</code> by default) —
-                tree history is wiped. Source has its own CodeMirror history.
+
+              <p class="large-stats__hint history-panel__policy">
+                <strong>Dual-pane:</strong> tree undo is tree-local. Host source
+                edits use <code>externalPolicy: &apos;clear&apos;</code> and wipe
+                this stack. Source has its own CodeMirror history.
               </p>
             </div>
+
+            <details class="bootstrap-pane" open>
+              <summary class="bootstrap-pane__summary">
+                <span>Bootstrap · How to wire</span>
+                <span class="bootstrap-pane__api">Solid API</span>
+              </summary>
+              <div class="bootstrap-pane__body">
+                <div class="bootstrap-pane__toolbar">
+                  <button
+                    type="button"
+                    class="btn bootstrap-pane__copy"
+                    onClick={() => void copyBootstrap()}
+                  >
+                    {bootstrapCopied() ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <pre class="bootstrap-pane__pre">
+                  <code>{SOLID_BOOTSTRAP}</code>
+                </pre>
+              </div>
+            </details>
+
             <div class="large-preview">
               <div
                 class="pane-header"
@@ -328,12 +443,60 @@ export const HistoryApp: Component = () => {
   );
 };
 
+/** Human-readable path: `name`, `meta.author`, `items.0.qty`. */
 function formatPathHint(path: readonly (string | number)[]): string {
   if (path.length === 0) return 'root';
-  return path
-    .map((p) => (typeof p === 'number' ? `[${p}]` : String(p)))
-    .join('.');
+  return path.map((p) => String(p)).join('.');
 }
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const HistoryStackRow: Component<{
+  entry: HistoryEntryMeta;
+  index: number;
+  isTop: boolean;
+  stackLabel: string;
+}> = (props) => {
+  const path = () => formatPathHint(props.entry.pathHint);
+  return (
+    <li
+      class="history-stack__row"
+      classList={{ 'history-stack__row--top': props.isTop }}
+      title={
+        props.isTop
+          ? 'Next Undo target'
+          : `${props.stackLabel} #${props.index + 1}`
+      }
+    >
+      <span class="history-stack__rank" aria-hidden="true">
+        {props.isTop ? '▶' : props.index + 1}
+      </span>
+      <div class="history-stack__body">
+        <div class="history-stack__primary">
+          <span class="history-stack__path" title={path()}>
+            {path()}
+          </span>
+          <Show when={props.isTop}>
+            <span class="history-stack__badge">next undo</span>
+          </Show>
+        </div>
+        <div class="history-stack__secondary">
+          <span class="history-stack__commit">{props.entry.commitKind}</span>
+          <span class="history-stack__sep">·</span>
+          <span class="history-stack__kind">{props.entry.kind}</span>
+          <span class="history-stack__sep">·</span>
+          <span class="history-stack__size">
+            {formatBytes(props.entry.approxBytes)}
+          </span>
+        </div>
+      </div>
+    </li>
+  );
+};
 
 const ValidityStatus: Component<{ validity: JsonValidity }> = (props) => (
   <span

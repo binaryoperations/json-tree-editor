@@ -471,6 +471,11 @@ body {
 }
 
 /* History plugin demo */
+.history-panel {
+  overflow: auto;
+  max-height: min(55vh, 28rem);
+}
+
 .history-panel code {
   font-family:
     ui-monospace,
@@ -483,40 +488,330 @@ body {
   color: #93c5fd;
 }
 
-.history-entries {
-  margin: 0.35rem 0 0.65rem;
+.history-panel__meta {
+  margin-bottom: 0.65rem !important;
 }
 
-.history-entries strong {
-  display: block;
+.history-panel__policy {
+  margin-top: 0.55rem !important;
+}
+
+.history-depths {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.4rem;
+  margin: 0 0 0.65rem;
+}
+
+.history-depths__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #2a2f3a;
+  background: #0f1218;
+  min-width: 0;
+}
+
+.history-depths__card--active {
+  border-color: #3b82f6;
+  background: #152238;
+}
+
+.history-depths__card--meta {
+  border-style: dashed;
+}
+
+.history-depths__label {
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #7d8696;
+}
+
+.history-depths__value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #e6e8ec;
+  line-height: 1.2;
+}
+
+.history-depths__value--sm {
+  font-size: 0.95rem;
+}
+
+.history-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.history-stack__section {
+  min-width: 0;
+}
+
+.history-stack__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.55rem;
   font-size: 0.7rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #8b93a3;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 
-.history-entries__list {
+.history-stack__heading-hint {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #5c6575;
+  font-size: 0.68rem;
+}
+
+.history-stack__empty {
+  margin: 0 !important;
+  padding: 0.55rem 0.65rem;
+  border-radius: 6px;
+  border: 1px dashed #2a2f3a;
+  background: #0f1218;
+  font-size: 0.74rem !important;
+  line-height: 1.4;
+  color: #6b7384 !important;
+}
+
+.history-stack__list {
+  list-style: none;
   margin: 0;
-  padding: 0 0 0 1.1rem;
-  max-height: 9rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 14rem;
   overflow: auto;
-  font-size: 0.75rem;
-  color: #c8d0dc;
 }
 
-.history-entries__list li {
-  margin: 0.2rem 0;
+.history-stack__row {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #232833;
+  background: #0f1218;
+  font-size: 0.75rem;
   line-height: 1.35;
 }
 
-.history-entries__kind {
-  font-weight: 600;
-  color: #e6e8ec;
-  margin-right: 0.35rem;
+.history-stack__row--top {
+  border-color: #3b82f6;
+  background: linear-gradient(90deg, #152238 0%, #0f1218 70%);
+  box-shadow: inset 2px 0 0 #3b82f6;
 }
 
-.history-entries__meta {
-  color: #8b93a3;
+.history-stack__rank {
+  flex-shrink: 0;
+  width: 1.1rem;
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  color: #5c6575;
+  margin-top: 0.1rem;
+}
+
+.history-stack__row--top .history-stack__rank {
+  color: #60a5fa;
+}
+
+.history-stack__body {
+  min-width: 0;
+  flex: 1;
+}
+
+.history-stack__primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.45rem;
+  min-width: 0;
+}
+
+.history-stack__path {
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace;
+  font-weight: 600;
+  color: #e6e8ec;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.history-stack__badge {
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #bfdbfe;
+  background: #1e3a5f;
+  border: 1px solid #3b82f6;
+  border-radius: 999px;
+  padding: 0.08rem 0.4rem;
+}
+
+.history-stack__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.3rem;
+  margin-top: 0.12rem;
+  color: #8b93a3;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-stack__commit {
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.history-stack__kind {
+  color: #9aa3b2;
+}
+
+.history-stack__size {
+  color: #7d8696;
+}
+
+.history-stack__sep {
+  color: #3a4150;
+}
+
+.history-stack__redo-summary {
+  margin: 0 !important;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #2a2f3a;
+  background: #0f1218;
+  font-size: 0.74rem !important;
+  line-height: 1.4;
+  color: #9aa3b2 !important;
+}
+
+.history-stack__redo-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #e6e8ec;
+}
+
+/* Plugin bootstrap / “how to wire” code pane */
+.bootstrap-pane {
+  flex-shrink: 0;
+  border-top: 1px solid #232833;
+  background: #0f1218;
+}
+
+.bootstrap-pane__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8b93a3;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.bootstrap-pane__summary::-webkit-details-marker {
+  display: none;
+}
+
+.bootstrap-pane__summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 0.4rem;
+  color: #5c6575;
+  transition: transform 0.12s ease;
+}
+
+.bootstrap-pane[open] > .bootstrap-pane__summary::before {
+  transform: rotate(90deg);
+}
+
+.bootstrap-pane__summary:hover {
+  color: #c8d0dc;
+  background: #12151c;
+}
+
+.bootstrap-pane__api {
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: none;
+  color: #93c5fd;
+  background: #152238;
+  border: 1px solid #1e3a5f;
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  font-size: 0.68rem;
+}
+
+.bootstrap-pane__body {
+  position: relative;
+  border-top: 1px solid #232833;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.bootstrap-pane__toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.35rem 0.5rem 0;
+  background: linear-gradient(180deg, #0f1218 60%, transparent);
+}
+
+.bootstrap-pane__pre {
+  margin: 0;
+  padding: 0.35rem 0.85rem 0.9rem;
+  overflow: auto;
+}
+
+.bootstrap-pane__pre code,
+.bootstrap-pane code {
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Liberation Mono',
+    'Courier New',
+    monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #c8d0dc;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.bootstrap-pane__copy.btn {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
 }

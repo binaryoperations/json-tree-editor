@@ -19,6 +19,7 @@ export default defineConfig({
         large: resolve(__dirname, 'large.html'),
         history: resolve(__dirname, 'history.html'),
         wc: resolve(__dirname, 'wc.html'),
+        'wc-history': resolve(__dirname, 'wc-history.html'),
       },
     },
   },

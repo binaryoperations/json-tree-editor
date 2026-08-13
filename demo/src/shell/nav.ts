@@ -1,5 +1,5 @@
 /** Demo page ids used by the shared header / drawer nav. */
-export type DemoPage = 'main' | 'large' | 'wc' | 'history';
+export type DemoPage = 'main' | 'large' | 'wc' | 'history' | 'wc-history';
 
 export type DemoNavItem = {
   id: DemoPage;
@@ -48,7 +48,13 @@ export const DEMO_NAV_SECTIONS: readonly DemoNavSection[] = [
         id: 'history',
         href: '/history.html',
         label: 'History plugin',
-        description: 'Path-scoped undo / redo',
+        description: 'Path-scoped undo / redo · Solid',
+      },
+      {
+        id: 'wc-history',
+        href: '/wc-history.html',
+        label: 'History (web component)',
+        description: 'Path-scoped undo / redo · WC',
       },
     ],
   },
@@ -64,6 +70,7 @@ export const DEMO_PAGE_LABEL: Record<DemoPage, string> = {
   large: 'Large',
   wc: 'Web component',
   history: 'History',
+  'wc-history': 'History (WC)',
 };
 
 export const DRAWER_ID = 'demo-nav-drawer';
