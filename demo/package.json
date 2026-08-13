@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite dev",
     "dev:large": "vite dev --open /large.html",
+    "dev:history": "vite dev --open /history.html",
     "dev:wc": "vite dev --open /wc.html",
     "prebuild": "pnpm --filter @binaryoperations/json-tree-editor build",
     "build": "vite build",

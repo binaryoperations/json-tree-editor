@@ -13,10 +13,11 @@ export default defineConfig({
   build: {
     sourcemap: true,
     rollupOptions: {
-      // Multi-page: Solid demo + large-tree + vanilla web component
+      // Multi-page: Solid demo + large-tree + history plugin + vanilla WC
       input: {
         main: resolve(__dirname, 'index.html'),
         large: resolve(__dirname, 'large.html'),
+        history: resolve(__dirname, 'history.html'),
         wc: resolve(__dirname, 'wc.html'),
       },
     },
