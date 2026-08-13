@@ -9,7 +9,7 @@ import {
 
 import { createEditorRuntime } from '../../lib/editor-runtime/create-editor-runtime';
 import type {
-  EditorCommitMeta,
+  EditorCommitMetaInput,
   JsonTreeEditorPlugin,
 } from '../../lib/editor-runtime/types';
 import {
@@ -386,12 +386,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     applyExpanded(next);
   };
 
-  const commit = (
-    nextRoot: unknown,
-    meta?: Partial<
-      Pick<EditorCommitMeta, 'kind' | 'path' | 'coalesceKey' | 'skipHistory'>
-    >,
-  ) => {
+  const commit = (nextRoot: unknown, meta?: EditorCommitMetaInput) => {
     runtime.commitUi(nextRoot, meta ?? {});
   };
 

@@ -238,6 +238,99 @@ export function setAtPath(root: unknown, path: JsonPath, value: unknown): unknow
   return value;
 }
 
+/**
+ * Insert a value at `path` (array splice or object key insert with order).
+ *
+ * - **Array parent:** last segment is the insert index; siblings shift right
+ *   (`splice(index, 0, value)`). Index is clamped to `[0, length]`.
+ * - **Object parent:** last segment is the new key. Optional `keyIndex` places
+ *   the key among existing keys (clamped to `[0, keys.length]`); omit to append.
+ *
+ * No-op when path is empty, parent is missing / wrong type, or object key
+ * already exists. Returns a new root (immutable).
+ */
+export function insertAtPath(
+  root: unknown,
+  path: JsonPath,
+  value: unknown,
+  options?: { keyIndex?: number },
+): unknown {
+  if (path.length === 0) return root;
+
+  if (path.length === 1) {
+    return insertAtParent(root, path[0], value, options?.keyIndex);
+  }
+
+  const [head, ...rest] = path;
+
+  if (Array.isArray(root)) {
+    const next = root.slice();
+    const idx = head as number;
+    next[idx] = insertAtPath(root[idx], rest, value, options);
+    return next;
+  }
+
+  if (root !== null && typeof root === 'object') {
+    const obj = root as Record<string, unknown>;
+    const key = String(head);
+    return {
+      ...obj,
+      [key]: insertAtPath(obj[key], rest, value, options),
+    };
+  }
+
+  return root;
+}
+
+function insertAtParent(
+  parent: unknown,
+  segment: string | number,
+  value: unknown,
+  keyIndex?: number,
+): unknown {
+  if (Array.isArray(parent)) {
+    if (typeof segment !== 'number' || !Number.isInteger(segment)) {
+      return parent;
+    }
+    const len = parent.length;
+    const index =
+      typeof segment === 'number' && Number.isFinite(segment)
+        ? Math.max(0, Math.min(len, Math.floor(segment)))
+        : len;
+    const next = parent.slice();
+    next.splice(index, 0, value);
+    return next;
+  }
+
+  if (parent !== null && typeof parent === 'object') {
+    const obj = parent as Record<string, unknown>;
+    const key = String(segment);
+    if (key in obj) return parent;
+
+    const keys = Object.keys(obj);
+    let at =
+      typeof keyIndex === 'number' && Number.isFinite(keyIndex)
+        ? Math.max(0, Math.min(keys.length, Math.floor(keyIndex)))
+        : keys.length;
+
+    const next: Record<string, unknown> = {};
+    let inserted = false;
+    for (let i = 0; i < keys.length; i += 1) {
+      if (i === at) {
+        next[key] = value;
+        inserted = true;
+      }
+      next[keys[i]] = obj[keys[i]];
+    }
+    if (!inserted) {
+      next[key] = value;
+    }
+    return next;
+  }
+
+  return parent;
+}
+
 /** Immutable delete at path (object key or array index). No-op for empty path. */
 export function deleteAtPath(root: unknown, path: JsonPath): unknown {
   if (path.length === 0) return root;

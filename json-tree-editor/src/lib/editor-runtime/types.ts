@@ -30,7 +30,39 @@ export type EditorCommitMeta = {
   coalesceKey?: string;
   skipHistory: boolean;
   echo: boolean;
+  /** Rename: new key after rename (path is the old node path). */
+  toKey?: string;
+  /** Reorder: source index within the array at `path`. */
+  fromIndex?: number;
+  /** Reorder: destination index within the array at `path`. */
+  toIndex?: number;
+  /**
+   * Add / duplicate: full path of the **new** node
+   * (`path` remains parent for add, source for duplicate).
+   */
+  newPath?: JsonPath;
+  /** Add (object): new property key when `newPath` is not provided. */
+  newKey?: string;
+  /** Add (array): new index when `newPath` is not provided. */
+  newIndex?: number;
 };
+
+/** UI / plugin fields that may be supplied on commit (not origin/echo defaults). */
+export type EditorCommitMetaInput = Partial<
+  Pick<
+    EditorCommitMeta,
+    | 'kind'
+    | 'path'
+    | 'coalesceKey'
+    | 'skipHistory'
+    | 'toKey'
+    | 'fromIndex'
+    | 'toIndex'
+    | 'newPath'
+    | 'newKey'
+    | 'newIndex'
+  >
+>;
 
 // ── Transaction (document only) ───────────────────────────
 // Exactly one of nextRoot | nextValue.
@@ -98,9 +130,7 @@ export interface PluginContext {
 
   setValue(
     prettyOrRoot: string | unknown,
-    meta?: Partial<
-      Pick<EditorCommitMeta, 'kind' | 'path' | 'coalesceKey' | 'skipHistory'>
-    >,
+    meta?: EditorCommitMetaInput,
   ): boolean;
 
   onTransaction(cb: (e: TransactionEvent) => void): () => void;

@@ -23,9 +23,10 @@ export const NumberEditor: Component<NumberEditorProps> = (props) => {
   const [draft, setDraft] = createSignal(String(props.value));
   const [focused, setFocused] = createSignal(false);
 
+  // Resync draft when props.value changes — including while focused (history undo).
+  // Incomplete local typing does not change props.value, so the draft stays free.
   createEffect(() => {
-    const v = props.value;
-    if (!focused()) setDraft(String(v));
+    setDraft(String(props.value));
   });
 
   /** Commit when `text` is a complete finite number. Optionally normalize draft. */

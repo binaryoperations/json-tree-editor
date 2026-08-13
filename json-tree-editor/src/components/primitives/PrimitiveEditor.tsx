@@ -6,9 +6,14 @@ import { NullEditor } from './NullEditor';
 import { NumberEditor } from './NumberEditor';
 import { StringEditor } from './StringEditor';
 
+export type PrimitiveEditorCommitOpts = {
+  /** String focus-session id for history coalesce. */
+  sessionId?: string;
+};
+
 export type PrimitiveEditorProps = {
   value: unknown;
-  onCommit: (next: unknown) => void;
+  onCommit: (next: unknown, opts?: PrimitiveEditorCommitOpts) => void;
   /** Display value only — no inputs. */
   readOnly?: boolean;
   /** Debounced search query for `<mark>` highlights. */
@@ -76,9 +81,14 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
         <Show when={kind() === 'string'}>
           <StringEditor
             value={asStringValue(props.value)}
-            onCommit={(next) => {
+            onCommit={(next, opts) => {
               // Always store plain string (never leave a Date instance in the tree).
-              props.onCommit(next);
+              props.onCommit(
+                next,
+                opts?.sessionId != null
+                  ? { sessionId: opts.sessionId }
+                  : undefined,
+              );
             }}
             highlightQuery={query()}
             activeHighlight={active()}

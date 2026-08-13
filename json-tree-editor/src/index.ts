@@ -12,6 +12,7 @@ export {
 export type {
   EditorCommitKind,
   EditorCommitMeta,
+  EditorCommitMetaInput,
   EditorCommitOrigin,
   EditorStateSnapshot,
   EditorTransaction,

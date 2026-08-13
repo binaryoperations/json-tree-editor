@@ -1,6 +1,7 @@
 export type {
   EditorCommitKind,
   EditorCommitMeta,
+  EditorCommitMetaInput,
   EditorCommitOrigin,
   EditorStateSnapshot,
   EditorTransaction,
@@ -16,7 +17,13 @@ export {
   type EditorRuntime,
 } from './create-editor-runtime';
 
-export { buildCommitMeta, setValueCoalesceKey, uiCommitMeta } from './meta';
+export {
+  buildCommitMeta,
+  isSessionCoalesceKey,
+  mintEditSessionId,
+  setValueCoalesceKey,
+  uiCommitMeta,
+} from './meta';
 
 // Internal pieces re-exported for unit tests (not a public package path).
 export { CommandRegistry } from './command-registry';

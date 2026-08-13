@@ -4,7 +4,7 @@ import { CommandRegistry } from './command-registry';
 import { buildCommitMeta } from './meta';
 import { PluginHost } from './plugin-host';
 import type {
-  EditorCommitMeta,
+  EditorCommitMetaInput,
   EditorStateSnapshot,
   EditorTransaction,
   JsonTreeEditorPlugin,
@@ -19,12 +19,7 @@ export type EditorRuntime = {
   getSnapshot(): EditorStateSnapshot;
 
   dispatch(tr: EditorTransaction): boolean;
-  commitUi(
-    nextRoot: unknown,
-    partial?: Partial<
-      Pick<EditorCommitMeta, 'kind' | 'path' | 'coalesceKey' | 'skipHistory'>
-    >,
-  ): boolean;
+  commitUi(nextRoot: unknown, partial?: EditorCommitMetaInput): boolean;
 
   handleHostValue(next: string): void;
 
@@ -109,6 +104,12 @@ export function createEditorRuntime(options: {
           coalesceKey: meta?.coalesceKey,
           skipHistory: meta?.skipHistory ?? false,
           echo: false,
+          toKey: meta?.toKey,
+          fromIndex: meta?.fromIndex,
+          toIndex: meta?.toIndex,
+          newPath: meta?.newPath,
+          newKey: meta?.newKey,
+          newIndex: meta?.newIndex,
         });
         if (typeof prettyOrRoot === 'string') {
           return dispatch({ nextValue: prettyOrRoot, meta: base });
@@ -239,16 +240,13 @@ export function createEditorRuntime(options: {
 
   function commitUi(
     nextRoot: unknown,
-    partial: Partial<
-      Pick<EditorCommitMeta, 'kind' | 'path' | 'coalesceKey' | 'skipHistory'>
-    > = {},
+    partial: EditorCommitMetaInput = {},
   ): boolean {
     return dispatch({
       nextRoot,
       meta: buildCommitMeta('ui', {
+        ...partial,
         kind: partial.kind ?? 'unknown',
-        path: partial.path,
-        coalesceKey: partial.coalesceKey,
         skipHistory: partial.skipHistory ?? false,
         echo: false,
       }),
