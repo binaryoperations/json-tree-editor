@@ -3,6 +3,8 @@
  *
  * Path-scoped undo/redo plugin (PRD History Plugin v3.1).
  * **Never** stores full-document copies on the stack.
+ *
+ * Docs: see `./README.md` in this folder.
  */
 
 export { historyPlugin, buildHistoryEntry } from './history-plugin';

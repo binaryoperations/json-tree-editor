@@ -9,19 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **History plugin** (`@binaryoperations/json-tree-editor/history`) — path-scoped undo/redo (PRD v3.1).
-  - `historyPlugin({ maxDepth?, enabled?, externalPolicy?: 'clear' | 'skip' })` — never stores full-document stack entries.
-  - Exclusive commands: `undo`, `redo`, `canUndo`, `canRedo`, `readHistory`, `clearHistory`.
-  - String live edits coalesce per focus session (`set-value:${path}:${sessionId}`).
-  - External whole-doc host writes: **clear** stacks (default) or **skip** record — full-doc record is forbidden.
-  - Dual-pane: tree history is tree-local; a source-pane keystroke is external and clears tree history under default policy (CodeMirror keeps its own undo).
-  - Pure path-stack helpers exported for tests/power users (`createPathStack`, `materializeEntry`, …).
-  - Core C0: `insertAtPath`, enriched commit meta (`toKey`, `fromIndex`/`toIndex`, `newPath`), StringEditor session coalesce + focused draft resync on undo.
-- **Plugin system foundation** — thin editor runtime with a single document `dispatch` funnel, `lastEmitted` echo/external classification, plugin host (identity by `name`), and first-wins command registry (master/subordinate; exclusive subordinate → `console.error`; no promote-on-teardown).
-  - Solid: `plugins?: JsonTreeEditorPlugin[]` prop; handle `use` / `callCommand` / `hasCommand` (plus existing `getRoot`).
-  - Web component: property `plugins`, methods `use` / `callCommand` / `hasCommand` (queued until mount; disposed on disconnect).
-  - Public types + `definePlugin` from package root and `@binaryoperations/json-tree-editor/plugin`.
-  - Structural UI commits annotate `kind` + `path` (+ session `coalesceKey` for string set-value).
+- **Plugin system** — opt-in plugins via Solid `plugins` / `use` and WC `plugins` / `use`, plus `callCommand` / `hasCommand`.  
+  Docs: [PRD / architecture](../plans/PRD-plugin-system.md), types `@binaryoperations/json-tree-editor/plugin`.
+- **History plugin** (`@binaryoperations/json-tree-editor/history`) — path-scoped undo/redo (`undo`, `redo`, `canUndo`, `canRedo`, `readHistory`, `clearHistory`).  
+  Docs: [history README](./src/history/README.md), [history PRD](../plans/PRD-history-plugin.md).
 
 ### Breaking Changes
 
