@@ -24,6 +24,8 @@ npm install solid-js
 | --- | --- |
 | `@binaryoperations/json-tree-editor` | `JsonTreeView` + `JsonTreeViewProps` only (peer `solid-js`) |
 | `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, path move helpers) — opt-in |
+| `@binaryoperations/json-tree-editor/history` | Path-scoped undo/redo plugin (`historyPlugin`, commands) — opt-in |
+| `@binaryoperations/json-tree-editor/plugin` | `definePlugin` + plugin contract types |
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, type utils, lower-level primitives |
 | `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` custom element (Solid bundled; DnD on) |
 | `@binaryoperations/json-tree-editor/styles.css` | Styles for the Solid path (WC embeds styles in shadow DOM) |
@@ -140,6 +142,7 @@ export function JsonPanel() {
 | `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent, no trailing whitespace) |
 | `defaultExpandedDepth` | `number` | no | Nesting levels open on mount (`0` = root only, default). `1` opens root + direct child containers, etc. |
 | `arrayReorder` | `ArrayReorderController \| false` | no | Array drag-reorder. Omit / `false` = off. Pass `HTML5_ARRAY_REORDER` from `/dnd` to enable. Reacts to prop changes (no remount needed); keep identity stable during a drag. |
+| `plugins` | `JsonTreeEditorPlugin[]` | no | Editor plugins (e.g. `historyPlugin()`). Stable list by plugin `name`; identity changes re-setup. |
 | `readOnly` | `boolean` | no | Read-only: no edits/add/delete/reorder; expand, collapse, and navigation still work. |
 | `search` | `boolean` | no | In-tree search (Cmd/Ctrl+F). Default `true`. Set `false` to disable the find bar and shortcut. |
 
@@ -148,6 +151,34 @@ export function JsonPanel() {
 | Method | Description |
 | --- | --- |
 | `getRoot()` | The root `.json-tree` DOM element (or `null` before mount) |
+| `use(plugin)` | Register a plugin; returns dispose |
+| `callCommand(name, …args)` | Invoke a registered command (e.g. history `undo`) |
+| `hasCommand(name)` | Whether a command is registered |
+
+### History plugin (`@binaryoperations/json-tree-editor/history`)
+
+Path-scoped undo/redo — **does not** store full-document copies on the stack:
+
+```ts
+import { JsonTreeView } from '@binaryoperations/json-tree-editor';
+import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
+
+<JsonTreeView
+  value={source()}
+  onChange={setSource}
+  plugins={[historyPlugin({ maxDepth: 100 })]}
+/>
+
+// handle.callCommand('undo' | 'redo' | 'canUndo' | 'canRedo' | 'readHistory' | 'clearHistory')
+```
+
+| Option | Default | Notes |
+| --- | --- | --- |
+| `maxDepth` | `100` | Max undo entries |
+| `enabled` | `true` | When false, no recording / no-op commands |
+| `externalPolicy` | `'clear'` | Host whole-doc rewrite: wipe stacks, or `'skip'` (keep; apply fails closed on drift) |
+
+**Dual-pane:** tree history is tree-local. A CodeMirror / source keystroke is an external host write and **clears** tree history under the default policy (CM keeps its own undo). Echo of the tree’s own `onChange` does not clear or record.
 
 Open nested branches with the **expand** / **collapse** controls on each open object or array row.
 

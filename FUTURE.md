@@ -45,7 +45,8 @@ History is a **plugin** exposing commands:
 
 Prefer a **history master** with a **pluggable backend** (`LocalStack` vs CRDT undo such as Yjs/Loro). Collab may package history and/or load as a **subordinate** that supplies a CRDT backend when the history master allows it. **First registrant is master** if both history and collab register the same commands.
 
-→ Plan: [plans/history.md](./plans/history.md)
+→ **PRD (frozen v3.1):** [plans/PRD-history-plugin.md](./plans/PRD-history-plugin.md) — path-scoped only; C0 meta gate  
+→ Earlier notes: [plans/history.md](./plans/history.md)
 
 ### 4. Collab + follow-user
 

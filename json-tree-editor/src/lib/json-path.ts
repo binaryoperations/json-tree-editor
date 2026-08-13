@@ -505,8 +505,12 @@ export function addShapedPropertyAtPath(
   return addPropertyAtPath(root, path, key, siblingTemplateShape(parent));
 }
 
-/** Deep-clone a JSON value (structure + content). */
+/**
+ * Deep-clone a JSON value (structure + content).
+ * `undefined` is returned as-is (JSON.stringify would not produce a string).
+ */
 export function deepCloneJson(value: unknown): unknown {
+  if (value === undefined) return undefined;
   return JSON.parse(JSON.stringify(value)) as unknown;
 }
 

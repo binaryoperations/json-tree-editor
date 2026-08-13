@@ -1,6 +1,8 @@
 # Undo/Redo History — Implementation Plan
 
-> Status: planned (not started). Companion to [FUTURE.md](../FUTURE.md).  
+> **Superseded for local IR + external policy** by **[PRD-history-plugin.md](./PRD-history-plugin.md) v3.1**.  
+> Path-scoped stack only (no full-doc entries). External host: **clear** / **skip** — never full-doc **record**.  
+> Status of this file: historical notes. Companion to [FUTURE.md](../FUTURE.md).  
 > Plugin foundation: [plugin-system.md](./plugin-system.md). Collab composition: [collaboration-plugins.md](./collaboration-plugins.md).
 
 ## Ownership (plugin model)

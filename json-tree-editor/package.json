@@ -47,6 +47,12 @@
       "import": "./src/plugin.ts",
       "default": "./src/plugin.ts"
     },
+    "./history": {
+      "types": "./src/history/index.ts",
+      "solid": "./src/history/index.ts",
+      "import": "./src/history/index.ts",
+      "default": "./src/history/index.ts"
+    },
     "./web-component": {
       "types": "./dist/web-component.d.ts",
       "import": "./dist/web-component.js",
