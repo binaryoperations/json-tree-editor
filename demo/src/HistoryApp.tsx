@@ -87,7 +87,10 @@ export const HistoryApp: Component = () => {
 
   const onTreeChange = (pretty: string) => {
     setSource(pretty);
+    // Runtime notifies plugins before onChange, so canUndo is already true.
     bumpHistory();
+    // Belt: re-read after the full dispatch flush (re-entrant plugin txs).
+    queueMicrotask(bumpHistory);
   };
 
   const onSourceChange = (next: string) => {

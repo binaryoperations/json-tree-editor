@@ -231,6 +231,25 @@ describe('createEditorRuntime — thin vs full', () => {
     expect(events[0].tr.meta.origin).toBe('ui');
     expect(events[0].tr.meta.kind).toBe('add');
   });
+
+  it('notifies plugins before host onChange (sync order)', () => {
+    const order: string[] = [];
+    const { rt } = runtime({
+      onChange: () => {
+        order.push('onChange');
+      },
+    });
+    rt.use({
+      name: 'logger',
+      setup(ctx) {
+        ctx.onTransaction(() => {
+          order.push('notify');
+        });
+      },
+    });
+    rt.commitUi({ a: 5 }, { kind: 'set-value', path: ['a'] });
+    expect(order).toEqual(['notify', 'onChange']);
+  });
 });
 
 describe('createEditorRuntime — commands', () => {

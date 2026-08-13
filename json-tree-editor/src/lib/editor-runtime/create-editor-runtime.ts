@@ -181,11 +181,13 @@ export function createEditorRuntime(options: {
     }
 
     currentValue = nextString;
-    let didEmit = false;
-    if (shouldEmit(tr)) {
+    // Plugins (e.g. history) must see the transaction *before* the host
+    // onChange so that canUndo/canRedo/readHistory are already updated when
+    // hosts re-query in their onChange handlers. Emit after notify; undo/redo
+    // still use apply-then-confirm (confirm* after setValue returns).
+    const willEmit = shouldEmit(tr);
+    if (willEmit) {
       lastEmitted = nextString;
-      onChange(nextString);
-      didEmit = true;
     }
 
     if (host) {
@@ -193,11 +195,15 @@ export function createEditorRuntime(options: {
         tr,
         value: currentValue,
         prevValue,
-        didEmit,
+        didEmit: willEmit,
         state: snapshot(),
       };
       // Notify while dispatchActive so re-entrant dispatch queues.
       host.notifyTransaction(event);
+    }
+
+    if (willEmit) {
+      onChange(nextString);
     }
 
     return true;

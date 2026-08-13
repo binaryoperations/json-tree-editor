@@ -148,16 +148,18 @@ dispatch(tr):
   // Host external / echo handled in handleHostValue, not always via dispatch
 
   currentValue = nextString
-  didEmit = false
-  if shouldEmit(tr):  // origin ui|plugin and not skip that skips emit… normal: emit
+  willEmit = shouldEmit(tr)  // origin ui|plugin …
+  if willEmit:
     lastEmitted = nextString
-    onChange(nextString)
-    didEmit = true
 
+  // Plugins first so history canUndo is ready before host onChange re-queries.
   if pluginHost:
-    notify onTransaction({ tr, value, prevValue, didEmit, state: snapshot() })
-    flushDispatchQueue()  // re-entrant dispatches, depth ≤ 8
+    notify onTransaction({ tr, value, prevValue, didEmit: willEmit, state: snapshot() })
 
+  if willEmit:
+    onChange(nextString)
+
+  // re-entrant dispatches from notify flush after applyOne returns (depth ≤ 8)
   return true
 ```
 
