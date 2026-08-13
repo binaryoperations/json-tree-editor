@@ -166,8 +166,8 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     props.onCommit(setAtPath(props.root(), props.path, next), {
       kind,
       path: meta?.path ?? props.path,
-      // String live edits pass session coalesceKey; bare set-value:path is not
-      // used for multi-keystroke coalescing (PRD history §4).
+      // String/number live edits pass session coalesceKey; bare set-value:path
+      // is not used for multi-keystroke coalescing (PRD history §4).
       coalesceKey: meta?.coalesceKey,
       skipHistory: meta?.skipHistory,
       toKey: meta?.toKey,

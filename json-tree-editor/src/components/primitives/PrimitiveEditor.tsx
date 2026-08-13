@@ -7,7 +7,7 @@ import { NumberEditor } from './NumberEditor';
 import { StringEditor } from './StringEditor';
 
 export type PrimitiveEditorCommitOpts = {
-  /** String focus-session id for history coalesce. */
+  /** String/number focus-session id for history coalesce. */
   sessionId?: string;
 };
 
@@ -98,7 +98,14 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
         <Show when={kind() === 'number'}>
           <NumberEditor
             value={props.value as number}
-            onCommit={props.onCommit}
+            onCommit={(next, opts) => {
+              props.onCommit(
+                next,
+                opts?.sessionId != null
+                  ? { sessionId: opts.sessionId }
+                  : undefined,
+              );
+            }}
             highlightQuery={query()}
             activeHighlight={active()}
           />

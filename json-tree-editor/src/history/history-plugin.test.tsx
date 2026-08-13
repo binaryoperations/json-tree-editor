@@ -73,6 +73,32 @@ function fakeTx(
 }
 
 describe('historyPlugin + createEditorRuntime', () => {
+  it('canUndo is true synchronously inside host onChange after first commitUi', () => {
+    // Regression: notifyTransaction must run before onChange so hosts that
+    // re-query canUndo in onChange are not one step behind.
+    let canUndoInOnChange: boolean | undefined;
+    const rt = createEditorRuntime({
+      initialValue: stringifyJsonDocument({ a: 'x' }),
+      onChange: () => {
+        canUndoInOnChange = rt.callCommand<boolean>('canUndo') === true;
+      },
+    });
+    rt.setPlugins([historyPlugin()]);
+
+    expect(rt.callCommand<boolean>('canUndo')).toBe(false);
+    rt.commitUi({ a: 'hello' }, {
+      kind: 'set-value',
+      path: ['a'],
+      coalesceKey: 'set-value:a:sess1',
+    });
+
+    expect(canUndoInOnChange).toBe(true);
+    expect(rt.callCommand<boolean>('canUndo')).toBe(true);
+    expect(rt.callCommand<HistoryReadSnapshot>('readHistory')?.undoDepth).toBe(
+      1,
+    );
+  });
+
   it('records path-replace and undoes/redoes without full-doc entries', () => {
     const onChange = vi.fn();
     const rt = createEditorRuntime({
@@ -138,6 +164,47 @@ describe('historyPlugin + createEditorRuntime', () => {
 
     rt.callCommand('undo');
     expect(JSON.parse(rt.getValue())).toEqual({ a: '' });
+  });
+
+  it('live number commit makes canUndo true without blur (session coalesce)', () => {
+    // Mirrors NumberEditor live path: complete intermediate numbers commit with
+    // a focus-session coalesce key so typing 10→11→12 is one undo step.
+    let canUndoInOnChange: boolean | undefined;
+    const rt = createEditorRuntime({
+      initialValue: stringifyJsonDocument({ score: 10 }),
+      onChange: () => {
+        canUndoInOnChange = rt.callCommand<boolean>('canUndo') === true;
+      },
+    });
+    rt.setPlugins([historyPlugin()]);
+
+    expect(rt.callCommand<boolean>('canUndo')).toBe(false);
+
+    const key = 'set-value:score:num-sess1';
+    // Intermediate complete value (as if user deleted 0 → "1")
+    rt.commitUi({ score: 1 }, {
+      kind: 'set-value',
+      path: ['score'],
+      coalesceKey: key,
+    });
+    expect(canUndoInOnChange).toBe(true);
+    expect(rt.callCommand<boolean>('canUndo')).toBe(true);
+
+    // Next complete value in same session (type "1" → "11")
+    canUndoInOnChange = undefined;
+    rt.commitUi({ score: 11 }, {
+      kind: 'set-value',
+      path: ['score'],
+      coalesceKey: key,
+    });
+    expect(canUndoInOnChange).toBe(true);
+    expect(rt.callCommand<HistoryReadSnapshot>('readHistory')?.undoDepth).toBe(
+      1,
+    );
+    expect(JSON.parse(rt.getValue()).score).toBe(11);
+
+    rt.callCommand('undo');
+    expect(JSON.parse(rt.getValue())).toEqual({ score: 10 });
   });
 
   it('external clear (default) wipes stacks; echo does not record', () => {
@@ -315,6 +382,99 @@ describe('historyPlugin + createEditorRuntime', () => {
 describe('historyPlugin + JsonTreeView integration', () => {
   const DOC = JSON.stringify({ name: 'Ada', count: 1 }, null, 2);
 
+  it('single string live edit enables canUndo inside host onChange', () => {
+    const [value, setValue] = createSignal(DOC);
+    let handle: JsonTreeViewHandle | undefined;
+    let canUndoInOnChange: boolean | undefined;
+
+    render(() => (
+      <JsonTreeView
+        value={value()}
+        onChange={(next) => {
+          setValue(next);
+          canUndoInOnChange = handle?.callCommand<boolean>('canUndo') === true;
+        }}
+        plugins={[historyPlugin()]}
+        defaultExpandedDepth={1}
+        ref={(h) => {
+          handle = h;
+        }}
+      />
+    ));
+
+    const input = screen.getByLabelText('String value');
+    fireEvent.focus(input);
+    fireEvent.input(input, { target: { value: 'Ada Lovelace' } });
+
+    expect(JSON.parse(value()).name).toBe('Ada Lovelace');
+    expect(canUndoInOnChange).toBe(true);
+    expect(handle!.callCommand<boolean>('canUndo')).toBe(true);
+    expect(handle!.callCommand<HistoryReadSnapshot>('readHistory')?.undoDepth).toBe(
+      1,
+    );
+  });
+
+  it('number blur-commit enables canUndo after one edit', () => {
+    const [value, setValue] = createSignal(DOC);
+    let handle: JsonTreeViewHandle | undefined;
+    let canUndoInOnChange: boolean | undefined;
+
+    render(() => (
+      <JsonTreeView
+        value={value()}
+        onChange={(next) => {
+          setValue(next);
+          canUndoInOnChange = handle?.callCommand<boolean>('canUndo') === true;
+        }}
+        plugins={[historyPlugin()]}
+        defaultExpandedDepth={1}
+        ref={(h) => {
+          handle = h;
+        }}
+      />
+    ));
+
+    const input = screen.getByLabelText('Number value');
+    fireEvent.focus(input);
+    fireEvent.input(input, { target: { value: '42' } });
+    fireEvent.blur(input);
+
+    expect(JSON.parse(value()).count).toBe(42);
+    expect(canUndoInOnChange).toBe(true);
+    expect(handle!.callCommand<boolean>('canUndo')).toBe(true);
+  });
+
+  it('key rename blur enables canUndo after one commit', () => {
+    const [value, setValue] = createSignal(DOC);
+    let handle: JsonTreeViewHandle | undefined;
+    let canUndoInOnChange: boolean | undefined;
+
+    render(() => (
+      <JsonTreeView
+        value={value()}
+        onChange={(next) => {
+          setValue(next);
+          canUndoInOnChange = handle?.callCommand<boolean>('canUndo') === true;
+        }}
+        plugins={[historyPlugin()]}
+        defaultExpandedDepth={1}
+        ref={(h) => {
+          handle = h;
+        }}
+      />
+    ));
+
+    const nameBtn = screen.getByRole('button', { name: 'name' });
+    fireEvent.click(nameBtn);
+    const input = screen.getByLabelText('Property key');
+    fireEvent.input(input, { target: { value: 'title' } });
+    fireEvent.blur(input);
+
+    expect(JSON.parse(value())).toHaveProperty('title');
+    expect(canUndoInOnChange).toBe(true);
+    expect(handle!.callCommand<boolean>('canUndo')).toBe(true);
+  });
+
   it('UI rename undoes via callCommand', async () => {
     const [value, setValue] = createSignal(DOC);
     let handle: JsonTreeViewHandle | undefined;
@@ -390,6 +550,37 @@ describe('historyPlugin + JsonTreeView integration', () => {
     // Simulate undo / host apply while still focused (props must actually change)
     setValue('hello');
     expect(input.value).toBe('hello');
+  });
+
+  it('NumberEditor live-commit through JsonTreeView enables canUndo without blur', () => {
+    const [value, setValue] = createSignal(
+      JSON.stringify({ score: 10 }, null, 2),
+    );
+    let handle: JsonTreeViewHandle | undefined;
+    render(() => (
+      <JsonTreeView
+        value={value()}
+        onChange={setValue}
+        plugins={[historyPlugin()]}
+        defaultExpandedDepth={2}
+        ref={(h) => {
+          handle = h;
+        }}
+      />
+    ));
+
+    expect(handle!.callCommand<boolean>('canUndo')).toBe(false);
+
+    const input = screen.getByLabelText('Number value') as HTMLInputElement;
+    fireEvent.focus(input);
+    fireEvent.input(input, { target: { value: '11' } });
+
+    // Live path: tree + history updated without blur
+    expect(JSON.parse(value()).score).toBe(11);
+    expect(handle!.callCommand<boolean>('canUndo')).toBe(true);
+    expect(handle!.callCommand<HistoryReadSnapshot>('readHistory')?.undoDepth).toBe(
+      1,
+    );
   });
 });
 

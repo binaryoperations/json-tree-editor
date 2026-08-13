@@ -30,13 +30,13 @@ export function buildCommitMeta(
 }
 
 /**
- * Normative coalesce key for leaf **string** live edits.
+ * Normative coalesce key for leaf **string/number** live edits.
  *
- * When `sessionId` is provided (minted on StringEditor focus, cleared on blur):
- * `set-value:${pathKey}:${sessionId}` — one undo step per focus session.
+ * When `sessionId` is provided (minted on StringEditor/NumberEditor focus, cleared
+ * on blur): `set-value:${pathKey}:${sessionId}` — one undo step per focus session.
  *
  * Bare `set-value:${pathKey}` (no session) must **not** be used for multi-keystroke
- * string typing; history will not treat it as infinite coalesce.
+ * typing; history will not treat it as infinite coalesce.
  */
 export function setValueCoalesceKey(
   path: JsonPath,
