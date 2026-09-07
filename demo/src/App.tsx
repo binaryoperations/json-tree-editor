@@ -1,4 +1,5 @@
 import { JsonTreeView } from '../../json-tree-editor/src';
+import { breadcrumbsPlugin } from '../../json-tree-editor/src/breadcrumbs';
 import { HTML5_ARRAY_REORDER } from '../../json-tree-editor/src/dnd';
 import {
   parseJsonSource,
@@ -9,6 +10,9 @@ import { type Component, createMemo, createSignal } from 'solid-js';
 import { DemoHeader } from './components/DemoHeader';
 import { JsonEditor } from './components/JsonEditor';
 import { JsonFormatted } from './components/JsonFormatted';
+
+/** Stable plugin instance — identity is by object across re-renders. */
+const TREE_PLUGINS = [breadcrumbsPlugin()];
 
 /** Sample starter JSON for the demo. */
 const STARTER_JSON = `{
@@ -119,6 +123,7 @@ export const App: Component = () => {
           </div>
           <div class="pane-body">
             <JsonTreeView
+              plugins={TREE_PLUGINS}
               value={source()}
               onChange={onTreeChange}
               readOnly={treeReadOnly()}

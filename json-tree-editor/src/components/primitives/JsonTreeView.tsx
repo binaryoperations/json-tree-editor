@@ -3,10 +3,18 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  For,
   onCleanup,
   Show,
+  untrack,
 } from 'solid-js';
 
+import { createEditorRuntime } from '../../lib/editor-runtime/create-editor-runtime';
+import type {
+  EditorCommitMetaInput,
+  JsonTreeEditorPlugin,
+  PluginRenderStage,
+} from '../../lib/editor-runtime/types';
 import {
   collectChildContainerPathKeys,
   collectVisiblePaths,
@@ -22,7 +30,6 @@ import {
   EMPTY_ROOT,
   type JsonRootValue,
   parseJsonSource,
-  stringifyJsonDocument,
 } from '../../lib/parse-json';
 import {
   ancestorPathKeys,
@@ -34,10 +41,24 @@ import type { ArrayReorderController } from './array-reorder';
 import { JsonTreeNode } from './JsonTreeNode';
 import { TreeSearchBar } from './TreeSearchBar';
 
+/** Options for the `json-tree.revealPath` view primitive. */
+export type RevealOptions = {
+  /** Move DOM focus to the revealed row. */
+  focus?: boolean;
+  /** Internal: keep the find input focused instead of the row. */
+  keepSearchFocus?: boolean;
+};
+
 /** Imperative handle exposed via Solid `ref` on {@link JsonTreeView}. */
 export type JsonTreeViewHandle = {
   /** The root `.json-tree` DOM element (or `null` before mount). */
   getRoot: () => HTMLDivElement | null;
+  /** Register a plugin; returns a dispose function. */
+  use: (plugin: JsonTreeEditorPlugin) => () => void;
+  /** Invoke a registered command (master only). Missing → `undefined`. */
+  callCommand: <T = unknown>(name: string, ...args: unknown[]) => T | undefined;
+  /** Whether a master command is currently registered. */
+  hasCommand: (name: string) => boolean;
 };
 
 export type JsonTreeViewProps = {
@@ -74,17 +95,17 @@ export type JsonTreeViewProps = {
    * shortcut, find bar, and match highlighting.
    */
   search?: boolean;
+  /**
+   * Document-lifecycle plugins (history, collab, …). Identity is by
+   * `plugin.name` only — same name across re-renders does not re-run setup.
+   * Prefer a stable array / stable plugin instances.
+   */
+  plugins?: JsonTreeEditorPlugin[];
   /** Solid component ref (function form recommended). */
   ref?: JsonTreeViewHandle | ((handle: JsonTreeViewHandle) => void);
 };
 
 const SEARCH_DEBOUNCE_MS = 200;
-
-function emitPretty(value: unknown, onChange: (s: string) => void): void {
-  // No trailing whitespace / newline — keep source clean for hosts that round-trip.
-  // Throws if any function slipped into the tree (never silently drop them).
-  onChange(stringifyJsonDocument(value));
-}
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -150,6 +171,8 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   /** Roving tabindex: which visible row is the active treeitem. */
   const [focusedPathKey, setFocusedPathKey] =
     createSignal<string>(ROOT_PATH_KEY);
+  /** Same row as `focusedPathKey`, as a path — read by plugin UI. */
+  const [focusedPath, setFocusedPath] = createSignal<JsonPath>([]);
   /**
    * Last successfully parsed root. Used when the source has a syntax error so
    * the tree stays visible while the user fixes the document.
@@ -163,12 +186,165 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   const [searchQuery, setSearchQuery] = createSignal('');
   const [activeMatchIndex, setActiveMatchIndex] = createSignal(0);
 
+  /**
+   * The `plugins` prop, read once per change.
+   *
+   * Memoized so the effect that installs plugins and the slot renderer below
+   * see the same array — and, for hosts that build the list inline, the same
+   * plugin instances.
+   */
+  const propPlugins = createMemo(() => props.plugins);
+
+  /**
+   * Plugins installed imperatively through `handle.use()`. Inherently outside
+   * the props graph, so this half cannot be derived — it is the only reason
+   * the render list is not a plain memo over `propPlugins`.
+   */
+  const [usedPlugins, setUsedPlugins] = createSignal<JsonTreeEditorPlugin[]>(
+    [],
+  );
+
   let treeRootEl: HTMLDivElement | undefined;
   let treeScrollEl: HTMLDivElement | undefined;
   let searchInputEl: HTMLInputElement | undefined;
 
   /** Search is on by default; only an explicit `search={false}` disables it. */
   const searchEnabled = () => props.search !== false;
+
+  // ── Document runtime (lastEmitted, dispatch, plugins) ──
+  // Created once per component instance. Thin until first plugin registration.
+  const runtime = createEditorRuntime({
+    initialValue: props.value,
+    // Solid props proxy — always reads the current host callback.
+    onChange: (pretty) => props.onChange(pretty),
+    readOnly: props.readOnly,
+  });
+
+  onCleanup(() => {
+    runtime.dispose();
+  });
+
+  /** `json-tree.onFocusedPathChange` subscribers. */
+  const focusSubscribers = new Set<(path: JsonPath) => void>();
+
+  /**
+   * View primitives published to plugins as commands.
+   *
+   * These are the DOM-side mechanics only — expand state and scrolling live in
+   * the view. Navigation *policy* (what a breadcrumb click means) belongs in a
+   * plugin, which composes these into its own `selectPath`.
+   *
+   * Installed lazily on the first real plugin so a plugin-free tree keeps the
+   * runtime thin.
+   */
+  const viewPrimitives: JsonTreeEditorPlugin = {
+    name: 'json-tree.view',
+    setup: (ctx) => {
+      ctx.registerCommand('json-tree.expandPath', (...args: unknown[]) => {
+        const path = args[0] as JsonPath;
+        expandPathKeys(ancestorPathKeys(path));
+        return true;
+      });
+
+      ctx.registerCommand('json-tree.revealPath', (...args: unknown[]) => {
+        const path = args[0] as JsonPath;
+        const opts = args[1] as RevealOptions | undefined;
+        return revealPath(path, opts);
+      });
+
+      ctx.registerCommand('json-tree.getFocusedPath', () => focusedPath());
+
+      ctx.registerCommand(
+        'json-tree.onFocusedPathChange',
+        (...args: unknown[]) => {
+          const cb = args[0] as (path: JsonPath) => void;
+          focusSubscribers.add(cb);
+          return () => focusSubscribers.delete(cb);
+        },
+      );
+    },
+  };
+
+  let viewPrimitivesInstalled = false;
+
+  /** Install view primitives before the first host plugin needs them. */
+  const ensureViewPrimitives = () => {
+    if (viewPrimitivesInstalled) return;
+    viewPrimitivesInstalled = true;
+    untrack(() => runtime.use(viewPrimitives));
+  };
+
+  /**
+   * Prepend the primitives to a host plugin list.
+   *
+   * `setPlugins` tears down every installed plugin missing from the list, so
+   * the primitives have to travel with it — and they must come first, since
+   * host plugins call them during `setup`.
+   */
+  const withViewPrimitives = (list: JsonTreeEditorPlugin[]) => [
+    viewPrimitives,
+    ...list.filter((p) => p.name !== viewPrimitives.name),
+  ];
+
+  createEffect(() => {
+    runtime.setReadOnly(!!props.readOnly);
+  });
+
+  createEffect(() => {
+    runtime.handleHostValue(props.value);
+  });
+
+  // Only sync when the host passes `plugins` explicitly. `undefined` leaves
+  // imperative `use()` installs alone (does not wipe them with `[]`).
+  createEffect(() => {
+    const list = propPlugins();
+    if (list === undefined) return;
+    // Plugin `setup` runs in here. Untrack it: a plugin that reads editor
+    // state during setup (the focused path, say) would otherwise make that
+    // signal a dependency of this effect and re-install the whole set on every
+    // change — re-reading `plugins` and, for inline lists, swapping instances.
+    untrack(() => {
+      if (list.length === 0) {
+        // Everything (primitives included) is torn down by an empty list.
+        viewPrimitivesInstalled = false;
+        runtime.setPlugins([]);
+        setUsedPlugins([]);
+        return;
+      }
+      viewPrimitivesInstalled = true;
+      runtime.setPlugins(withViewPrimitives(list));
+      // `setPlugins` tears down installed names missing from `list`, imperative
+      // installs included — drop the ones that just went away.
+      const kept = new Set(list.map((p) => p.name));
+      setUsedPlugins((prev) => prev.filter((p) => kept.has(p.name)));
+    });
+  });
+
+  /**
+   * Installed plugins that contribute UI, in render order.
+   *
+   * Declarative order first, then imperative installs. When a name arrives
+   * through both channels the imperative instance is the live one —
+   * `setPlugins` keeps an already-installed name rather than re-running setup.
+   */
+  const renderPlugins = createMemo(() => {
+    const used = usedPlugins();
+    const installedByName = new Map(used.map((p) => [p.name, p]));
+    const out: JsonTreeEditorPlugin[] = [];
+    const seen = new Set<string>();
+    for (const plugin of propPlugins() ?? []) {
+      const live = installedByName.get(plugin.name) ?? plugin;
+      if (seen.has(live.name)) continue;
+      seen.add(live.name);
+      out.push(live);
+    }
+    for (const plugin of used) {
+      if (seen.has(plugin.name)) continue;
+      seen.add(plugin.name);
+      out.push(plugin);
+    }
+    return out.filter((p) => typeof p.render === 'function');
+  });
 
   const validity = createMemo(() => parseJsonSource(props.value));
 
@@ -203,6 +379,15 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     return lastGoodRoot() ?? EMPTY_ROOT;
   };
 
+  // Snapshot providers for plugins (display root / validity stay view-owned).
+  createEffect(() => {
+    // Track validity + lastGood so providers stay current.
+    void validity();
+    void lastGoodRoot();
+    runtime.setRootProvider(() => displayRoot());
+    runtime.setValidityProvider(() => validity());
+  });
+
   const expanded = (): Set<string> => internalExpanded();
 
   const applyExpanded = (next: Set<string>) => {
@@ -211,6 +396,17 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
 
   const handle: JsonTreeViewHandle = {
     getRoot: () => treeRootEl ?? null,
+    use: (plugin) => {
+      ensureViewPrimitives();
+      const dispose = untrack(() => runtime.use(plugin));
+      setUsedPlugins((prev) => [...prev, plugin]);
+      return () => {
+        setUsedPlugins((prev) => prev.filter((p) => p !== plugin));
+        dispose();
+      };
+    },
+    callCommand: (name, ...args) => runtime.callCommand(name, ...args),
+    hasCommand: (name) => runtime.hasCommand(name),
   };
 
   createEffect(() => {
@@ -335,9 +531,30 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     applyExpanded(next);
   };
 
-  const commit = (nextRoot: unknown) => {
-    if (props.readOnly) return;
-    emitPretty(nextRoot, props.onChange);
+  const commit = (nextRoot: unknown, meta?: EditorCommitMetaInput) => {
+    runtime.commitUi(nextRoot, meta ?? {});
+  };
+
+  onCleanup(() => {
+    focusSubscribers.clear();
+  });
+
+  /** Move the roving tabindex and notify focused-path subscribers. */
+  const setFocused = (path: JsonPath) => {
+    const key = pathKey(path);
+    setFocusedPath(path);
+    if (focusedPathKey() === key) return;
+    setFocusedPathKey(key);
+    for (const cb of [...focusSubscribers]) {
+      try {
+        cb(path);
+      } catch (err) {
+        console.error(
+          '[json-tree-editor] focused-path subscriber threw:',
+          err,
+        );
+      }
+    }
   };
 
   const findTreeItem = (path: JsonPath): HTMLElement | null => {
@@ -368,7 +585,7 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
   };
 
   const focusPath = (path: JsonPath) => {
-    setFocusedPathKey(pathKey(path));
+    setFocused(path);
     const tryFocus = (): boolean => {
       const item = findTreeItem(path);
       if (!item) return false;
@@ -389,31 +606,51 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     }
   };
 
-  /** After expand/layout, scroll match into view (optionally keep search focused). */
-  const revealPath = (path: JsonPath, opts?: { keepSearchFocus?: boolean }) => {
-    const run = () => {
+  /**
+   * Scroll `path`'s row into view once it exists in the DOM.
+   *
+   * Resolves the row element (after up to two animation frames of
+   * expand/layout settling), or `null` when it never appeared — a collapsed
+   * ancestor or a path that is not in the document. Callers that need the row
+   * to exist should `json-tree.expandPath` first.
+   *
+   * Returning the element is what lets plugins decorate the revealed row
+   * (the breadcrumbs flash ring, say) without the view owning that concern.
+   */
+  const revealPath = (
+    path: JsonPath,
+    opts?: RevealOptions,
+  ): Promise<HTMLElement | null> => {
+    const run = (): HTMLElement | null => {
       const item = findTreeItem(path);
-      if (!item) return false;
-      setFocusedPathKey(pathKey(path));
+      if (!item) return null;
+      setFocused(path);
       scrollItemIntoView(item);
       if (opts?.keepSearchFocus) {
         focusSearchInput();
-      }
-      return true;
-    };
-    if (!run()) {
-      requestAnimationFrame(() => {
-        if (!run()) {
-          requestAnimationFrame(() => {
-            run();
-          });
+      } else if (opts?.focus) {
+        if (document.activeElement !== item) {
+          item.focus({ preventScroll: true });
         }
+      }
+      return item;
+    };
+    const first = run();
+    if (first) return Promise.resolve(first);
+    return new Promise<HTMLElement | null>((resolve) => {
+      requestAnimationFrame(() => {
+        const second = run();
+        if (second) {
+          resolve(second);
+          return;
+        }
+        requestAnimationFrame(() => resolve(run()));
       });
-    }
+    });
   };
 
   const onFocusPath = (path: JsonPath) => {
-    setFocusedPathKey(pathKey(path));
+    setFocused(path);
   };
 
   const pathFromEventTarget = (target: EventTarget | null): JsonPath | null => {
@@ -624,6 +861,26 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
     return { active: activeMatchIndex() + 1, total: n };
   };
 
+  /** UI-contributing plugins assigned to one slot (`stage` defaults to head). */
+  const stagePlugins = (stage: PluginRenderStage) =>
+    renderPlugins().filter((p) => (p.stage ?? 'head') === stage);
+
+  /**
+   * Call a plugin's `render`, isolating throws so one bad plugin cannot blank
+   * the tree.
+   */
+  const renderPlugin = (plugin: JsonTreeEditorPlugin, stage: PluginRenderStage) => {
+    try {
+      return plugin.render?.(stage, runtime.getPluginContext(plugin.name));
+    } catch (err) {
+      console.error(
+        `[json-tree-editor] plugin "${plugin.name}" render threw:`,
+        err,
+      );
+      return null;
+    }
+  };
+
   return (
     <div
       class="json-tree"
@@ -633,6 +890,10 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
       }}
       onKeyDown={onTreeRootKeyDown}
     >
+      <For each={stagePlugins('head')}>
+        {(plugin) => renderPlugin(plugin, 'head')}
+      </For>
+
       <Show when={errorMessage()}>
         {(msg) => (
           <div class="json-tree__error" part="error" role="status">
@@ -692,6 +953,10 @@ export const JsonTreeView: Component<JsonTreeViewProps> = (props) => {
           }
         />
       </div>
+
+      <For each={stagePlugins('tail')}>
+        {(plugin) => renderPlugin(plugin, 'tail')}
+      </For>
     </div>
   );
 };

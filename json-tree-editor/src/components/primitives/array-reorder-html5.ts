@@ -46,7 +46,7 @@ export function createHtml5ArrayReorderParent(
     const nextRoot = moveArrayItemAtPath(ctx.root(), itemPath, toIndex);
     setDrag(null);
     if (nextRoot === ctx.root()) return;
-    ctx.onCommit(nextRoot);
+    ctx.onCommit(nextRoot, { fromIndex, toIndex });
     ctx.onFocusPath([...ctx.path(), toIndex]);
   };
 

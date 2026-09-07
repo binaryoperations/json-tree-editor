@@ -230,7 +230,23 @@
 .demo-drawer__nav {
   display: flex;
   flex-direction: column;
+  gap: 0.85rem;
+}
+
+.demo-drawer__section {
+  display: flex;
+  flex-direction: column;
   gap: 0.35rem;
+}
+
+.demo-drawer__section-label {
+  margin: 0;
+  padding: 0.35rem 0.75rem 0.15rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
 }
 
 .demo-drawer__link {

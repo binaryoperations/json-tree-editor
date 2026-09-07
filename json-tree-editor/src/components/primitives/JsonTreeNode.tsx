@@ -20,6 +20,8 @@ import {
   setAtPath,
   uniqueObjectKey,
 } from '../../lib/json-path';
+import type { EditorCommitMeta } from '../../lib/editor-runtime/types';
+import { setValueCoalesceKey } from '../../lib/editor-runtime/meta';
 import type { SearchMatch } from '../../lib/search';
 import type {
   ArrayReorderBinding,
@@ -29,6 +31,23 @@ import { HighlightText } from './HighlightText';
 import { KeyEditor } from './KeyEditor';
 import { PrimitiveEditor } from './PrimitiveEditor';
 import { ROOT_JSON_TYPES, TypeSelect } from './TypeSelect';
+
+/** Optional meta for structural / value commits (plugin runtime). */
+export type JsonTreeCommitMeta = Partial<
+  Pick<
+    EditorCommitMeta,
+    | 'kind'
+    | 'path'
+    | 'coalesceKey'
+    | 'skipHistory'
+    | 'toKey'
+    | 'fromIndex'
+    | 'toIndex'
+    | 'newPath'
+    | 'newKey'
+    | 'newIndex'
+  >
+>;
 
 export type JsonTreeNodeProps = {
   root: () => unknown;
@@ -43,7 +62,7 @@ export type JsonTreeNodeProps = {
   onExpandChildren: (path: JsonPath) => void;
   /** Collapse nested containers under this path (this node stays open). */
   onCollapseChildren: (path: JsonPath) => void;
-  onCommit: (nextRoot: unknown) => void;
+  onCommit: (nextRoot: unknown, meta?: JsonTreeCommitMeta) => void;
   /** Path key of the roving-tabindex active row. */
   focusedPathKey: () => string;
   onFocusPath: (path: JsonPath) => void;
@@ -94,7 +113,13 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     return ctrl.createParent({
       path: () => props.path,
       root: () => props.root(),
-      onCommit: (next) => props.onCommit(next),
+      onCommit: (next, reorderMeta) =>
+        props.onCommit(next, {
+          kind: 'reorder',
+          path: props.path,
+          fromIndex: reorderMeta?.fromIndex,
+          toIndex: reorderMeta?.toIndex,
+        }),
       onFocusPath: (path) => props.onFocusPath(path),
       isArray: () => typeName() === 'array',
       length: () => {
@@ -136,8 +161,22 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     return '';
   };
 
-  const setValue = (next: unknown) => {
-    props.onCommit(setAtPath(props.root(), props.path, next));
+  const setValue = (next: unknown, meta?: JsonTreeCommitMeta) => {
+    const kind = meta?.kind ?? 'set-value';
+    props.onCommit(setAtPath(props.root(), props.path, next), {
+      kind,
+      path: meta?.path ?? props.path,
+      // String/number live edits pass session coalesceKey; bare set-value:path
+      // is not used for multi-keystroke coalescing (PRD history §4).
+      coalesceKey: meta?.coalesceKey,
+      skipHistory: meta?.skipHistory,
+      toKey: meta?.toKey,
+      fromIndex: meta?.fromIndex,
+      toIndex: meta?.toIndex,
+      newPath: meta?.newPath,
+      newKey: meta?.newKey,
+      newIndex: meta?.newIndex,
+    });
   };
 
   const changeType = (to: JsonTypeName) => {
@@ -145,7 +184,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     if (props.isRoot && to !== 'object' && to !== 'array') return;
     const prevType = typeName();
     const converted = convertJsonType(value(), to);
-    setValue(converted);
+    setValue(converted, { kind: 'type-change', path: props.path });
     if (to === 'object' || to === 'array') {
       props.onExpand(props.path);
     }
@@ -157,17 +196,20 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
 
   const remove = () => {
     if (props.isRoot) return;
-    props.onCommit(deleteAtPath(props.root(), props.path));
+    props.onCommit(deleteAtPath(props.root(), props.path), {
+      kind: 'delete',
+      path: props.path,
+    });
   };
 
   const emptyContainer = () => {
     const t = typeName();
     if (t === 'object') {
-      setValue({});
+      setValue({}, { kind: 'clear', path: props.path });
       return;
     }
     if (t === 'array') {
-      setValue([]);
+      setValue([], { kind: 'clear', path: props.path });
     }
   };
 
@@ -176,15 +218,29 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     if (v === null || typeof v !== 'object' || Array.isArray(v)) return;
     // Clone shape of last property (or first when only one); empty → null.
     const key = uniqueObjectKey(v as Record<string, unknown>);
-    props.onCommit(addShapedPropertyAtPath(props.root(), props.path, key));
+    const newPath: JsonPath = [...props.path, key];
+    props.onCommit(addShapedPropertyAtPath(props.root(), props.path, key), {
+      kind: 'add',
+      path: props.path,
+      newPath,
+      newKey: key,
+    });
     props.onExpand(props.path);
     setPendingEditKey(key);
   };
 
   const addItem = () => {
-    if (!Array.isArray(value())) return;
+    const v = value();
+    if (!Array.isArray(v)) return;
     // Clone shape of last element (or first when only one); empty → null.
-    props.onCommit(addShapedItemAtPath(props.root(), props.path));
+    const newIndex = v.length;
+    const newPath: JsonPath = [...props.path, newIndex];
+    props.onCommit(addShapedItemAtPath(props.root(), props.path), {
+      kind: 'add',
+      path: props.path,
+      newPath,
+      newIndex,
+    });
     props.onExpand(props.path);
   };
 
@@ -192,8 +248,22 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
   const duplicateSelf = () => {
     if (props.isRoot || props.path.length === 0) return;
     if (!isContainer()) return;
+    const last = props.path[props.path.length - 1];
+    const parentPath = props.path.slice(0, -1);
     const newKey = duplicateKeyAtPath(props.root(), props.path);
-    props.onCommit(duplicateAtPath(props.root(), props.path));
+    let newPath: JsonPath | undefined;
+    if (typeof last === 'number') {
+      newPath = [...parentPath, last + 1];
+    } else if (newKey != null) {
+      newPath = [...parentPath, newKey];
+    }
+    props.onCommit(duplicateAtPath(props.root(), props.path), {
+      kind: 'duplicate',
+      path: props.path,
+      newPath,
+      newKey: newKey ?? undefined,
+      newIndex: typeof last === 'number' ? last + 1 : undefined,
+    });
     if (newKey != null) {
       props.onRequestEditKey?.(newKey);
     }
@@ -204,7 +274,11 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
     const last = props.path[props.path.length - 1];
     if (typeof last !== 'string') return;
     const parentPath = props.path.slice(0, -1);
-    props.onCommit(renameKeyAtPath(props.root(), parentPath, last, newKey));
+    props.onCommit(renameKeyAtPath(props.root(), parentPath, last, newKey), {
+      kind: 'rename',
+      path: props.path,
+      toKey: newKey,
+    });
   };
 
   const isArrayIndex = () =>
@@ -394,7 +468,16 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
         <Show when={!isContainer()}>
           <PrimitiveEditor
             value={value()}
-            onCommit={setValue}
+            onCommit={(next, opts) => {
+              setValue(next, {
+                kind: 'set-value',
+                path: props.path,
+                coalesceKey:
+                  opts?.sessionId != null
+                    ? setValueCoalesceKey(props.path, opts.sessionId)
+                    : undefined,
+              });
+            }}
             readOnly={props.readOnly}
             highlightQuery={highlightQuery()}
             activeHighlight={pathMatchesActive('value')}

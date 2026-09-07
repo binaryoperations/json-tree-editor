@@ -54,6 +54,7 @@ export {
   expandedPathsUpToDepth,
   getAtPath,
   setAtPath,
+  insertAtPath,
   deleteAtPath,
   renameKeyAtPath,
   addPropertyAtPath,

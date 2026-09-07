@@ -38,11 +38,20 @@ export type ArrayReorderBinding = {
   ) => void;
 };
 
+/** Indices for a completed array reorder commit (history meta). */
+export type ArrayReorderCommitMeta = {
+  fromIndex: number;
+  toIndex: number;
+};
+
 /** Context for creating a parent-array reorder controller instance. */
 export type ArrayReorderParentContext = {
   path: () => JsonPath;
   root: () => unknown;
-  onCommit: (nextRoot: unknown) => void;
+  onCommit: (
+    nextRoot: unknown,
+    meta?: ArrayReorderCommitMeta,
+  ) => void;
   onFocusPath: (path: JsonPath) => void;
   isArray: () => boolean;
   length: () => number;

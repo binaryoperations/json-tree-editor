@@ -4,6 +4,16 @@ Interactive **JSON tree editor** you can drop into any app: edit keys, types, an
 
 Use it as a **SolidJS component** (TypeScript source, peer `solid-js`) or as a framework-agnostic **web component** (`<json-tree-editor>` with Solid bundled).
 
+### Highlights
+
+- Collapsible object/array tree with type changes, rename, add/delete, clear, duplicate  
+- Controlled `value` / `onChange` (pretty JSON string)  
+- Optional **plugins** (e.g. path-scoped **history** / undo-redo)  
+- In-tree search (Cmd/Ctrl+F), optional array drag-reorder, read-only mode  
+- CSS variables + `::part` theming  
+
+---
+
 ## Install
 
 ```bash
@@ -22,96 +32,21 @@ npm install solid-js
 
 | Import | What you get |
 | --- | --- |
-| `@binaryoperations/json-tree-editor` | `JsonTreeView` + `JsonTreeViewProps` only (peer `solid-js`) |
-| `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, path move helpers) — opt-in |
-| `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, type utils, lower-level primitives |
-| `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` custom element (Solid bundled; DnD on) |
+| `@binaryoperations/json-tree-editor` | `JsonTreeView` + props/handle types (peer `solid-js`) |
+| `@binaryoperations/json-tree-editor/plugin` | `definePlugin` + plugin contract types |
+| `@binaryoperations/json-tree-editor/history` | Path-scoped undo/redo — **opt-in** ([history README](./src/history/README.md)) |
+| `@binaryoperations/json-tree-editor/breadcrumbs` | Path bar + `selectPath` — **opt-in** ([breadcrumbs README](./src/breadcrumbs/README.md)) |
+| `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, …) — **opt-in** |
+| `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, lower-level primitives |
+| `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` (Solid bundled; DnD on by default) |
 | `@binaryoperations/json-tree-editor/styles.css` | Styles for the Solid path (WC embeds styles in shadow DOM) |
 
 ---
 
-## Web component usage
-
-Import the web component once. Solid is bundled, so React, Vue, Svelte, and vanilla hosts do not need `solid-js`.
+## Quick start
 
 <details>
-<summary>Vanilla HTML / JavaScript example</summary>
-
-```html
-<script type="module">
-  import '@binaryoperations/json-tree-editor/web-component';
-
-  const el = document.querySelector('json-tree-editor');
-  el.value = JSON.stringify({ hello: 'world', count: 1 }, null, 2);
-
-  el.addEventListener('change', (e) => {
-    console.log(e.detail.value); // pretty JSON string
-  });
-  // Alias with the same payload:
-  // el.addEventListener('json-change', (e) => { ... });
-</script>
-
-<json-tree-editor></json-tree-editor>
-```
-
-Small documents can use the attribute instead of the property:
-
-```html
-<json-tree-editor value='{"a":1}'></json-tree-editor>
-```
-
-</details>
-
-<details>
-<summary>TypeScript host example (property + events)</summary>
-
-```ts
-import '@binaryoperations/json-tree-editor/web-component';
-import type { JsonTreeEditorElement } from '@binaryoperations/json-tree-editor/web-component';
-
-const el = document.querySelector('json-tree-editor') as JsonTreeEditorElement;
-el.value = '{"name":"Ada"}';
-
-el.addEventListener('change', (event) => {
-  const { value } = (event as CustomEvent<{ value: string }>).detail;
-  // Sync value back into your store / form state
-  console.log(value);
-});
-```
-
-</details>
-
-### Web component API
-
-| Surface | Type | Notes |
-| --- | --- | --- |
-| Property `value` | `string` | Preferred source of truth, especially for large JSON |
-| Attribute `value` | `string` | Optional; reflected only when length ≤ ~8KB |
-| Property `defaultExpandedDepth` | `number` | Nesting levels open on mount (`0` = root only). Default `0` |
-| Attribute `default-expanded-depth` | number string | Optional; e.g. `default-expanded-depth="1"` |
-| Property / attribute `readOnly` / `readonly` | `boolean` | Read-only tree (browse/expand only; no mutations) |
-| Property / attribute `arrayReorder` / `array-reorder` | `boolean` | Array drag-and-drop (default `true`). Set `false` / `array-reorder="false"` to disable |
-| Property / attribute `search` | `boolean` | In-tree find (Cmd/Ctrl+F; default `true`). Set `false` / `search="false"` to disable |
-| Method `getRoot()` | `HTMLDivElement \| null` | The `.json-tree` element in shadow DOM |
-| Event `change` | `CustomEvent<{ value: string }>` | Fired after a tree edit with pretty-printed JSON |
-| Event `json-change` | same as `change` | Extra alias for hosts that prefer a namespaced event |
-
-Styles live in an **open shadow DOM**. Theme tokens are defined on `:host`, so you can override them with a `style` attribute, CSS on the host element, or `::part` selectors (see [Theming](#theming)).
-
----
-
-## SolidJS usage
-
-Solid consumers import **TypeScript source** from the package root. Your bundler compiles the JSX with your app’s `solid-js` instance—no separate library JS build is required for this path.
-
-Import styles once in your app entry or layout:
-
-```ts
-import '@binaryoperations/json-tree-editor/styles.css';
-```
-
-<details>
-<summary>Solid component example</summary>
+<summary>Solid</summary>
 
 ```tsx
 import { createSignal } from 'solid-js';
@@ -132,40 +67,267 @@ export function JsonPanel() {
 
 </details>
 
+<details>
+<summary>Web component (HTML)</summary>
+
+```html
+<script type="module">
+  import '@binaryoperations/json-tree-editor/web-component';
+
+  const el = document.querySelector('json-tree-editor');
+  el.value = JSON.stringify({ hello: 'world', count: 1 }, null, 2);
+
+  el.addEventListener('change', (e) => {
+    console.log(e.detail.value); // pretty JSON string
+  });
+</script>
+
+<json-tree-editor></json-tree-editor>
+```
+
+</details>
+
+<details>
+<summary>Web component (TypeScript host)</summary>
+
+```ts
+import '@binaryoperations/json-tree-editor/web-component';
+import type { JsonTreeEditorElement } from '@binaryoperations/json-tree-editor/web-component';
+
+const el = document.querySelector('json-tree-editor') as JsonTreeEditorElement;
+el.value = '{"name":"Ada"}';
+
+el.addEventListener('change', (event) => {
+  const { value } = (event as CustomEvent<{ value: string }>).detail;
+  console.log(value);
+});
+```
+
+</details>
+
+---
+
+## SolidJS API
+
+Import styles once in your app entry or layout:
+
+```ts
+import '@binaryoperations/json-tree-editor/styles.css';
+```
+
 ### `JsonTreeView` props
 
 | Prop | Type | Required | Description |
 | --- | --- | --- | --- |
 | `value` | `string` | yes | JSON document source (parsed internally) |
-| `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent, no trailing whitespace) |
-| `defaultExpandedDepth` | `number` | no | Nesting levels open on mount (`0` = root only, default). `1` opens root + direct child containers, etc. |
-| `arrayReorder` | `ArrayReorderController \| false` | no | Array drag-reorder. Omit / `false` = off. Pass `HTML5_ARRAY_REORDER` from `/dnd` to enable. Reacts to prop changes (no remount needed); keep identity stable during a drag. |
-| `readOnly` | `boolean` | no | Read-only: no edits/add/delete/reorder; expand, collapse, and navigation still work. |
-| `search` | `boolean` | no | In-tree search (Cmd/Ctrl+F). Default `true`. Set `false` to disable the find bar and shortcut. |
+| `onChange` | `(prettyJson: string) => void` | yes | Called after an edit with pretty JSON (2-space indent) |
+| `defaultExpandedDepth` | `number` | no | Nesting levels open on mount (`0` = root only, default) |
+| `arrayReorder` | `ArrayReorderController \| false` | no | Array drag-reorder. Omit / `false` = off. Pass `HTML5_ARRAY_REORDER` from `/dnd` |
+| `plugins` | `JsonTreeEditorPlugin[]` | no | Editor plugins (e.g. `historyPlugin()`). Stable by plugin `name` |
+| `readOnly` | `boolean` | no | Browse/expand only; no mutations |
+| `search` | `boolean` | no | In-tree find (Cmd/Ctrl+F). Default `true` |
+| `ref` | handle or callback | no | Imperative API (see below) |
 
-### `JsonTreeView` ref handle
+### Ref handle
 
 | Method | Description |
 | --- | --- |
-| `getRoot()` | The root `.json-tree` DOM element (or `null` before mount) |
-
-Open nested branches with the **expand** / **collapse** controls on each open object or array row.
+| `getRoot()` | Root `.json-tree` DOM element (or `null` before mount) |
+| `use(plugin)` | Register a plugin; returns dispose |
+| `callCommand(name, …args)` | Invoke a registered command (e.g. history `undo`) |
+| `hasCommand(name)` | Whether a command is registered |
 
 Keep the source string as document truth: pass it as `value`, push tree edits back via `onChange`.
 
-**Root rules** (applied inside the view): blank source is treated as a valid empty object `{}` (no error). The root must be an **object or array** (never `string` / `number` / `boolean` / `null`).
+**Root rules** (applied inside the view): blank source → valid empty object `{}`. Root must be an **object or array**. Syntax errors keep a last-good tree visible with an error banner; tree edits still emit pretty JSON so you can recover.
 
-`JsonTreeView` always keeps a tree visible:
-- Blank source → empty object `{}` (no error banner)
-- Primitive root → error banner + normalized empty object `{}`
-- Syntax errors → error banner + previous valid tree (or `{}` if none yet)
-- Tree edits still call `onChange` with pretty JSON so the user can recover from the tree pane
+---
 
-### DnD entry (`@binaryoperations/json-tree-editor/dnd`)
+## Plugins
 
-Array reorder is **opt-in** so the core Solid entry stays smaller:
+Plugins are opt-in modules that observe document transactions, register **commands**, and may contribute **UI**. Core stays free of undo stacks / CRDTs / chrome.
+
+| Surface | How |
+| --- | --- |
+| Solid | `plugins={[myPlugin()]}` and/or `handle.use(myPlugin())` |
+| Web component | `el.plugins = […]` and/or `el.use(plugin)` (queues until connected) |
+| Commands | `handle.callCommand('…')` / `el.callCommand('…')` |
+
+Command registry: **first registrant is master** for a command name; later plugins are subordinates. Types: `@binaryoperations/json-tree-editor/plugin`. Architecture: [plugin system PRD](../plans/PRD-plugin-system.md).
+
+> Prefer **stable plugin instances**. Identity is by `name`, and a changed list
+> reinstalls the set; hoisting the array to a `const` keeps that from happening on
+> unrelated re-renders. (An inline `plugins={[myPlugin()]}` is read once and cached,
+> so it works — it is just easier to churn by accident.)
+
+### The contract
 
 ```ts
+type JsonTreeEditorPlugin = {
+  name: string;
+  /** Slot for `render`. Default `'head'`. Ignored without `render`. */
+  stage?: 'head' | 'tail';
+  setup(ctx: PluginContext): void | (() => void);
+  /** Optional UI. Called once, in the slot named by `stage`. */
+  render?(stage: 'head' | 'tail', ctx: PluginContext): JSX.Element | null;
+};
+```
+
+### `render` — plugin UI
+
+A plugin that needs chrome (a path bar, a status strip, a toolbar) returns it from
+`render` instead of asking the host to place a component.
+
+- **Slots.** `stage: 'head'` (default) mounts above everything — before the error
+  banner, the find bar and the tree. `stage: 'tail'` mounts below the tree scroller.
+- **Called once per plugin**, in its own slot. The `stage` argument is passed so one
+  component can serve both placements; it is *not* an invitation to render twice.
+- **Reactive context.** `render` runs inside the view's reactive root, so Solid
+  primitives are safe and cleanup runs on unmount. Hold plugin state in signals
+  created by the factory and written from `setup`.
+- **Isolated.** A throwing `render` is logged and skipped — it cannot blank the tree.
+- **Solid hosts only.** `JsonTreeView` and the web component render it; headless
+  hosts ignore it. Return `null` to contribute nothing.
+
+Plugins that render usually also need the view's DOM mechanics. Those are published
+as commands, and are registered only once at least one plugin is installed:
+
+| Command | Signature | Does |
+| --- | --- | --- |
+| `json-tree.expandPath` | `(path) => true` | Expand every ancestor of `path` (and `path` itself when it is a container) |
+| `json-tree.revealPath` | `(path, { focus? }) => Promise<HTMLElement \| null>` | Scroll the row into view once it exists and optionally focus it. Resolves the row element — so a plugin can decorate it — or `null` if it never appears |
+| `json-tree.getFocusedPath` | `() => JsonPath` | The roving-tabindex row |
+| `json-tree.onFocusedPathChange` | `(cb) => unsubscribe` | Fires when the focused row changes |
+
+The split is deliberate: the view owns what needs its internals (expand state, sticky-aware
+scrolling) and hands back the element. Everything else — navigation *policy*, decoration —
+stays in the plugin. `selectPath` and its flash ring are composed from these primitives by
+the [breadcrumbs plugin](./src/breadcrumbs/README.md), not built in.
+
+`setup` runs untracked, so reading editor state there does not subscribe the host's
+install effect to it.
+
+<details>
+<summary>Authoring sketch</summary>
+
+```tsx
+import { definePlugin } from '@binaryoperations/json-tree-editor/plugin';
+
+export function statusPlugin() {
+  const [count, setCount] = createSignal(0);
+
+  return definePlugin({
+    name: 'status',
+    stage: 'tail',
+    setup(ctx) {
+      return ctx.onTransaction(() => setCount((n) => n + 1));
+    },
+    render(_stage, ctx) {
+      return <footer>{count()} edits · {ctx.getState().validity.ok ? 'valid' : 'invalid'}</footer>;
+    },
+  });
+}
+```
+
+</details>
+
+---
+
+## Breadcrumbs plugin
+
+**Import:** `@binaryoperations/json-tree-editor/breadcrumbs`
+
+A path bar for the focused row, and the `selectPath` command — expand ancestors,
+scroll the row into view, flash a ring around its key.
+
+**→ Full docs: [src/breadcrumbs/README.md](./src/breadcrumbs/README.md)**
+
+<details>
+<summary>Minimal wire-up</summary>
+
+```tsx
+import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
+
+const plugins = [breadcrumbsPlugin()];
+
+<JsonTreeView value={json()} onChange={setJson} plugins={plugins} />
+// The bar is rendered by the plugin — no extra markup.
+await handle.callCommand('selectPath', ['meta', 'author', 'email']);
+```
+
+</details>
+
+---
+
+## History plugin
+
+**Import:** `@binaryoperations/json-tree-editor/history`
+
+Path-scoped undo/redo — subtree deltas on the stack, not full-document copies.
+
+**→ Full docs: [src/history/README.md](./src/history/README.md)**  
+Design: [history PRD](../plans/PRD-history-plugin.md).
+
+<details>
+<summary>Minimal Solid wire-up</summary>
+
+```tsx
+import { JsonTreeView } from '@binaryoperations/json-tree-editor';
+import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
+
+const plugins = [historyPlugin({ maxDepth: 50 })];
+
+<JsonTreeView value={json()} onChange={setJson} plugins={plugins} />
+// handle.callCommand('undo' | 'redo' | 'canUndo' | 'readHistory' | …)
+```
+
+</details>
+
+<details>
+<summary>Minimal web component wire-up</summary>
+
+```ts
+import '@binaryoperations/json-tree-editor/web-component';
+import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
+
+const el = document.querySelector('json-tree-editor')!;
+el.use(historyPlugin({ maxDepth: 50 }));
+el.callCommand('undo');
+```
+
+</details>
+
+---
+
+## Web component API
+
+| Surface | Type | Notes |
+| --- | --- | --- |
+| Property `value` | `string` | Preferred source of truth (esp. large JSON) |
+| Attribute `value` | `string` | Optional; reflected only when length ≤ ~8KB |
+| `defaultExpandedDepth` / `default-expanded-depth` | `number` | Nesting levels open on mount (default `0`) |
+| `readOnly` / `readonly` | `boolean` | Browse/expand only |
+| `arrayReorder` / `array-reorder` | `boolean` | Array DnD (default **on** for WC). Set `false` to disable |
+| `search` | `boolean` | In-tree find (default **on**) |
+| Property `plugins` | `JsonTreeEditorPlugin[]` | Replace plugin set (no HTML attribute) |
+| Method `use(plugin)` | `() => void` dispose | Register one plugin (pre-connect queue OK) |
+| Method `callCommand(name, …)` | varies | Invoke plugin commands |
+| Method `hasCommand(name)` | `boolean` | Command registered? |
+| Method `getRoot()` | `HTMLDivElement \| null` | `.json-tree` in shadow DOM |
+| Event `change` / `json-change` | `CustomEvent<{ value: string }>` | After tree edit (pretty JSON) |
+
+Styles live in an **open shadow DOM**. Theme tokens sit on `:host` (see [Theming](#theming)).
+
+---
+
+## DnD (`/dnd`)
+
+Array reorder is **opt-in** on Solid so the core entry stays smaller. The web component enables HTML5 DnD by default. Also exports types and path helpers for custom controllers.
+
+<details>
+<summary>Solid example</summary>
+
+```tsx
 import { JsonTreeView } from '@binaryoperations/json-tree-editor';
 import { HTML5_ARRAY_REORDER } from '@binaryoperations/json-tree-editor/dnd';
 
@@ -176,17 +338,33 @@ import { HTML5_ARRAY_REORDER } from '@binaryoperations/json-tree-editor/dnd';
 />
 ```
 
-Also exports types, factories, and path helpers (`moveArrayItemAtPath`, …) for custom controllers. The web component enables HTML5 DnD by default.
+</details>
 
-### Utils entry (`@binaryoperations/json-tree-editor/utils`)
+---
 
-Path helpers (`getAtPath`, `setAtPath`, …), type utilities, parse helpers (`parseJsonSource`, `JsonValidity`), and lower-level primitives (`JsonTreeNode`, editors) are exported from `/utils`. Most apps only need the package root (`JsonTreeView`); use utils when the host needs validity for its own UI or expand-all helpers.
+## Utils (`/utils`)
+
+Path helpers (`getAtPath`, `setAtPath`, `insertAtPath`, …), parse helpers (`parseJsonSource`, `JsonValidity`), and lower-level primitives. Most apps only need the package root.
 
 ---
 
 ## Theming
 
-Defaults match a dark editor chrome. Override CSS variables on the web component host or on `.json-tree` (Solid light DOM):
+Defaults match a dark editor chrome. Override CSS variables on the web component host or on `.json-tree` (Solid light DOM).
+
+| Variable group | Role |
+| --- | --- |
+| `--jte-bg` / `--jte-fg` | Tree surface and default text |
+| `--jte-border` / `--jte-border-strong` | Nesting and control borders |
+| `--jte-row-hover` / `--jte-row-focus-bg` | Row chrome |
+| `--jte-key` / `--jte-key-root` / `--jte-key-index` | Property keys |
+| `--jte-string` / `--jte-number` / `--jte-boolean` / `--jte-null` | Primitive colors |
+| `--jte-type-*` | Type badge colors |
+| `--jte-focus-ring` / `--jte-focus-border` | Focus outlines |
+| `--jte-font` / `--jte-font-mono` / `--jte-font-size` | Typography |
+
+<details>
+<summary>Example token overrides</summary>
 
 ```css
 json-tree-editor,
@@ -206,66 +384,75 @@ json-tree-editor,
 }
 ```
 
-| Variable group | Role |
-| --- | --- |
-| `--jte-bg` / `--jte-fg` | Tree surface and default text |
-| `--jte-border` / `--jte-border-strong` | Nesting and control borders |
-| `--jte-row-hover` / `--jte-row-focus-bg` | Row chrome |
-| `--jte-key` / `--jte-key-root` / `--jte-key-index` | Property keys |
-| `--jte-string` / `--jte-number` / `--jte-boolean` / `--jte-null` | Primitive value colors |
-| `--jte-type-*` | Type badge colors |
-| `--jte-focus-ring` / `--jte-focus-border` | Focus outlines |
-| `--jte-font` / `--jte-font-mono` / `--jte-font-size` | Typography |
+</details>
 
 <details>
 <summary>Web component <code>::part</code> hooks</summary>
 
-Major pieces expose `part` for styling from outside the shadow tree:
-
 ```css
 json-tree-editor::part(tree) { /* .json-tree root */ }
-json-tree-editor::part(row) { /* one tree row */ }
+json-tree-editor::part(scroll) { }
+json-tree-editor::part(row) { }
 json-tree-editor::part(key) { }
 json-tree-editor::part(value) { }
-json-tree-editor::part(type) { /* badge-styled type <select> */ }
+json-tree-editor::part(type) { /* type <select> */ }
 json-tree-editor::part(chevron) { }
 json-tree-editor::part(actions) { }
 json-tree-editor::part(input) { }
-json-tree-editor::part(disabled) { /* invalid-JSON state panel */ }
+json-tree-editor::part(search) { }
+json-tree-editor::part(disabled) { /* invalid-JSON panel */ }
 ```
 
-Also available: `scroll`, `summary`, `action`, `null`.
+Also: `summary`, `action`, `null`.
 
 </details>
 
-On the Solid path, the same CSS variables apply. You can also target BEM-style classes (`.json-tree-row`, and so on) after importing `styles.css`.
+On the Solid path, the same variables apply; you can also target BEM classes (`.json-tree-row`, …) after importing `styles.css`.
 
 ---
 
-## Keyboard navigation
+## Keyboard
 
-Focus a tree row (click the row chrome, or Tab to the active row). Arrow keys move among **visible** rows (depth-first, respecting expand state). Navigation is **disabled** while focus is inside an `input`, `select`, or `textarea` so caret and type controls keep normal Left/Right (and select Up/Down) behavior.
+Focus a tree row (or Tab to the active row). Arrow keys move among **visible** rows. Navigation is **disabled** while focus is inside an `input`, `select`, or `textarea`.
 
 | Key | Action |
 | --- | --- |
-| `↓` ArrowDown | Next visible row |
-| `↑` ArrowUp | Previous visible row |
-| `→` ArrowRight | Expand a collapsed container; if already expanded, move to first child |
-| `←` ArrowLeft | Collapse an expanded container; if collapsed or a leaf, move to parent |
-| Home | First visible row |
-| End | Last visible row |
+| `↓` / `↑` | Next / previous visible row |
+| `→` | Expand collapsed container, else first child |
+| `←` | Collapse expanded container, else parent |
+| Home / End | First / last visible row |
+| Cmd/Ctrl+F | Open in-tree find (when `search` enabled) |
 
-Roving `tabindex` marks one visible `role="treeitem"` as tabbable; others use `-1`.
+Roving `tabindex` keeps one visible `role="treeitem"` tabbable.
 
 ---
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md) for release history.
+See [CHANGELOG.md](./CHANGELOG.md).
 
 ## Demos
 
-Interactive demos are coming soon. Until then, clone the monorepo and run the local demo package (see the [repository README](https://github.com/binaryoperations/json-tree-editor)).
+Clone the monorepo and run the local demo package (see the [repository README](https://github.com/binaryoperations/json-tree-editor)):
+
+| Page | Description |
+| --- | --- |
+| `/` | Solid three-pane editor |
+| `/large.html` | ~5k-node stress test |
+| `/wc.html` | Vanilla web component host |
+| `/history.html` | Solid + `historyPlugin` (stack UI + bootstrap snippet) |
+| `/wc-history.html` | WC + `historyPlugin` (stack UI + bootstrap snippet) |
+
+<details>
+<summary>Run demos locally</summary>
+
+```bash
+pnpm install
+pnpm dev
+# or: pnpm --filter @json-tree-editor/demo dev:history
+```
+
+</details>
 
 ## License
 

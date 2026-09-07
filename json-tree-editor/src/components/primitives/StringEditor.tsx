@@ -1,10 +1,16 @@
 import { type Component, createEffect, createSignal, Show } from 'solid-js';
 
+import { mintEditSessionId } from '../../lib/editor-runtime/meta';
 import { HighlightText } from './HighlightText';
+
+export type StringEditorCommitOpts = {
+  /** Focus-session id for history coalesce (`set-value:path:sessionId`). */
+  sessionId: string;
+};
 
 export type StringEditorProps = {
   value: string;
-  onCommit: (next: string) => void;
+  onCommit: (next: string, opts?: StringEditorCommitOpts) => void;
   /** Debounced search query; when set and unfocused, show `<mark>` highlights. */
   highlightQuery?: string;
   activeHighlight?: boolean;
@@ -14,10 +20,14 @@ export type StringEditorProps = {
 export const StringEditor: Component<StringEditorProps> = (props) => {
   const [draft, setDraft] = createSignal(props.value);
   const [focused, setFocused] = createSignal(false);
+  /** Minted on focus; cleared on blur — drives path-scoped string coalesce. */
+  const [sessionId, setSessionId] = createSignal<string | null>(null);
 
+  // Resync draft from props whenever value changes — including while focused
+  // (history undo / external apply). Local typing already matches props after
+  // commit; incomplete external lag is acceptable vs stale draft after undo.
   createEffect(() => {
-    const v = props.value;
-    if (!focused()) setDraft(v);
+    setDraft(props.value);
   });
 
   const showHighlight = () =>
@@ -38,13 +48,23 @@ export const StringEditor: Component<StringEditorProps> = (props) => {
               queueMicrotask(() => el.focus());
             }
           }}
-          onFocus={() => setFocused(true)}
+          onFocus={() => {
+            setFocused(true);
+            setSessionId(mintEditSessionId());
+          }}
           onInput={(e) => {
             const next = e.currentTarget.value;
             setDraft(next);
-            props.onCommit(next);
+            const sid = sessionId();
+            props.onCommit(
+              next,
+              sid != null ? { sessionId: sid } : undefined,
+            );
           }}
-          onBlur={() => setFocused(false)}
+          onBlur={() => {
+            setFocused(false);
+            setSessionId(null);
+          }}
         />
       }
     >
@@ -54,11 +74,15 @@ export const StringEditor: Component<StringEditorProps> = (props) => {
         role="textbox"
         tabindex={0}
         aria-label="String value"
-        onClick={() => setFocused(true)}
+        onClick={() => {
+          setFocused(true);
+          setSessionId(mintEditSessionId());
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             setFocused(true);
+            setSessionId(mintEditSessionId());
           }
         }}
       >

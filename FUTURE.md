@@ -1,51 +1,67 @@
 # Future features
 
-Ideas to take up as a separate project later. Captured from product notes (2026-03-11).
+Backlog only — work not yet done. Shipped capabilities live in package READMEs and `CHANGELOG.md`.
 
-## High interest
+New product features should prefer the **plugin** model (`plugins` / `use`, command registry, master/subordinate) rather than growing core props. See [plans/PRD-plugin-system.md](./plans/PRD-plugin-system.md).
 
-1. **Breadcrumb / path bar** — Show the current node path; click segments to navigate up the tree.  
-   → Plan: [plans/breadcrumb.md](./plans/breadcrumb.md)
-2. **Undo/redo history** — Stack for tree edits (edit, add, delete, reorder, rename). Keep as first-class.  
-   → Plan: [plans/history.md](./plans/history.md)
-3. **Real-time collaboration, plugins & follow-user** — Major initiative; own project.  
-   → Notes: [plans/collaboration-plugins.md](./plans/collaboration-plugins.md)
+---
 
-### Collaboration suite (detail)
+## Next
 
-Ship as one coordinated project (dependency order below).
+### 1. Array DnD as a plugin
 
-#### Real-time collaboration (Yjs + Loro)
+**Today:** array reorder is a first-class editor concern:
 
-- CRDT-backed multiplayer editing of the JSON document.
-- **Both adapters:** integrate **Yjs** and **Loro** via a shared collaboration port/interface so hosts pick one backend without baking either into the core tree.
-- Adapter responsibilities (sketch): map document ↔ tree value, apply remote ops, local commits, awareness/presence channel, optional undo integration with CRDT undo managers.
-- Core editor stays CRDT-agnostic; adapters are pluggable packages or optional entry points.
+- Solid: `arrayReorder={HTML5_ARRAY_REORDER}` from `@binaryoperations/json-tree-editor/dnd`
+- Web component: `arrayReorder` / `array-reorder` (default **on**)
+- Controllers under `/dnd`; commits via tree meta (`kind: 'reorder'`, indices)
 
-#### Plugin API (web component + Solid)
+**Target:** DnD as a **plugin** (same model as history), not core props:
 
-- **Web component plugin surface** — register plugins on `<json-tree-editor>` (and mirror for Solid `JsonTreeView` where it makes sense).
-- Plugins can hook into: lifecycle, document change, focus/path change, toolbar/chrome slots, context actions, and collab adapters.
-- Keep the public plugin contract small and versioned so adapters (Yjs, Loro) and features (follow user, copy-as-code, previews) can ship as plugins rather than core bloat.
+- e.g. `arrayReorderPlugin()` / `dndPlugin({ controller })` via `plugins` / `use()`
+- Core exposes hooks (reorder commit path, handles, a11y) without shipping HTML5 DnD by default
+- WC default-on DnD becomes “install the DnD plugin” (or a documented default plugin set)
+- Keep `/dnd` as controller implementation; avoid duplicating HTML5 logic
+- History already records `reorder` via commit meta — keep that when DnD is a plugin
 
-#### Follow another user
+**Migration sketch:**
 
-- Show remote cursors / focused paths (who is on which node).
-- **Follow mode:** viewport and focus track a chosen peer’s path (breadcrumb + expand + scroll), with an easy way to unfollow.
-- Depends on presence/awareness from the collab layer (user id, color, current `JsonPath`).
+1. Plugin API + lifecycle (bind/unbind, readOnly).  
+2. Deprecate Solid `arrayReorder` and WC `array-reorder` in favor of the plugin.  
+3. Update demos and README bootstrap snippets.  
+4. Changelog: soft deprecation or breaking, per release policy.
 
-**Suggested build order:** (1) minimal plugin API → (2) collab port + Yjs + Loro adapters → (3) presence UI + follow user.
+### 2. Breadcrumb / path bar
 
-## Nice to have
+Show current node path; click segments to navigate.
 
-4. **Copy as code** — Copy a node or subtree as JSON, JS, TypeScript, etc.
-5. **"Go to" / quick open** — Filter-style jump to a key or path (complements in-tree search).
-6. **Diff view** — Compare two JSONs (side-by-side or structural / inline).
-7. **Table / grid view** — Arrays of objects as editable rows and columns.
-8. **URL / image preview** — Detect URL and image strings; show previews inline or on hover.
-9. **JSON5 / comments support** — Parse and round-trip comments, trailing commas, etc. (lower priority).
+→ Plan: [plans/breadcrumb.md](./plans/breadcrumb.md)
 
-## Already in place
+### 3. Collab + follow-user
 
-- Collapse on every collapsible node (expands all children under that node).
-- Auto-repair / “fix JSON” via `new Function()` wrapping the object string.
+- CRDT multiplayer via **Yjs** and **Loro** adapters as plugins.
+- Separate concern from history; compose via master/subordinate (or collab packages history).
+- **Follow user** / presence (peer path, color, follow mode).
+
+→ Notes: [plans/collaboration-plugins.md](./plans/collaboration-plugins.md)
+
+---
+
+## Later
+
+4. **Copy as code** — node/subtree as JSON, JS, TypeScript, etc.  
+5. **"Go to" / quick open** — jump to key or path.  
+6. **Diff view** — compare two JSONs.  
+7. **Table / grid view** — arrays of objects as rows/columns.  
+8. **URL / image preview** — detect URLs/images; preview.  
+9. **JSON5 / comments** — comments, trailing commas (lower priority).
+
+---
+
+## Suggested order
+
+1. **DnD as plugin** — migrate from `arrayReorder` prop / WC attribute  
+2. **Breadcrumb**  
+3. **Collab** (Yjs + Loro) + history composition  
+4. **Presence + follow user**  
+5. Remaining items as plugins where useful  
