@@ -47,6 +47,12 @@
       "import": "./src/plugin.ts",
       "default": "./src/plugin.ts"
     },
+    "./breadcrumbs": {
+      "types": "./src/breadcrumbs/index.ts",
+      "solid": "./src/breadcrumbs/index.ts",
+      "import": "./src/breadcrumbs/index.ts",
+      "default": "./src/breadcrumbs/index.ts"
+    },
     "./history": {
       "types": "./src/history/index.ts",
       "solid": "./src/history/index.ts",

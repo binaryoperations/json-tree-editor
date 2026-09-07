@@ -815,3 +815,18 @@ body {
   font-size: 0.7rem;
   padding: 0.2rem 0.55rem;
 }
+
+/* Breadcrumbs demo: jump buttons + Solid / web-component code switch. */
+.crumb-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0.2rem;
+}
+
+.code-flavor {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-right: auto;
+}
+

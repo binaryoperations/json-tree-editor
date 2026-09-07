@@ -4,6 +4,8 @@
  * (or root `pnpm build:lib` / demo `prebuild`).
  */
 import '@binaryoperations/json-tree-editor/web-component';
+import type { JsonTreeEditorPlugin } from '@binaryoperations/json-tree-editor/plugin';
+import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
 
 import { mountDemoHeader } from './shell/header';
 
@@ -39,8 +41,13 @@ const tree = document.querySelector<
     value: string;
     readOnly: boolean;
     arrayReorder: boolean;
+    plugins: JsonTreeEditorPlugin[];
   }
 >('#tree')!;
+
+// Breadcrumb path bar — a plugin, so the web component takes it the same way
+// a Solid host does. Renders inside the shadow root, above the tree.
+tree.plugins = [breadcrumbsPlugin()];
 const status = document.querySelector<HTMLElement>('#status')!;
 const btnDnd = document.querySelector<HTMLButtonElement>('#btn-dnd')!;
 

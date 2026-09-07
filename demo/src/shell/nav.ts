@@ -1,5 +1,5 @@
 /** Demo page ids used by the shared header / drawer nav. */
-export type DemoPage = 'main' | 'large' | 'wc' | 'history' | 'wc-history';
+export type DemoPage = 'main' | 'large' | 'wc' | 'history' | 'wc-history' | 'breadcrumb';
 
 export type DemoNavItem = {
   id: DemoPage;
@@ -56,6 +56,12 @@ export const DEMO_NAV_SECTIONS: readonly DemoNavSection[] = [
         label: 'History (web component)',
         description: 'Path-scoped undo / redo · WC',
       },
+      {
+        id: 'breadcrumb',
+        href: '/breadcrumb.html',
+        label: 'Breadcrumbs plugin',
+        description: 'Path bar · scroll-to + flash',
+      },
     ],
   },
 ] as const;
@@ -71,6 +77,7 @@ export const DEMO_PAGE_LABEL: Record<DemoPage, string> = {
   wc: 'Web component',
   history: 'History',
   'wc-history': 'History (WC)',
+  breadcrumb: 'Breadcrumb',
 };
 
 export const DRAWER_ID = 'demo-nav-drawer';

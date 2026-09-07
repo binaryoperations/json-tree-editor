@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Docs: [PRD / architecture](../plans/PRD-plugin-system.md), types `@binaryoperations/json-tree-editor/plugin`.
 - **History plugin** (`@binaryoperations/json-tree-editor/history`) — path-scoped undo/redo (`undo`, `redo`, `canUndo`, `canRedo`, `readHistory`, `clearHistory`).  
   Docs: [history README](./src/history/README.md), [history PRD](../plans/PRD-history-plugin.md).
+- **Plugin UI** — plugins may contribute chrome via an optional `render(stage, ctx)` and a `stage: 'head' | 'tail'` config. Called once per plugin, in its own slot; a throwing `render` is isolated.  
+  View primitives published as commands for plugin authors: `json-tree.expandPath`, `json-tree.revealPath` (resolves the revealed row element, so plugins can decorate it), `json-tree.getFocusedPath`, `json-tree.onFocusedPathChange`. Plugin `setup` runs untracked, so state read during setup does not reinstall the plugin set when it changes.
+- **Breadcrumbs plugin** (`@binaryoperations/json-tree-editor/breadcrumbs`) — path bar for the focused row plus the `selectPath` command (expand ancestors → scroll into view → flash a ring around the key). `selectPath` exists only while the plugin is loaded.  
+  Docs: [breadcrumbs README](./src/breadcrumbs/README.md).
+- `pointerToJsonPath` / `jsonPathToPointer` — RFC 6901 JSON Pointer ↔ `JsonPath` helpers, exported from the package root.
+
+### Fixed
+
+- **Reveal scrolled to the wrong place for expanded containers.** `scrollTreeItemIntoView` measured the `.json-tree-row`, which is `position: sticky; top: 0` — once scrolled past, an expanded container's row reported itself pinned at the top of the scroller and looked "already visible" from any depth. Revealing it (a breadcrumb click on a shallow ancestor, search, or keyboard navigation) moved by the sticky-inset difference and stranded the viewport mid-subtree. It now positions by the node box, which stays in normal flow, and only requires the header row to fit rather than the whole subtree. `scrollTop` is also clamped at 0.
 
 ### Breaking Changes
 

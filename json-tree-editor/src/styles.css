@@ -62,6 +62,10 @@
   --jte-type-array-bg: #83184355;
   --jte-type-array-border: #be185d88;
 
+  /* Reveal flash (breadcrumb / programmatic scroll-to) */
+  --jte-flash-ring: #f59e0b;
+  --jte-flash-bg: #f59e0b33;
+
   /* Controls */
   --jte-focus-ring: #60a5fa;
   --jte-focus-border: #3b82f6;
@@ -874,4 +878,119 @@ mark.json-tree-mark--active {
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
+}
+
+/* ── Breadcrumbs plugin ─────────────────────────────────────────────────
+   Rendered by `breadcrumbsPlugin()` in the head (default) or tail slot. */
+
+.json-tree-breadcrumbs {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--jte-border, #232833);
+  background: var(--jte-surface, #12151c);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.json-tree-breadcrumbs__list {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.json-tree-breadcrumbs__item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.json-tree-breadcrumbs__sep {
+  color: var(--jte-muted, #5c6575);
+  padding: 0 0.15rem;
+  font-size: 0.7rem;
+}
+
+.json-tree-breadcrumbs__ellipsis {
+  color: var(--jte-muted-2, #7d8696);
+  padding: 0.1rem 0.25rem;
+  font-size: 0.72rem;
+}
+
+.json-tree-breadcrumbs__crumb {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  margin: 0;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--jte-key, #93c5fd);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.json-tree-breadcrumbs__crumb--index {
+  color: var(--jte-key-index, #a5b4c8);
+  font-variant-numeric: tabular-nums;
+}
+
+button.json-tree-breadcrumbs__crumb {
+  cursor: pointer;
+}
+
+button.json-tree-breadcrumbs__crumb:hover {
+  background: var(--jte-row-hover, #151922);
+  border-color: var(--jte-border-hover, #3a4254);
+}
+
+button.json-tree-breadcrumbs__crumb:focus-visible {
+  outline: none;
+  border-color: var(--jte-focus-border, #3b82f6);
+  box-shadow: 0 0 0 2px var(--jte-focus-glow-soft, rgba(59, 130, 246, 0.25));
+}
+
+.json-tree-breadcrumbs__crumb--current {
+  color: var(--jte-fg, #e6e8ec);
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Reveal ring — owned by the breadcrumbs plugin (`json-tree.revealPath` hands
+   it the row; the ring is applied to that row's key). Lives in this stylesheet
+   because the web component inlines exactly one sheet into its shadow root. */
+.json-tree-flash-ring {
+  border-radius: 4px;
+  /* Two pulses — duration × iterations must equal FLASH_MS in flash-ring.ts. */
+  animation: jte-flash-ring 450ms ease-out 2;
+}
+
+@keyframes jte-flash-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--jte-flash-ring, #f59e0b);
+    background: var(--jte-flash-bg, #f59e0b33);
+  }
+  35% {
+    box-shadow: 0 0 0 2px var(--jte-flash-ring, #f59e0b);
+    background: var(--jte-flash-bg, #f59e0b33);
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .json-tree-flash-ring {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--jte-flash-ring, #f59e0b);
+  }
 }

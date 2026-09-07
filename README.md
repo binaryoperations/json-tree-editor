@@ -44,6 +44,7 @@ pnpm dev         # all demo pages on one Vite server
 | `/wc.html` | Vanilla `<json-tree-editor>` host |
 | `/history.html` | Solid + **history plugin** (live stack + bootstrap snippet) |
 | `/wc-history.html` | WC + **history plugin** (live stack + bootstrap snippet) |
+| `/breadcrumb.html` | Solid + **breadcrumbs plugin** (path bar, `selectPath`, Solid / WC snippets) |
 
 ```bash
 pnpm dev                 # all pages
@@ -76,7 +77,7 @@ json-tree-editor/                 # monorepo root
     dist/                         # WC artifact (web-component.js + .d.ts)
   demo/
     index.html · large.html · wc.html
-    history.html · wc-history.html
+    history.html · wc-history.html · breadcrumb.html
   plans/                          # design docs (plugin system, history PRDs)
 ```
 

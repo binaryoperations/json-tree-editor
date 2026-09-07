@@ -141,12 +141,45 @@ History interprets: same key as top entry while a leaf string session is open �
 
 | ID | Requirement |
 |---|---|
-| FR-16 | Plugin shape: `{ name: string; setup(ctx): void | (() => void) }` |
+| FR-16 | Plugin shape: `{ name: string; stage?: 'head' \| 'tail'; setup(ctx): void \| (() => void); render?(stage, ctx) }` |
 | FR-17 | `name` unique per editor instance; duplicate → `console.error`, skip second `setup` |
 | FR-18 | Identity for prop updates = `name` only; same name → do not re-run `setup` (no option hot-reload) |
 | FR-19 | Hosts MUST use stable plugin instances / names; options change = remove name then re-add |
 | FR-20 | Teardown disposer runs on unmount, name removal, `use()` dispose, WC disconnect; runs even if another plugin throws (isolate errors) |
 | FR-21 | Teardown timing: no new `dispatch` from a plugin after its disposer starts; in-flight outer turn finishes, then disposer |
+
+### 4.4.1 Plugin UI (`render`) — v1.2
+
+Added after the v1.1 freeze. Additive: a plugin without `render` behaves exactly as before.
+
+| ID | Requirement |
+|---|---|
+| FR-16a | Optional `render(stage, ctx): JSX.Element \| null` — plugin-contributed UI |
+| FR-16b | `stage` config (`'head'` default, `'tail'`) selects the slot. `head` mounts above the error banner, find bar and tree; `tail` mounts below the tree scroller |
+| FR-16c | `render` is called **once per plugin**, in its own slot — not once per stage. The `stage` argument lets one component serve both placements |
+| FR-16d | `render` runs inside the host view's reactive root: Solid primitives are legal, cleanup runs on unmount |
+| FR-16e | A throwing `render` is caught, `console.error`d, and skipped — the tree still renders |
+| FR-16f | Rendered only by Solid-rendering hosts (`JsonTreeView`, web component). Headless hosts ignore it |
+| FR-16g | Plugins installed via `handle.use()` contribute UI too, removed on dispose |
+
+**View primitives.** Plugin UI generally needs the view's DOM mechanics, published as commands and registered lazily with the first plugin install (preserving FR-38):
+
+| Command | Signature |
+|---|---|
+| `json-tree.expandPath` | `(path: JsonPath) => true` |
+| `json-tree.revealPath` | `(path: JsonPath, opts?: { focus?: boolean }) => Promise<HTMLElement \| null>` |
+| `json-tree.getFocusedPath` | `() => JsonPath` |
+| `json-tree.onFocusedPathChange` | `(cb: (path: JsonPath) => void) => () => void` |
+
+Rationale: the view owns expand state and scrolling; *policy* (what navigating means) stays in plugins. `selectPath` is therefore **not** a core command — the breadcrumbs plugin masters it, and a competing plugin registering `selectPath` becomes a subordinate under FR-23.
+
+Expand state has no host-facing contract (no controlled prop, no event; in-tree search already mutates it silently), so `json-tree.expandPath` introduces no new observable surface.
+
+`revealPath` resolves the **row element** so plugins can decorate what the view revealed (the breadcrumbs flash ring) without the view owning presentation it does not need.
+
+| ID | Requirement |
+|---|---|
+| FR-16h | Plugin `setup` runs **untracked** in Solid hosts: state read during setup must not subscribe the host's install effect, which would reinstall the plugin set on every change |
 
 ### 4.5 Commands
 
@@ -186,6 +219,7 @@ History interprets: same key as top entry while a leaf string session is open �
 | ID | Requirement |
 |---|---|
 | FR-33 | Solid: optional `plugins?: JsonTreeEditorPlugin[]` |
+| FR-33a | Solid + WC render plugin `render` output in the `head` / `tail` slots |
 | FR-34 | Handle: `getRoot`, `use(plugin) => dispose`, `callCommand`, `hasCommand` |
 | FR-35 | WC: `use`, `plugins` setter, `callCommand`, `hasCommand`; no HTML attributes for plugins |
 | FR-36 | WC: queue `use`/`plugins` until runtime ready; dispose all on `disconnectedCallback` |
@@ -262,9 +296,15 @@ type TransactionEvent = {
 
 // ── Plugin ────────────────────────────────────────────────
 
+type PluginRenderStage = 'head' | 'tail';
+
 type JsonTreeEditorPlugin = {
   name: string;
+  /** Slot for `render`. Default 'head'. Ignored without `render`. */
+  stage?: PluginRenderStage;
   setup(ctx: PluginContext): void | (() => void);
+  /** Optional UI. Called once, in the slot named by `stage`. */
+  render?(stage: PluginRenderStage, ctx: PluginContext): JSX.Element | null;
 };
 
 type RegisterCommandResult = {

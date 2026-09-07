@@ -1,6 +1,8 @@
 # Breadcrumb / Path Bar — Implementation Plan
 
-> Status: planned (not started). Companion to [FUTURE.md](../FUTURE.md).  
+> Status: **shipped as a plugin** — see [breadcrumbs README](../json-tree-editor/src/breadcrumbs/README.md).
+> The v1 "core chrome" option below was not taken: the bar is plugin-rendered UI
+> (`stage: 'head' | 'tail'`) and `selectPath` is a plugin command. Companion to [FUTURE.md](../FUTURE.md).  
 > Builds after plugin foundation notes: [plugin-system.md](./plugin-system.md) (breadcrumb may later register as a plugin; v1 plan below can still land as core chrome).
 
 ## Current state (findings)

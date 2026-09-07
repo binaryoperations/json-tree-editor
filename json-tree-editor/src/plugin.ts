@@ -14,6 +14,7 @@ export type {
   EditorTransaction,
   JsonTreeEditorPlugin,
   PluginContext,
+  PluginRenderStage,
   RegisterCommandOptions,
   RegisterCommandResult,
   TransactionEvent,

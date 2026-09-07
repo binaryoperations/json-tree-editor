@@ -35,6 +35,7 @@ npm install solid-js
 | `@binaryoperations/json-tree-editor` | `JsonTreeView` + props/handle types (peer `solid-js`) |
 | `@binaryoperations/json-tree-editor/plugin` | `definePlugin` + plugin contract types |
 | `@binaryoperations/json-tree-editor/history` | Path-scoped undo/redo — **opt-in** ([history README](./src/history/README.md)) |
+| `@binaryoperations/json-tree-editor/breadcrumbs` | Path bar + `selectPath` — **opt-in** ([breadcrumbs README](./src/breadcrumbs/README.md)) |
 | `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, …) — **opt-in** |
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, lower-level primitives |
 | `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` (Solid bundled; DnD on by default) |
@@ -144,7 +145,7 @@ Keep the source string as document truth: pass it as `value`, push tree edits ba
 
 ## Plugins
 
-Plugins are opt-in modules that observe document transactions and register **commands**. Core stays free of undo stacks / CRDTs.
+Plugins are opt-in modules that observe document transactions, register **commands**, and may contribute **UI**. Core stays free of undo stacks / CRDTs / chrome.
 
 | Surface | How |
 | --- | --- |
@@ -154,12 +155,104 @@ Plugins are opt-in modules that observe document transactions and register **com
 
 Command registry: **first registrant is master** for a command name; later plugins are subordinates. Types: `@binaryoperations/json-tree-editor/plugin`. Architecture: [plugin system PRD](../plans/PRD-plugin-system.md).
 
+> Prefer **stable plugin instances**. Identity is by `name`, and a changed list
+> reinstalls the set; hoisting the array to a `const` keeps that from happening on
+> unrelated re-renders. (An inline `plugins={[myPlugin()]}` is read once and cached,
+> so it works — it is just easier to churn by accident.)
+
+### The contract
+
+```ts
+type JsonTreeEditorPlugin = {
+  name: string;
+  /** Slot for `render`. Default `'head'`. Ignored without `render`. */
+  stage?: 'head' | 'tail';
+  setup(ctx: PluginContext): void | (() => void);
+  /** Optional UI. Called once, in the slot named by `stage`. */
+  render?(stage: 'head' | 'tail', ctx: PluginContext): JSX.Element | null;
+};
+```
+
+### `render` — plugin UI
+
+A plugin that needs chrome (a path bar, a status strip, a toolbar) returns it from
+`render` instead of asking the host to place a component.
+
+- **Slots.** `stage: 'head'` (default) mounts above everything — before the error
+  banner, the find bar and the tree. `stage: 'tail'` mounts below the tree scroller.
+- **Called once per plugin**, in its own slot. The `stage` argument is passed so one
+  component can serve both placements; it is *not* an invitation to render twice.
+- **Reactive context.** `render` runs inside the view's reactive root, so Solid
+  primitives are safe and cleanup runs on unmount. Hold plugin state in signals
+  created by the factory and written from `setup`.
+- **Isolated.** A throwing `render` is logged and skipped — it cannot blank the tree.
+- **Solid hosts only.** `JsonTreeView` and the web component render it; headless
+  hosts ignore it. Return `null` to contribute nothing.
+
+Plugins that render usually also need the view's DOM mechanics. Those are published
+as commands, and are registered only once at least one plugin is installed:
+
+| Command | Signature | Does |
+| --- | --- | --- |
+| `json-tree.expandPath` | `(path) => true` | Expand every ancestor of `path` (and `path` itself when it is a container) |
+| `json-tree.revealPath` | `(path, { focus? }) => Promise<HTMLElement \| null>` | Scroll the row into view once it exists and optionally focus it. Resolves the row element — so a plugin can decorate it — or `null` if it never appears |
+| `json-tree.getFocusedPath` | `() => JsonPath` | The roving-tabindex row |
+| `json-tree.onFocusedPathChange` | `(cb) => unsubscribe` | Fires when the focused row changes |
+
+The split is deliberate: the view owns what needs its internals (expand state, sticky-aware
+scrolling) and hands back the element. Everything else — navigation *policy*, decoration —
+stays in the plugin. `selectPath` and its flash ring are composed from these primitives by
+the [breadcrumbs plugin](./src/breadcrumbs/README.md), not built in.
+
+`setup` runs untracked, so reading editor state there does not subscribe the host's
+install effect to it.
+
 <details>
 <summary>Authoring sketch</summary>
 
 ```tsx
 import { definePlugin } from '@binaryoperations/json-tree-editor/plugin';
-// JsonTreeEditorPlugin: { name, setup(ctx) { … } }
+
+export function statusPlugin() {
+  const [count, setCount] = createSignal(0);
+
+  return definePlugin({
+    name: 'status',
+    stage: 'tail',
+    setup(ctx) {
+      return ctx.onTransaction(() => setCount((n) => n + 1));
+    },
+    render(_stage, ctx) {
+      return <footer>{count()} edits · {ctx.getState().validity.ok ? 'valid' : 'invalid'}</footer>;
+    },
+  });
+}
+```
+
+</details>
+
+---
+
+## Breadcrumbs plugin
+
+**Import:** `@binaryoperations/json-tree-editor/breadcrumbs`
+
+A path bar for the focused row, and the `selectPath` command — expand ancestors,
+scroll the row into view, flash a ring around its key.
+
+**→ Full docs: [src/breadcrumbs/README.md](./src/breadcrumbs/README.md)**
+
+<details>
+<summary>Minimal wire-up</summary>
+
+```tsx
+import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
+
+const plugins = [breadcrumbsPlugin()];
+
+<JsonTreeView value={json()} onChange={setJson} plugins={plugins} />
+// The bar is rendered by the plugin — no extra markup.
+await handle.callCommand('selectPath', ['meta', 'author', 'email']);
 ```
 
 </details>

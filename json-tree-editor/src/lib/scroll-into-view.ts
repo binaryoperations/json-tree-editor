@@ -40,6 +40,9 @@ export function measureStickyTopInset(
  * Scroll `item` inside `scroller` so its row is fully below sticky ancestors
  * and above the scroller bottom (with a small pad).
  *
+ * Positions by the node's natural (unstuck) offset, so revealing an expanded
+ * container from deep inside its own subtree scrolls back up to it.
+ *
  * Mutates `scroller.scrollTop` only when the target is outside the safe band.
  * Safe in jsdom (no `scrollIntoView` / `scrollBy` required).
  */
@@ -49,21 +52,36 @@ export function scrollTreeItemIntoView(
   pad: number = TREE_SCROLL_PAD_PX,
 ): void {
   const scrollerRect = scroller.getBoundingClientRect();
-  const row = item.querySelector(':scope > .json-tree-row');
-  const target = row instanceof HTMLElement ? row : item;
-  const targetRect = target.getBoundingClientRect();
+  const rowEl = item.querySelector(':scope > .json-tree-row');
+  const row = rowEl instanceof HTMLElement ? rowEl : item;
+
+  // Measure the **node box**, not its row.
+  //
+  // An expanded container's row is `position: sticky; top: 0`. Once scrolled
+  // past, that row reports itself pinned at the top of the scroller — so it
+  // looks "already visible" from any depth, and scrolling to it would move
+  // by the sticky-inset difference and stop, stranding the viewport deep in
+  // the subtree. The node box stays in normal flow, so its top is where the
+  // row actually lives.
+  const itemRect = item.getBoundingClientRect();
+  const rowHeight = row.getBoundingClientRect().height || itemRect.height;
+  const targetTop = itemRect.top;
+  // Only the header row has to fit — not the whole subtree under it.
+  const targetBottom = targetTop + rowHeight;
 
   const topInset = measureStickyTopInset(scroller, item);
   const visibleTop = scrollerRect.top + topInset + pad;
   const visibleBottom = scrollerRect.bottom - pad;
 
   let delta = 0;
-  if (targetRect.top < visibleTop) {
-    delta = targetRect.top - visibleTop;
-  } else if (targetRect.bottom > visibleBottom) {
-    delta = targetRect.bottom - visibleBottom;
+  if (targetTop < visibleTop) {
+    delta = targetTop - visibleTop;
+  } else if (targetBottom > visibleBottom) {
+    delta = targetBottom - visibleBottom;
   }
   if (delta === 0) return;
 
-  scroller.scrollTop += delta;
+  // Browsers clamp a negative scrollTop; be explicit so callers (and jsdom)
+  // see the same value. Revealing the root row overshoots by `pad`.
+  scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
 }

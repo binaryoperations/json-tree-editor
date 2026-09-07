@@ -7,6 +7,7 @@ export {
   JsonTreeView,
   type JsonTreeViewProps,
   type JsonTreeViewHandle,
+  type RevealOptions,
 } from './components/primitives/JsonTreeView';
 
 export type {
@@ -18,9 +19,13 @@ export type {
   EditorTransaction,
   JsonTreeEditorPlugin,
   PluginContext,
+  PluginRenderStage,
   RegisterCommandOptions,
   RegisterCommandResult,
   TransactionEvent,
 } from './lib/editor-runtime/types';
 
 export { definePlugin } from './plugin';
+
+// Utilities — RFC 6901 JSON Pointer ↔ JsonPath
+export { pointerToJsonPath, jsonPathToPointer } from './lib/json-path-utils';

@@ -3,6 +3,8 @@
  * Re-exported from package root and `./plugin`.
  */
 
+import type { JSX } from 'solid-js';
+
 import type { JsonPath } from '../json-path';
 import type { JsonRootValue, JsonValidity } from '../parse-json';
 
@@ -101,9 +103,40 @@ export type TransactionEvent = {
 
 // ── Plugin ────────────────────────────────────────────────
 
+/**
+ * Where a plugin's {@link JsonTreeEditorPlugin.render} output is mounted
+ * inside `JsonTreeView`.
+ *
+ * - `'head'` (default) — above everything: before the error banner, the find
+ *   bar and the tree scroller.
+ * - `'tail'` — below the tree scroller.
+ */
+export type PluginRenderStage = 'head' | 'tail';
+
 export type JsonTreeEditorPlugin = {
   name: string;
+  /**
+   * Slot for {@link JsonTreeEditorPlugin.render}. Defaults to `'head'`.
+   * Ignored when the plugin has no `render`.
+   */
+  stage?: PluginRenderStage;
   setup(ctx: PluginContext): void | (() => void);
+  /**
+   * Optional UI contributed to the host view.
+   *
+   * Called **once per plugin**, in the slot named by
+   * {@link JsonTreeEditorPlugin.stage} — not once per stage. `stage` is passed
+   * so one component can serve both placements without reading the plugin
+   * object back.
+   *
+   * Runs inside the view's reactive root: Solid primitives
+   * (`createSignal` / `createEffect` / `onCleanup`) are safe here, and cleanup
+   * runs on unmount. Return `null` to contribute nothing.
+   *
+   * Only rendered by Solid-rendering hosts (`JsonTreeView` and the web
+   * component). Headless hosts ignore it.
+   */
+  render?(stage: PluginRenderStage, ctx: PluginContext): JSX.Element | null;
 };
 
 export type RegisterCommandResult = {

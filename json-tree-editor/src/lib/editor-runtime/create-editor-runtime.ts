@@ -30,6 +30,11 @@ export type EditorRuntime = {
 
   setPlugins(plugins: JsonTreeEditorPlugin[]): void;
   use(plugin: JsonTreeEditorPlugin): () => void;
+  /**
+   * Context handed to `plugin.render`. Contexts are stateless views over the
+   * runtime, so this is safe to call for a plugin that is already installed.
+   */
+  getPluginContext(pluginName: string): PluginContext;
   callCommand<T = unknown>(name: string, ...args: unknown[]): T | undefined;
   hasCommand(name: string): boolean;
 
@@ -387,6 +392,10 @@ export function createEditorRuntime(options: {
     },
     setPlugins,
     use,
+    getPluginContext: (pluginName) => {
+      ensureFull();
+      return createPluginContext(pluginName);
+    },
     callCommand,
     hasCommand,
     isFull: () => full,
