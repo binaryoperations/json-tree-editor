@@ -191,19 +191,21 @@ Expand state has no host-facing contract (no controlled prop, no event; in-tree 
 | FR-25 | `exclusive: true` + subordinate = **broken install** → `console.error` once per registration (dev and prod); master continues |
 | FR-26 | Master teardown → command **removed** (no promote-on-teardown) |
 | FR-27 | Missing command: `callCommand` → `undefined`; `hasCommand` → `false`; no throw |
-| FR-28 | Well-known names (not implemented in foundation): `undo`, `redo`, `canUndo`, `canRedo`, `readHistory` |
+| FR-28 | Well-known names are **reserved for plugins**; core masters none of them: `undo`, `redo`, `canUndo`, `canRedo`, `readHistory`, `clearHistory`, `selectPath` |
 
-**Signatures (docs freeze):**
+**Signatures (as shipped):**
 
-| Command | Signature |
-|---|---|
-| `undo` / `redo` | `() => boolean` |
-| `canUndo` / `canRedo` | `() => boolean` |
-| `readHistory` | `() => unknown` |
+| Command | Master | Signature |
+|---|---|---|
+| `undo` / `redo` | history | `() => boolean` |
+| `canUndo` / `canRedo` | history | `() => boolean` |
+| `readHistory` | history | `() => HistoryReadSnapshot` |
+| `clearHistory` | history | `() => boolean` |
+| `selectPath` | breadcrumbs | `(path: JsonPath, opts?: { focus?: boolean; flash?: boolean }) => Promise<boolean>` |
+
+History registers all six `exclusive: true` (a second history install is inert and `console.error`s per FR-25). `selectPath` is **not** exclusive: a competing navigation plugin becomes a plain subordinate under FR-23. Core's own view primitives (`json-tree.*`) are separate — see §4.4.1.
 
 **Toolbar / `canUndo`:** no core subscription bus. UIs re-query `callCommand('canUndo')` on `onTransaction` (or keep state inside the history plugin / host). History may later expose a small store; out of foundation scope.
-
-**Handle convenience `undo()`:** not in foundation. History package or a later PR may add thin wrappers; until then hosts use `callCommand('undo')`.
 
 ### 4.6 History / collab composition (docs + soft validation)
 
@@ -476,12 +478,12 @@ Backend attach lives in the **history package**, e.g. `attachHistoryBackend(ctx,
 
 ## 11. Out of scope follow-ups (tracked, not this PRD)
 
-- History plugin (LocalStack, coalesce sessions, Mod+Z, `readHistory` shape)  
+Only **open** work is listed. Items are deleted once they ship — absence here means shipped or abandoned, not forgotten; `CHANGELOG.md` and the package READMEs are the record of what exists.
+
+- Array DnD as a plugin (migrate off the `arrayReorder` prop / `array-reorder` attribute)  
 - Collab Yjs/Loro adapters + presence + follow  
 - `filterTransaction`  
 - UI state subscriptions / transactions  
-- Breadcrumb (core chrome)  
-- Handle/WC `undo` wrappers  
 
 ---
 
@@ -520,10 +522,7 @@ Backend attach lives in the **history package**, e.g. `attachHistoryBackend(ctx,
 
 ## 14. Open items deferred (explicitly not freeze blockers)
 
-1. Exact `HistorySnapshot` shape for `readHistory`  
-2. Whether known-pair warning ships in foundation or history PR  
-3. Package export path: types on root vs `@…/plugin` only  
-4. Dev-only vs always-on `console.error` volume (normative: once per bad registration is enough)
+1. Known-pair `console.error` (FR-31) — shipped in neither the foundation nor the history plugin; still optional-if-cheap
 
 ---
 

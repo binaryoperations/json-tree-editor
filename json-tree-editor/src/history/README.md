@@ -112,7 +112,7 @@ All registered **exclusive** by the history master plugin:
 | `canUndo` | `() => boolean` | Whether undo is available |
 | `canRedo` | `() => boolean` | Whether redo is available |
 | `readHistory` | `() => HistoryReadSnapshot` | Lightweight stack meta (no full entry bodies) |
-| `clearHistory` | `() => void` | Empty stacks; document unchanged |
+| `clearHistory` | `() => boolean` | Empty stacks (returns `true`); document unchanged |
 
 Invoke via Solid handle or WC:
 

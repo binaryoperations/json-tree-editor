@@ -31,13 +31,7 @@ New product features should prefer the **plugin** model (`plugins` / `use`, comm
 3. Update demos and README bootstrap snippets.  
 4. Changelog: soft deprecation or breaking, per release policy.
 
-### 2. Breadcrumb / path bar
-
-Show current node path; click segments to navigate.
-
-→ Plan: [plans/breadcrumb.md](./plans/breadcrumb.md)
-
-### 3. Collab + follow-user
+### 2. Collab + follow-user
 
 - CRDT multiplayer via **Yjs** and **Loro** adapters as plugins.
 - Separate concern from history; compose via master/subordinate (or collab packages history).
@@ -49,19 +43,18 @@ Show current node path; click segments to navigate.
 
 ## Later
 
-4. **Copy as code** — node/subtree as JSON, JS, TypeScript, etc.  
-5. **"Go to" / quick open** — jump to key or path.  
-6. **Diff view** — compare two JSONs.  
-7. **Table / grid view** — arrays of objects as rows/columns.  
-8. **URL / image preview** — detect URLs/images; preview.  
-9. **JSON5 / comments** — comments, trailing commas (lower priority).
+3. **Copy as code** — node/subtree as JSON, JS, TypeScript, etc.  
+4. **"Go to" / quick open** — jump to key or path.  
+5. **Diff view** — compare two JSONs.  
+6. **Table / grid view** — arrays of objects as rows/columns.  
+7. **URL / image preview** — detect URLs/images; preview.  
+8. **JSON5 / comments** — comments, trailing commas (lower priority).
 
 ---
 
 ## Suggested order
 
 1. **DnD as plugin** — migrate from `arrayReorder` prop / WC attribute  
-2. **Breadcrumb**  
-3. **Collab** (Yjs + Loro) + history composition  
-4. **Presence + follow user**  
-5. Remaining items as plugins where useful  
+2. **Collab** (Yjs + Loro) + history composition  
+3. **Presence + follow user**  
+4. Remaining items as plugins where useful  
