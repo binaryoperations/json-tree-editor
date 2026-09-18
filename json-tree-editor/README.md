@@ -40,8 +40,7 @@ npm install solid-js
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, lower-level primitives |
 | `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` (Solid bundled; DnD on by default) |
 | `@binaryoperations/json-tree-editor/styles.css` | Structure + default preset (WC embeds this in shadow DOM) |
-| `@binaryoperations/json-tree-editor/themes/default.css` | Default light/dark tokens (already imported by `styles.css`) |
-| `@binaryoperations/json-tree-editor/themes/high-contrast.css` | Optional high-contrast preset — import **after** `styles.css` |
+| `@binaryoperations/json-tree-editor/themes/*.css` | Named presets (`default.css` already pulled in by `styles.css`; `high-contrast.css` after it) |
 
 ---
 
