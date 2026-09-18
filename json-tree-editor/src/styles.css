@@ -708,7 +708,8 @@ mark.json-tree-mark--active {
   transition: opacity 0.1s ease;
 }
 
-.json-tree-row:focus-within .json-tree-actions {
+.json-tree-row:focus-within .json-tree-actions,
+.json-tree-actions:hover {
   opacity: 1;
 }
 
@@ -729,6 +730,7 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-action:hover:not(:disabled) {
+  opacity: 1;
   color: var(--jte--json-tree--color);
   border-color: var(--jte--json-tree--color);
   background: var(--jte--json-tree-row--hover);
@@ -791,6 +793,11 @@ mark.json-tree-mark--active {
 
 .json-tree-add-row:hover {
   background: var(--jte--json-tree-row--hover);
+}
+
+.json-tree-add-row .json-tree-action {
+  opacity: var(--jte--json-tree-actions--idle);
+  transition: opacity 0.1s ease;
 }
 
 .json-tree-add-row__btn {
