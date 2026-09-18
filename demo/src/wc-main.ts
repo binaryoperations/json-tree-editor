@@ -6,6 +6,7 @@
 import '@binaryoperations/json-tree-editor/web-component';
 import type { JsonTreeEditorPlugin } from '@binaryoperations/json-tree-editor/plugin';
 import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
+import highContrastHref from '@binaryoperations/json-tree-editor/themes/high-contrast.css?url';
 
 import { mountDemoHeader } from './shell/header';
 
@@ -94,9 +95,34 @@ document.querySelector('#btn-sample')!.addEventListener('click', () => {
   setStatus('sample loaded');
 });
 
-document.querySelector('#btn-theme')!.addEventListener('click', () => {
-  tree.classList.toggle('light');
-  setStatus(tree.classList.contains('light') ? 'light theme' : 'dark theme');
+const SCHEME: Record<string, string> = {
+  light: 'light',
+  dark: 'dark',
+  system: 'light dark',
+};
+
+const schemeSelect = document.querySelector<HTMLSelectElement>('#sel-scheme')!;
+function applyScheme(value: string) {
+  tree.style.colorScheme = SCHEME[value] ?? 'light dark';
+}
+applyScheme(schemeSelect.value);
+schemeSelect.addEventListener('change', () => {
+  applyScheme(schemeSelect.value);
+  setStatus(`color-scheme: ${tree.style.colorScheme}`);
+});
+
+const hcLink = document.querySelector<HTMLLinkElement>('#jte-high-contrast')!;
+hcLink.href = highContrastHref;
+const chkHc = document.querySelector<HTMLInputElement>('#chk-hc')!;
+chkHc.addEventListener('change', () => {
+  hcLink.disabled = !chkHc.checked;
+  setStatus(chkHc.checked ? 'high-contrast on' : 'high-contrast off');
+});
+
+const chkParts = document.querySelector<HTMLInputElement>('#chk-parts')!;
+chkParts.addEventListener('change', () => {
+  tree.classList.toggle('demo-parts', chkParts.checked);
+  setStatus(chkParts.checked ? '::part(row)/::part(search) on' : '::part demo off');
 });
 
 const btnReadOnly = document.querySelector<HTMLButtonElement>('#btn-readonly')!;
