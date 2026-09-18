@@ -40,7 +40,7 @@ export const TypeSelect: Component<TypeSelectProps> = (props) => {
         <span
           class="json-tree-type"
           classList={{ [`json-tree-type--${props.type}`]: true }}
-          part="type"
+          part={`type ${props.type}`}
           aria-label={`JSON type: ${props.type}`}
         >
           {props.type}
@@ -50,7 +50,7 @@ export const TypeSelect: Component<TypeSelectProps> = (props) => {
       <select
         class="json-tree-type json-tree-type-select"
         classList={{ [`json-tree-type--${props.type}`]: true }}
-        part="type"
+        part={`type ${props.type}`}
         title="Change type"
         aria-label="JSON type"
         value={props.type}

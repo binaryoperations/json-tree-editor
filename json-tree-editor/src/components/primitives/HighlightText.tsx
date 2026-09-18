@@ -27,7 +27,7 @@ export const HighlightText: Component<HighlightTextProps> = (props) => {
             <mark
               class="json-tree-mark"
               classList={{ 'json-tree-mark--active': !!props.active }}
-              part="mark"
+              part={props.active ? 'mark active' : 'mark'}
             >
               {seg.text}
             </mark>
