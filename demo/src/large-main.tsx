@@ -1,4 +1,5 @@
 import '@binaryoperations/json-tree-editor/styles.css';
+import '@binaryoperations/json-tree-editor/themes/default.css';
 import './styles.css';
 
 import { render } from 'solid-js/web';

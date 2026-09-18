@@ -1,14 +1,16 @@
-/* JSON tree editor styles (library)
+/* JSON tree editor styles (library) — structure only, no palette.
  *
- * Import `@binaryoperations/json-tree-editor/styles.css` (this file already
- * loads the default preset). Optionally import `themes/high-contrast.css`
- * after it. Override `--jte--*` tokens on `json-tree-editor` or `.json-tree`.
- * Hosts force a palette with `color-scheme: light`, `dark`, or `light dark`.
+ * Import this plus **exactly one** theme:
+ *   `@binaryoperations/json-tree-editor/themes/default.css`
+ *   `@binaryoperations/json-tree-editor/themes/high-contrast.css`
+ * Do not load two themes; high-contrast replaces default, it does not stack.
  *
- * Shadow DOM consumers can also style via ::part(tree|row|key|value|…).
+ * Theme files target `json-tree-editor, .json-tree` (not `:host`).
+ * `:host` below is WC layout (the custom element box), not a page theme.
+ * Force a side with `color-scheme: light | dark` on that same element.
+ *
+ * Shadow DOM: also `::part(tree|row|key|value|…)`.
  */
-
-@import './themes/default.css';
 
 :host {
   display: block;
@@ -225,7 +227,7 @@ mark.json-tree-mark--active {
 /* Roving tabindex row focus (keyboard arrow navigation). */
 .json-tree-node:focus-visible > .json-tree-row {
   background: var(--jte--json-tree-row--focus);
-  box-shadow: inset 0 0 0 2px var(--jte--json-tree--focus);
+  box-shadow: inset 0 0 0 var(--jte--json-tree--focus-width) var(--jte--json-tree--focus);
 }
 
 /* Scroll inset lives on the root node (not the scroller) so sticky

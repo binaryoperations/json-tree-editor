@@ -6,6 +6,7 @@
 import '@binaryoperations/json-tree-editor/web-component';
 import type { JsonTreeEditorPlugin } from '@binaryoperations/json-tree-editor/plugin';
 import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
+import defaultHref from '@binaryoperations/json-tree-editor/themes/default.css?url';
 import highContrastHref from '@binaryoperations/json-tree-editor/themes/high-contrast.css?url';
 
 import { mountDemoHeader } from './shell/header';
@@ -111,12 +112,12 @@ schemeSelect.addEventListener('change', () => {
   setStatus(`color-scheme: ${tree.style.colorScheme}`);
 });
 
-const hcLink = document.querySelector<HTMLLinkElement>('#jte-high-contrast')!;
-hcLink.href = highContrastHref;
+const themeLink = document.querySelector<HTMLLinkElement>('#jte-theme')!;
+themeLink.href = defaultHref;
 const chkHc = document.querySelector<HTMLInputElement>('#chk-hc')!;
 chkHc.addEventListener('change', () => {
-  hcLink.disabled = !chkHc.checked;
-  setStatus(chkHc.checked ? 'high-contrast on' : 'high-contrast off');
+  themeLink.href = chkHc.checked ? highContrastHref : defaultHref;
+  setStatus(chkHc.checked ? 'theme: high-contrast' : 'theme: default');
 });
 
 const chkParts = document.querySelector<HTMLInputElement>('#chk-parts')!;

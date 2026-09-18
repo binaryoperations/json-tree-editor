@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
     <title>json-tree-editor — Web Component demo</title>
-    <!-- Library high-contrast preset; enabled from the demo toolbar. -->
+    <!-- Exactly one theme at a time. Toolbar swaps href between default and high-contrast. -->
     <link
-      id="jte-high-contrast"
+      id="jte-theme"
       rel="stylesheet"
-      href="@binaryoperations/json-tree-editor/themes/high-contrast.css"
-      disabled
+      data-jte-theme
+      href="@binaryoperations/json-tree-editor/themes/default.css"
     />
     <style>
       *,

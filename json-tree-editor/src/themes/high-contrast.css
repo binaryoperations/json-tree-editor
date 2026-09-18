@@ -1,6 +1,5 @@
-:host,
 json-tree-editor,
-.json-tree:not(:host *) {
+.json-tree {
   color-scheme: light dark;
 
   --jte--json-tree--bg: light-dark(#ffffff, #000000);
@@ -51,6 +50,7 @@ json-tree-editor,
   --jte--json-tree-value--array: var(--jte--json-tree-type--array);
 
   --jte--json-tree--focus: light-dark(#000000, #ffffff);
+  --jte--json-tree--focus-width: 3px;
   --jte--json-tree-mark: #000000;
   --jte--json-tree-mark-bg: #ffff00;
   --jte--json-tree-mark--active: #000000;
@@ -59,10 +59,4 @@ json-tree-editor,
   --jte--json-tree__error: light-dark(#9f1239, #fb7185);
   --jte--json-tree__error-bg: light-dark(#ffe4e6, #4c0519);
   --jte--json-tree__error-border: light-dark(#9f1239, #fb7185);
-}
-
-:host .json-tree-node:focus-visible > .json-tree-row,
-json-tree-editor .json-tree-node:focus-visible > .json-tree-row,
-.json-tree:not(:host *) .json-tree-node:focus-visible > .json-tree-row {
-  box-shadow: inset 0 0 0 3px var(--jte--json-tree--focus);
 }

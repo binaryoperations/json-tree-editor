@@ -3,6 +3,7 @@
  * Requires WC source via Vite alias (or built dist for production consumers).
  */
 import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/themes/default.css';
 import {
   historyPlugin,
   type HistoryEntryMeta,

@@ -39,8 +39,8 @@ npm install solid-js
 | `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, …) — **opt-in** |
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, lower-level primitives |
 | `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` (Solid bundled; DnD on by default) |
-| `@binaryoperations/json-tree-editor/styles.css` | Structure + default preset (WC embeds this in shadow DOM) |
-| `@binaryoperations/json-tree-editor/themes/*.css` | Named presets (`default.css` already pulled in by `styles.css`; `high-contrast.css` after it) |
+| `@binaryoperations/json-tree-editor/styles.css` | Structure only (WC inlines this in shadow DOM) |
+| `@binaryoperations/json-tree-editor/themes/*.css` | Palettes — import **exactly one** (`default.css` or `high-contrast.css`) |
 
 ---
 
@@ -53,6 +53,7 @@ npm install solid-js
 import { createSignal } from 'solid-js';
 import { JsonTreeView } from '@binaryoperations/json-tree-editor';
 import '@binaryoperations/json-tree-editor/styles.css';
+import '@binaryoperations/json-tree-editor/themes/default.css';
 
 export function JsonPanel() {
   const [source, setSource] = createSignal('{"hello":"world"}');
@@ -74,6 +75,7 @@ export function JsonPanel() {
 ```html
 <script type="module">
   import '@binaryoperations/json-tree-editor/web-component';
+  import '@binaryoperations/json-tree-editor/themes/default.css';
 
   const el = document.querySelector('json-tree-editor');
   el.value = JSON.stringify({ hello: 'world', count: 1 }, null, 2);
@@ -93,6 +95,7 @@ export function JsonPanel() {
 
 ```ts
 import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/themes/default.css';
 import type { JsonTreeEditorElement } from '@binaryoperations/json-tree-editor/web-component';
 
 const el = document.querySelector('json-tree-editor') as JsonTreeEditorElement;
@@ -110,10 +113,11 @@ el.addEventListener('change', (event) => {
 
 ## SolidJS API
 
-Import styles once in your app entry or layout:
+Import structure plus **one** theme in your app entry or layout:
 
 ```ts
 import '@binaryoperations/json-tree-editor/styles.css';
+import '@binaryoperations/json-tree-editor/themes/default.css';
 ```
 
 ### `JsonTreeView` props
@@ -289,6 +293,7 @@ const plugins = [historyPlugin({ maxDepth: 50 })];
 
 ```ts
 import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/themes/default.css';
 import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
 
 const el = document.querySelector('json-tree-editor')!;
@@ -351,18 +356,19 @@ Path helpers (`getAtPath`, `setAtPath`, `insertAtPath`, …), parse helpers (`pa
 
 ## Theming
 
-Import the stylesheet once. It includes the **default** preset (`color-scheme: light dark` + `light-dark()`), so the tree follows the OS `prefers-color-scheme`. High-contrast is a second file — load it **after** `styles.css`.
+`styles.css` is layout only. Import **exactly one** theme for color (`default` or `high-contrast`). High-contrast **replaces** default — do not load both.
 
 ```ts
 import '@binaryoperations/json-tree-editor/styles.css';
-// optional:
+import '@binaryoperations/json-tree-editor/themes/default.css';
+// or:
 import '@binaryoperations/json-tree-editor/themes/high-contrast.css';
 ```
 
-The web component already inlines `styles.css` in its open shadow. High-contrast is a **document** stylesheet:
+Theme files set tokens on `json-tree-editor` and `.json-tree`, not `:host` (that would be the document when the file is a page stylesheet). The web component inlines **structure** in its shadow; the theme stays a **document** stylesheet so it paints the custom element, which inherits into the shadow:
 
 ```css
-@import '@binaryoperations/json-tree-editor/themes/high-contrast.css';
+@import '@binaryoperations/json-tree-editor/themes/default.css';
 ```
 
 Force a side on the host (or on `.json-tree` for Solid):

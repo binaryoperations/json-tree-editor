@@ -1,3 +1,4 @@
+import defaultCssUrl from '@binaryoperations/json-tree-editor/themes/default.css?url';
 import highContrastCssUrl from '@binaryoperations/json-tree-editor/themes/high-contrast.css?url';
 import {
   JsonTreeView,
@@ -30,7 +31,7 @@ const TREE_COLOR_SCHEME_CSS: Record<TreeColorScheme, string> = {
   system: 'light dark',
 };
 
-const HIGH_CONTRAST_LINK_ID = 'jte-theme-high-contrast';
+const THEME_LINK_ID = 'jte-theme';
 
 /** Stable plugin instance — identity is by object across re-renders. */
 const TREE_PLUGINS = [breadcrumbsPlugin()];
@@ -77,26 +78,19 @@ export const App: Component = () => {
   });
 
   createEffect(() => {
-    const on = highContrast();
-    let link = document.getElementById(
-      HIGH_CONTRAST_LINK_ID,
-    ) as HTMLLinkElement | null;
-    if (on) {
-      if (!link) {
-        link = document.createElement('link');
-        link.id = HIGH_CONTRAST_LINK_ID;
-        link.rel = 'stylesheet';
-        link.href = highContrastCssUrl;
-        document.head.appendChild(link);
-      }
-      link.disabled = false;
-    } else if (link) {
-      link.disabled = true;
+    let link = document.getElementById(THEME_LINK_ID) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = THEME_LINK_ID;
+      link.rel = 'stylesheet';
+      link.setAttribute('data-jte-theme', '');
+      document.head.appendChild(link);
     }
+    link.href = highContrast() ? highContrastCssUrl : defaultCssUrl;
   });
 
   onCleanup(() => {
-    document.getElementById(HIGH_CONTRAST_LINK_ID)?.remove();
+    document.getElementById(THEME_LINK_ID)?.remove();
   });
 
   const prettyPrint = () => {
@@ -179,8 +173,8 @@ export const App: Component = () => {
           aria-pressed={highContrast()}
           title={
             highContrast()
-              ? 'High-contrast theme stylesheet is loaded'
-              : 'Load high-contrast.css after styles.css'
+              ? 'Using themes/high-contrast.css (not default)'
+              : 'Using themes/default.css'
           }
           onClick={() => setHighContrast((on) => !on)}
         >
