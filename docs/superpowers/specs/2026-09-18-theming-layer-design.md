@@ -19,6 +19,7 @@ Nobody is consuming the current `--jte-*` public names, so they can be replaced 
 3. **Great defaults** — complete light and dark palettes (every token, not a partial remap).
 4. **Easy overrides** — set any public token on `.json-tree` / `json-tree-editor` after the preset.
 5. **BEM tokens** namespaced with `--jte--`, so hyphenated block names stay unambiguous.
+6. **Every utility exposes a `::part`** so WC hosts can style row, chevron, buttons, search, etc. without piercing the shadow.
 
 ## Non-goals
 
@@ -228,6 +229,70 @@ Reuse key tokens for crumb color (`.json-tree-breadcrumbs__crumb` → `--jte--js
 
 `.json-tree-input--number` may keep **layout** bits that are not color (`font-variant-numeric`, `max-width`) via a non-color class if needed, e.g. leave those rules on `.json-tree-value--number .json-tree-input` so we do not smuggle type color through `--number`.
 
+## `::part` contract (web component)
+
+Tokens set color. **`::part` is how a host restyles a specific control** (size, display, extra chrome) through the open shadow.
+
+Solid hosts already see BEM classes in light DOM. Parts are required for `<json-tree-editor>` and must exist on the same nodes as the BEM classes (Solid can keep `part` attributes; they are harmless).
+
+### Naming
+
+- One **stem** per utility, matching the BEM block after `json-tree-` / `json-tree__`: `.json-tree-row` → `row`, `.json-tree__search` → `search`.
+- **Variants are extra part tokens** on the same node (space-separated). Hosts can target the family or the instance:
+
+```css
+json-tree-editor::part(action) { /* every button */ }
+json-tree-editor::part(delete) { /* delete only */ }
+json-tree-editor::part(action delete) { /* same node, both names */ }
+json-tree-editor::part(chevron) { /* expand/collapse cue */ }
+json-tree-editor::part(type string) { /* string type chip */ }
+```
+
+- Do not invent a parallel vocabulary. If the class is `.json-tree-action--danger`, parts are `action` + `delete` (role), not a third name.
+
+### Map
+
+Every public utility below **must** have `part` set. Names already shipped stay (`row`, `chevron`, `search`, `action`, …). Gaps are filled.
+
+| Utility | Class | `part` |
+|---|---|---|
+| Tree root | `.json-tree` | `tree` |
+| Scroll body | `.json-tree__scroll` | `scroll` |
+| Parse / empty error | `.json-tree__error` | `error` |
+| Disabled panel | `.json-tree__disabled` | `disabled` |
+| Find bar | `.json-tree__search` | `search` |
+| Find icon | `.json-tree__search-icon` | `search-icon` |
+| Find input | `.json-tree__search-input` | `search-input` |
+| Find count | `.json-tree__search-count` | `search-count` |
+| Find prev / next / close | `.json-tree__search-btn` | `action search-prev` / `action search-next` / `action search-close` |
+| Row | `.json-tree-row` | `row`; add `search-active` when that modifier is on |
+| Drag handle | `.json-tree-drag-handle` | `drag-handle` |
+| Expand / collapse cue | `.json-tree-chevron` | `chevron`; add `open` or `leaf` |
+| Key | `.json-tree-key` | `key`; add `root` or `index` |
+| Type chip / select | `.json-tree-type` | `type` + JSON type (`string`, `number`, …) |
+| Value | `.json-tree-value` | `value` + JSON type |
+| Value / key input | `.json-tree-input` | `input` |
+| Null affordance | `.json-tree-null` | `null` |
+| Container summary | `.json-tree-summary` | `summary` |
+| Row action cluster | `.json-tree-actions` | `actions` |
+| Duplicate / delete | `.json-tree-action` | `action duplicate` / `action delete` |
+| Add / expand toolbar | `.json-tree-add-row` | `add-row` |
+| Expand / collapse children | `.json-tree-add-row__btn` | `action expand-children` / `action collapse-children` |
+| Add key / item / clear | `.json-tree-add-row__btn` | `action add-key` / `action add-item` / `action clear` |
+| Nested group | `.json-tree-children` | `children` |
+| Search mark | `.json-tree-mark` | `mark`; add `active` |
+| Breadcrumb bar | `.json-tree-breadcrumbs` | `breadcrumbs` |
+| Crumb | `.json-tree-breadcrumbs__crumb` | `crumb`; add `current` and/or `index` |
+| Crumb separator | `.json-tree-breadcrumbs__sep` | `breadcrumb-sep` |
+| Truncation ellipsis | `.json-tree-breadcrumbs__ellipsis` | `breadcrumb-ellipsis` |
+| Reveal flash | `.json-tree-flash-ring` | `flash-ring` (set while the class is on) |
+
+Tree items (`.json-tree-node`) do not need a part if hosts style `::part(row)`; skip unless a host cannot reach the row.
+
+### Search and buttons today
+
+Search prev/next/close currently share `part="action"` only — **not enough**. They must gain the specific names above. Same for duplicate vs delete vs add-key: keep `action` as the family, add the role.
+
 ## High-contrast preset
 
 Same token names. Differences:
@@ -282,7 +347,7 @@ json-tree-editor,
 - `color-scheme: dark` is no longer hardcoded; default follows OS preference.
 - `.json-tree-input--string` / `--number` / `--boolean` / `--null` are not the type-color API.
 
-Document in `CHANGELOG.md` under Unreleased **Breaking**. Rewrite the README Theming section around presets + `color-scheme` + the BEM token table (compact groups, not 70 one-liners).
+Document in `CHANGELOG.md` under Unreleased **Breaking**. Rewrite the README Theming section around presets + `color-scheme` + the BEM token table (compact groups, not 70 one-liners) + the full `::part` map.
 
 ## Demos
 
@@ -293,8 +358,9 @@ Document in `CHANGELOG.md` under Unreleased **Breaking**. Rewrite the README The
 ## Tests
 
 - DOM: value wrapper has `.json-tree-value--{type}` for each JSON type (extend existing render tests).
+- DOM: `part` on row, chevron, search, search-input, and at least one specific action (`delete` or `search-close`) — WC hosts depend on these.
 - No requirement to screenshot palettes in unit tests.
-- Manual: demo light, dark, system, high-contrast, and a one-token override (`--jte--json-tree-type--string`).
+- Manual: demo light, dark, system, high-contrast, a one-token override (`--jte--json-tree-type--string`), and a `::part(row)` / `::part(search)` override on the WC demo.
 
 ## Implementation sketch (not a full plan)
 
@@ -302,9 +368,10 @@ Document in `CHANGELOG.md` under Unreleased **Breaking**. Rewrite the README The
 2. Add `themes/high-contrast.css`.
 3. Point structure CSS at the new tokens; drop dark fallbacks.
 4. Add `.json-tree-value--{type}`; stop coloring via `.json-tree-input--{type}`.
-5. Package exports for the two theme files.
-6. README + CHANGELOG + demos.
+5. Fill `part` gaps (search internals, specific actions, type/value extra tokens, breadcrumbs crumbs, children, flash-ring).
+6. Package exports for the two theme files.
+7. README + CHANGELOG + demos.
 
 ## Open questions
 
-None — scheme, files, naming, token set, high-contrast, and “no `--jte-*` aliases” were decided in design review.
+None — scheme, files, naming, token set, high-contrast, `::part` map, and “no `--jte-*` aliases” were decided in design review.
