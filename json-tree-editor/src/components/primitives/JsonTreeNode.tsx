@@ -378,7 +378,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
       <div
         class="json-tree-row"
         classList={{ 'json-tree-row--search-active': isSearchActiveRow() }}
-        part="row"
+        part={isSearchActiveRow() ? 'row search-active' : 'row'}
         onMouseDown={onRowMouseDown}
       >
         <Show when={itemReorderUi()?.canDrag()}>
@@ -401,14 +401,14 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           fallback={
             <span
               class="json-tree-chevron json-tree-chevron--leaf"
-              part="chevron"
+              part="chevron leaf"
             />
           }
         >
           <button
             type="button"
             class="json-tree-chevron"
-            part="chevron"
+            part={open() ? 'chevron open' : 'chevron'}
             classList={{ 'json-tree-chevron--open': open() }}
             aria-label={open() ? 'Collapse' : 'Expand'}
             onClick={() => props.onToggle(props.path)}
@@ -422,7 +422,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           fallback={
             <span
               class="json-tree-key"
-              part="key"
+              part={`key${props.isRoot ? ' root' : ''}${isArrayIndex() ? ' index' : ''}`}
               classList={{
                 'json-tree-key--root': !!props.isRoot,
                 'json-tree-key--index': isArrayIndex(),
@@ -490,7 +490,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
               <button
                 type="button"
                 class="json-tree-action"
-                part="action"
+                part="action duplicate"
                 title="Duplicate"
                 onClick={duplicateSelf}
               >
@@ -501,7 +501,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
               <button
                 type="button"
                 class="json-tree-action json-tree-action--danger"
-                part="action"
+                part="action delete"
                 title="Delete"
                 onClick={remove}
               >
@@ -513,14 +513,14 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
       </div>
 
       <Show when={isContainer() && open()}>
-        <div class="json-tree-children" role="group">
+        <div class="json-tree-children" part="children" role="group">
           {/* Toolbar: expand | collapse …… + key/item | clear */}
           <div class="json-tree-add-row" part="add-row">
             <div class="json-tree-add-row__left">
               <button
                 type="button"
                 class="json-tree-add-row__btn"
-                part="action"
+                part="action expand-children"
                 title="Expand child objects and arrays"
                 disabled={!canExpandChildren()}
                 onClick={() => props.onExpandChildren(props.path)}
@@ -530,7 +530,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
               <button
                 type="button"
                 class="json-tree-add-row__btn"
-                part="action"
+                part="action collapse-children"
                 title="Collapse nested objects and arrays"
                 disabled={!canCollapseChildren()}
                 onClick={() => props.onCollapseChildren(props.path)}
@@ -544,7 +544,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                   <button
                     type="button"
                     class="json-tree-add-row__btn"
-                    part="action"
+                    part="action add-key"
                     title="Add property"
                     onClick={addProperty}
                   >
@@ -555,7 +555,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                   <button
                     type="button"
                     class="json-tree-add-row__btn"
-                    part="action"
+                    part="action add-item"
                     title="Add item"
                     onClick={addItem}
                   >
@@ -565,7 +565,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                 <button
                   type="button"
                   class="json-tree-add-row__btn json-tree-add-row__btn--danger"
-                  part="action"
+                  part="action clear"
                   title={
                     typeName() === 'array' ? 'Clear array' : 'Clear object'
                   }
