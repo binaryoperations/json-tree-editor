@@ -520,7 +520,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
               <Show when={canExpandChildren()}>
                 <button
                   type="button"
-                  class="json-tree-add-row__btn"
+                  class="json-tree-action"
                   part="action expand-children"
                   title="Expand child objects and arrays"
                   onClick={() => props.onExpandChildren(props.path)}
@@ -531,7 +531,7 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
               <Show when={canCollapseChildren()}>
                 <button
                   type="button"
-                  class="json-tree-add-row__btn"
+                  class="json-tree-action"
                   part="action collapse-children"
                   title="Collapse nested objects and arrays"
                   onClick={() => props.onCollapseChildren(props.path)}
