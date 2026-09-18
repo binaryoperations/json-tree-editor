@@ -484,30 +484,17 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           />
         </Show>
 
-        <Show when={!props.readOnly}>
+        <Show when={!props.readOnly && !props.isRoot}>
           <div class="json-tree-actions" part="actions">
-            <Show when={!props.isRoot && isContainer()}>
-              <button
-                type="button"
-                class="json-tree-action"
-                part="action duplicate"
-                title="Duplicate"
-                onClick={duplicateSelf}
-              >
-                duplicate
-              </button>
-            </Show>
-            <Show when={!props.isRoot}>
-              <button
-                type="button"
-                class="json-tree-action json-tree-action--danger"
-                part="action delete"
-                title="Delete"
-                onClick={remove}
-              >
-                ×
-              </button>
-            </Show>
+            <button
+              type="button"
+              class="json-tree-action json-tree-action--danger"
+              part="action delete"
+              title="Delete"
+              onClick={remove}
+            >
+              ×
+            </button>
           </div>
         </Show>
       </div>
@@ -537,6 +524,17 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                   onClick={() => props.onCollapseChildren(props.path)}
                 >
                   collapse
+                </button>
+              </Show>
+              <Show when={!props.isRoot && !props.readOnly}>
+                <button
+                  type="button"
+                  class="json-tree-action"
+                  part="action duplicate"
+                  title="Duplicate"
+                  onClick={duplicateSelf}
+                >
+                  duplicate
                 </button>
               </Show>
             </div>
