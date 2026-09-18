@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breadcrumbs plugin** (`@binaryoperations/json-tree-editor/breadcrumbs`) — path bar for the focused row plus the `selectPath` command (expand ancestors → scroll into view → flash a ring around the key). `selectPath` exists only while the plugin is loaded.  
   Docs: [breadcrumbs README](./src/breadcrumbs/README.md).
 - `pointerToJsonPath` / `jsonPathToPointer` — RFC 6901 JSON Pointer ↔ `JsonPath` helpers, exported from the package root.
-- **Theming presets** — `styles.css` is structure only; import **one** of `themes/default.css` or `themes/high-contrast.css` (`light-dark()` + `color-scheme: light dark`). Do not stack presets. Public tokens are BEM `--jte--{block}…` names. Complete `::part` map for the web component (search internals, action roles, crumbs, `flash-ring`).
+- **Theming presets** — import **one** of `themes/default.css` or `themes/high-contrast.css` (each `@import`s structure). `light-dark()` + `color-scheme: light dark`. Do not stack presets. Public tokens are BEM `--jte--{block}…` names. Complete `::part` map for the web component (search internals, action roles, crumbs, `flash-ring`). Disabled expand/collapse toolbar buttons are omitted instead of shown greyed-out.
 
 ### Fixed
 

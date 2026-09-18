@@ -6,8 +6,8 @@
 import '@binaryoperations/json-tree-editor/web-component';
 import type { JsonTreeEditorPlugin } from '@binaryoperations/json-tree-editor/plugin';
 import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
-import defaultHref from '@binaryoperations/json-tree-editor/themes/default.css?url';
-import highContrastHref from '@binaryoperations/json-tree-editor/themes/high-contrast.css?url';
+import defaultCss from '@binaryoperations/json-tree-editor/themes/default.css?inline';
+import highContrastCss from '@binaryoperations/json-tree-editor/themes/high-contrast.css?inline';
 
 import { mountDemoHeader } from './shell/header';
 
@@ -112,11 +112,17 @@ schemeSelect.addEventListener('change', () => {
   setStatus(`color-scheme: ${tree.style.colorScheme}`);
 });
 
-const themeLink = document.querySelector<HTMLLinkElement>('#jte-theme')!;
-themeLink.href = defaultHref;
+const themeEl = document.createElement('style');
+themeEl.id = 'jte-theme';
+themeEl.setAttribute('data-jte-theme', '');
+document.head.appendChild(themeEl);
+const applyTheme = (hc: boolean) => {
+  themeEl.textContent = hc ? highContrastCss : defaultCss;
+};
+applyTheme(false);
 const chkHc = document.querySelector<HTMLInputElement>('#chk-hc')!;
 chkHc.addEventListener('change', () => {
-  themeLink.href = chkHc.checked ? highContrastHref : defaultHref;
+  applyTheme(chkHc.checked);
   setStatus(chkHc.checked ? 'theme: high-contrast' : 'theme: default');
 });
 

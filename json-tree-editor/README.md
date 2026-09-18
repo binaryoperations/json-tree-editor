@@ -39,8 +39,8 @@ npm install solid-js
 | `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, …) — **opt-in** |
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, lower-level primitives |
 | `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` (Solid bundled; DnD on by default) |
-| `@binaryoperations/json-tree-editor/styles.css` | Structure only (WC inlines this in shadow DOM) |
-| `@binaryoperations/json-tree-editor/themes/*.css` | Palettes — import **exactly one** (`default.css` or `high-contrast.css`) |
+| `@binaryoperations/json-tree-editor/styles.css` | Structure only (also inlined into the WC shadow) |
+| `@binaryoperations/json-tree-editor/themes/*.css` | A complete look — each file `@import`s structure. Import **exactly one**. |
 
 ---
 
@@ -52,7 +52,6 @@ npm install solid-js
 ```tsx
 import { createSignal } from 'solid-js';
 import { JsonTreeView } from '@binaryoperations/json-tree-editor';
-import '@binaryoperations/json-tree-editor/styles.css';
 import '@binaryoperations/json-tree-editor/themes/default.css';
 
 export function JsonPanel() {
@@ -113,10 +112,9 @@ el.addEventListener('change', (event) => {
 
 ## SolidJS API
 
-Import structure plus **one** theme in your app entry or layout:
+Import **one** theme in your app entry or layout (it pulls in structure):
 
 ```ts
-import '@binaryoperations/json-tree-editor/styles.css';
 import '@binaryoperations/json-tree-editor/themes/default.css';
 ```
 
@@ -356,16 +354,15 @@ Path helpers (`getAtPath`, `setAtPath`, `insertAtPath`, …), parse helpers (`pa
 
 ## Theming
 
-`styles.css` is layout only. Import **exactly one** theme for color (`default` or `high-contrast`). High-contrast **replaces** default — do not load both.
+Import **exactly one** theme. Each file `@import`s `styles.css` (structure), so you do not import structure separately. High-contrast **replaces** default — do not load both.
 
 ```ts
-import '@binaryoperations/json-tree-editor/styles.css';
 import '@binaryoperations/json-tree-editor/themes/default.css';
 // or:
 import '@binaryoperations/json-tree-editor/themes/high-contrast.css';
 ```
 
-Theme files set tokens on `json-tree-editor` and `.json-tree`, not `:host` (that would be the document when the file is a page stylesheet). The web component inlines **structure** in its shadow; the theme stays a **document** stylesheet so it paints the custom element, which inherits into the shadow:
+Theme files set tokens on `json-tree-editor` and `.json-tree`. They do not use `:host` — that selector is the custom element only inside a shadow stylesheet, and this package does not style the host from the shadow. Size `json-tree-editor` from the page (`display: block` is in the document copy of `styles.css`). The web component still inlines structure into its shadow so class rules apply there; the document theme supplies tokens (custom properties inherit).
 
 ```css
 @import '@binaryoperations/json-tree-editor/themes/default.css';
@@ -457,7 +454,7 @@ json-tree-editor::part(type string) { }
 json-tree-editor::part(flash-ring) { }
 ```
 
-On the Solid path, the same tokens apply; you can also target BEM classes (`.json-tree-row`, `.json-tree-value--string`, …) after importing `styles.css`.
+On the Solid path, the same tokens apply; you can also target BEM classes (`.json-tree-row`, `.json-tree-value--string`, …) after importing a theme.
 
 ---
 

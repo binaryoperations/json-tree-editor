@@ -1,5 +1,5 @@
-import defaultCssUrl from '@binaryoperations/json-tree-editor/themes/default.css?url';
-import highContrastCssUrl from '@binaryoperations/json-tree-editor/themes/high-contrast.css?url';
+import defaultCss from '@binaryoperations/json-tree-editor/themes/default.css?inline';
+import highContrastCss from '@binaryoperations/json-tree-editor/themes/high-contrast.css?inline';
 import {
   JsonTreeView,
   type JsonTreeViewHandle,
@@ -78,15 +78,14 @@ export const App: Component = () => {
   });
 
   createEffect(() => {
-    let link = document.getElementById(THEME_LINK_ID) as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement('link');
-      link.id = THEME_LINK_ID;
-      link.rel = 'stylesheet';
-      link.setAttribute('data-jte-theme', '');
-      document.head.appendChild(link);
+    let el = document.getElementById(THEME_LINK_ID) as HTMLStyleElement | null;
+    if (!el) {
+      el = document.createElement('style');
+      el.id = THEME_LINK_ID;
+      el.setAttribute('data-jte-theme', '');
+      document.head.appendChild(el);
     }
-    link.href = highContrast() ? highContrastCssUrl : defaultCssUrl;
+    el.textContent = highContrast() ? highContrastCss : defaultCss;
   });
 
   onCleanup(() => {

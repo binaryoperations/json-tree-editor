@@ -1,21 +1,15 @@
 /* JSON tree editor styles (library) — structure only, no palette.
  *
- * Import this plus **exactly one** theme:
- *   `@binaryoperations/json-tree-editor/themes/default.css`
- *   `@binaryoperations/json-tree-editor/themes/high-contrast.css`
- * Do not load two themes; high-contrast replaces default, it does not stack.
+ * Prefer importing a theme (`themes/default.css` or `themes/high-contrast.css`);
+ * each theme `@import`s this file. Do not load two themes.
  *
- * Theme files target `json-tree-editor, .json-tree` (not `:host`).
- * `:host` below is WC layout (the custom element box), not a page theme.
- * Force a side with `color-scheme: light | dark` on that same element.
- *
- * Shadow DOM: also `::part(tree|row|key|value|…)`.
+ * `json-tree-editor { display: block }` is a document type selector so the
+ * page/theme sizes the custom element. This sheet does not use `:host`
+ * (that would style the WC from inside its shadow).
  */
 
-:host {
+json-tree-editor {
   display: block;
-  height: 100%;
-  width: 100%;
   box-sizing: border-box;
 }
 

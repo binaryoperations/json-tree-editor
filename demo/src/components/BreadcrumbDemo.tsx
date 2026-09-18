@@ -61,7 +61,6 @@ const JUMP_TARGETS: { label: string; path: (string | number)[] }[] = [
 
 const SOLID_BOOTSTRAP = `import { JsonTreeView } from '@binaryoperations/json-tree-editor';
 import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
-import '@binaryoperations/json-tree-editor/styles.css';
 import '@binaryoperations/json-tree-editor/themes/default.css';
 
 // Stable instance — the plugin owns the bar's state.

@@ -68,4 +68,17 @@ describe('JsonTreeView expand state', () => {
     expect(screen.getByText('b')).toBeTruthy();
     expect(screen.queryByText('c')).toBeNull();
   });
+
+  it('omits expand/collapse toolbar buttons when they would be disabled', () => {
+    render(() => (
+      <JsonTreeView
+        value={NESTED}
+        onChange={() => {}}
+        defaultExpandedDepth={0}
+      />
+    ));
+
+    expect(screen.getByRole('button', { name: 'expand' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'collapse' })).toBeNull();
+  });
 });

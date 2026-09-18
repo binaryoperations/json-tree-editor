@@ -517,26 +517,28 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           {/* Toolbar: expand | collapse …… + key/item | clear */}
           <div class="json-tree-add-row" part="add-row">
             <div class="json-tree-add-row__left">
-              <button
-                type="button"
-                class="json-tree-add-row__btn"
-                part="action expand-children"
-                title="Expand child objects and arrays"
-                disabled={!canExpandChildren()}
-                onClick={() => props.onExpandChildren(props.path)}
-              >
-                expand
-              </button>
-              <button
-                type="button"
-                class="json-tree-add-row__btn"
-                part="action collapse-children"
-                title="Collapse nested objects and arrays"
-                disabled={!canCollapseChildren()}
-                onClick={() => props.onCollapseChildren(props.path)}
-              >
-                collapse
-              </button>
+              <Show when={canExpandChildren()}>
+                <button
+                  type="button"
+                  class="json-tree-add-row__btn"
+                  part="action expand-children"
+                  title="Expand child objects and arrays"
+                  onClick={() => props.onExpandChildren(props.path)}
+                >
+                  expand
+                </button>
+              </Show>
+              <Show when={canCollapseChildren()}>
+                <button
+                  type="button"
+                  class="json-tree-add-row__btn"
+                  part="action collapse-children"
+                  title="Collapse nested objects and arrays"
+                  onClick={() => props.onCollapseChildren(props.path)}
+                >
+                  collapse
+                </button>
+              </Show>
             </div>
             <Show when={!props.readOnly}>
               <div class="json-tree-add-row__right">

@@ -23,7 +23,7 @@ is UI the plugin contributes. Turning the plugin off removes the bar *and*
 import { createSignal } from 'solid-js';
 import { JsonTreeView, type JsonTreeViewHandle } from '@binaryoperations/json-tree-editor';
 import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
-import '@binaryoperations/json-tree-editor/styles.css';
+import '@binaryoperations/json-tree-editor/themes/default.css';
 
 // Stable instance — the plugin owns the bar's state.
 const plugins = [breadcrumbsPlugin()];
