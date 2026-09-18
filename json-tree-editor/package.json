@@ -65,6 +65,8 @@
       "default": "./dist/web-component.js"
     },
     "./styles.css": "./src/styles.css",
+    "./themes/default.css": "./src/themes/default.css",
+    "./themes/high-contrast.css": "./src/themes/high-contrast.css",
     "./package.json": "./package.json"
   },
   "scripts": {
