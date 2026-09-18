@@ -7,6 +7,13 @@ const ELLIPSIS = Symbol('breadcrumb-ellipsis');
 
 type Crumb = BreadcrumbSegment | typeof ELLIPSIS;
 
+function crumbPart(seg: BreadcrumbSegment, isCurrent: boolean): string {
+  const parts = ['crumb'];
+  if (isCurrent) parts.push('current');
+  if (seg.isIndex) parts.push('index');
+  return parts.join(' ');
+}
+
 /**
  * Build the crumb list for `path`, collapsing the middle when it exceeds
  * `maxSegments`. Root and the last two segments always survive.
@@ -64,7 +71,11 @@ export const BreadcrumbBar: Component<BreadcrumbBarProps> = (props) => {
             return (
               <li class="json-tree-breadcrumbs__item">
                 <Show when={index() > 0}>
-                  <span class="json-tree-breadcrumbs__sep" aria-hidden="true">
+                  <span
+                    class="json-tree-breadcrumbs__sep"
+                    part="breadcrumb-sep"
+                    aria-hidden="true"
+                  >
                     ›
                   </span>
                 </Show>
@@ -73,6 +84,7 @@ export const BreadcrumbBar: Component<BreadcrumbBarProps> = (props) => {
                   fallback={
                     <span
                       class="json-tree-breadcrumbs__ellipsis"
+                      part="breadcrumb-ellipsis"
                       aria-label="path truncated"
                     >
                       …
@@ -89,6 +101,7 @@ export const BreadcrumbBar: Component<BreadcrumbBarProps> = (props) => {
                             'json-tree-breadcrumbs__crumb--index':
                               seg().isIndex,
                           }}
+                          part={crumbPart(seg(), true)}
                           aria-current="location"
                         >
                           {seg().label}
@@ -101,6 +114,7 @@ export const BreadcrumbBar: Component<BreadcrumbBarProps> = (props) => {
                         classList={{
                           'json-tree-breadcrumbs__crumb--index': seg().isIndex,
                         }}
+                        part={crumbPart(seg(), false)}
                         onClick={() => props.onSelect(seg().path)}
                       >
                         {seg().label}
