@@ -1,15 +1,36 @@
-import { JsonTreeView } from '../../json-tree-editor/src';
+import highContrastCssUrl from '@binaryoperations/json-tree-editor/themes/high-contrast.css?url';
+import {
+  JsonTreeView,
+  type JsonTreeViewHandle,
+} from '../../json-tree-editor/src';
 import { breadcrumbsPlugin } from '../../json-tree-editor/src/breadcrumbs';
 import { HTML5_ARRAY_REORDER } from '../../json-tree-editor/src/dnd';
 import {
   parseJsonSource,
   type JsonValidity,
 } from '../../json-tree-editor/src/utils';
-import { type Component, createMemo, createSignal } from 'solid-js';
+import {
+  type Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  onCleanup,
+} from 'solid-js';
 
 import { DemoHeader } from './components/DemoHeader';
 import { JsonEditor } from './components/JsonEditor';
 import { JsonFormatted } from './components/JsonFormatted';
+
+type TreeColorScheme = 'light' | 'dark' | 'system';
+
+/** Host `color-scheme` values: system follows OS via `light dark`. */
+const TREE_COLOR_SCHEME_CSS: Record<TreeColorScheme, string> = {
+  light: 'light',
+  dark: 'dark',
+  system: 'light dark',
+};
+
+const HIGH_CONTRAST_LINK_ID = 'jte-theme-high-contrast';
 
 /** Stable plugin instance — identity is by object across re-renders. */
 const TREE_PLUGINS = [breadcrumbsPlugin()];
@@ -41,7 +62,42 @@ export const App: Component = () => {
   const [arrayDnd, setArrayDnd] = createSignal(true);
   /** Tree browseable read-only — mirrors WC `readOnly` / `readonly`. */
   const [treeReadOnly, setTreeReadOnly] = createSignal(false);
+  /** Force light/dark or follow OS (`color-scheme: light dark`). */
+  const [scheme, setScheme] = createSignal<TreeColorScheme>('system');
+  const [highContrast, setHighContrast] = createSignal(false);
+  const [treeHandle, setTreeHandle] = createSignal<JsonTreeViewHandle | null>(
+    null,
+  );
   const validity = createMemo(() => parseJsonSource(source()));
+
+  createEffect(() => {
+    const root = treeHandle()?.getRoot();
+    if (!root) return;
+    root.style.colorScheme = TREE_COLOR_SCHEME_CSS[scheme()];
+  });
+
+  createEffect(() => {
+    const on = highContrast();
+    let link = document.getElementById(
+      HIGH_CONTRAST_LINK_ID,
+    ) as HTMLLinkElement | null;
+    if (on) {
+      if (!link) {
+        link = document.createElement('link');
+        link.id = HIGH_CONTRAST_LINK_ID;
+        link.rel = 'stylesheet';
+        link.href = highContrastCssUrl;
+        document.head.appendChild(link);
+      }
+      link.disabled = false;
+    } else if (link) {
+      link.disabled = true;
+    }
+  });
+
+  onCleanup(() => {
+    document.getElementById(HIGH_CONTRAST_LINK_ID)?.remove();
+  });
 
   const prettyPrint = () => {
     const v = validity();
@@ -89,6 +145,50 @@ export const App: Component = () => {
         <button
           type="button"
           class="btn"
+          classList={{ 'btn--active': scheme() === 'light' }}
+          aria-pressed={scheme() === 'light'}
+          title="Force tree color-scheme: light"
+          onClick={() => setScheme('light')}
+        >
+          Light
+        </button>
+        <button
+          type="button"
+          class="btn"
+          classList={{ 'btn--active': scheme() === 'dark' }}
+          aria-pressed={scheme() === 'dark'}
+          title="Force tree color-scheme: dark"
+          onClick={() => setScheme('dark')}
+        >
+          Dark
+        </button>
+        <button
+          type="button"
+          class="btn"
+          classList={{ 'btn--active': scheme() === 'system' }}
+          aria-pressed={scheme() === 'system'}
+          title="Follow OS prefers-color-scheme (color-scheme: light dark)"
+          onClick={() => setScheme('system')}
+        >
+          System
+        </button>
+        <button
+          type="button"
+          class="btn"
+          classList={{ 'btn--active': highContrast() }}
+          aria-pressed={highContrast()}
+          title={
+            highContrast()
+              ? 'High-contrast theme stylesheet is loaded'
+              : 'Load high-contrast.css after styles.css'
+          }
+          onClick={() => setHighContrast((on) => !on)}
+        >
+          {highContrast() ? 'High-contrast' : 'Default contrast'}
+        </button>
+        <button
+          type="button"
+          class="btn"
           onClick={prettyPrint}
           disabled={!validity().ok}
           title={
@@ -128,6 +228,7 @@ export const App: Component = () => {
               onChange={onTreeChange}
               readOnly={treeReadOnly()}
               arrayReorder={arrayDnd() ? HTML5_ARRAY_REORDER : false}
+              ref={(handle) => setTreeHandle(handle)}
             />
           </div>
         </section>
