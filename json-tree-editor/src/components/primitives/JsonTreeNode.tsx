@@ -504,6 +504,17 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
           {/* Toolbar: expand | collapse …… + key/item | clear */}
           <div class="json-tree-add-row" part="add-row">
             <div class="json-tree-add-row__left">
+              <Show when={!props.isRoot && !props.readOnly}>
+                <button
+                  type="button"
+                  class="json-tree-action"
+                  part="action duplicate"
+                  title="Duplicate"
+                  onClick={duplicateSelf}
+                >
+                  duplicate
+                </button>
+              </Show>
               <Show when={canExpandChildren()}>
                 <button
                   type="button"
@@ -524,17 +535,6 @@ export const JsonTreeNode: Component<JsonTreeNodeProps> = (props) => {
                   onClick={() => props.onCollapseChildren(props.path)}
                 >
                   collapse
-                </button>
-              </Show>
-              <Show when={!props.isRoot && !props.readOnly}>
-                <button
-                  type="button"
-                  class="json-tree-action"
-                  part="action duplicate"
-                  title="Duplicate"
-                  onClick={duplicateSelf}
-                >
-                  duplicate
                 </button>
               </Show>
             </div>
