@@ -38,7 +38,7 @@ export const StringEditor: Component<StringEditorProps> = (props) => {
       when={showHighlight()}
       fallback={
         <input
-          class="json-tree-input json-tree-input--string"
+          class="json-tree-input"
           part="input"
           type="text"
           value={draft()}
@@ -69,8 +69,8 @@ export const StringEditor: Component<StringEditorProps> = (props) => {
       }
     >
       <span
-        class="json-tree-input json-tree-input--string json-tree-input--readonly json-tree-input--search-display"
-        part="value"
+        class="json-tree-input json-tree-input--readonly json-tree-input--search-display"
+        part="input"
         role="textbox"
         tabindex={0}
         aria-label="String value"

@@ -41,10 +41,14 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
     query().trim().length > 0;
 
   return (
-    <span class="json-tree-value" part="value">
+    <span
+      class="json-tree-value"
+      classList={{ [`json-tree-value--${kind()}`]: true }}
+      part={`value ${kind()}`}
+    >
       <Show when={props.readOnly}>
         <Show when={kind() === 'string'}>
-          <span class="json-tree-input json-tree-input--string json-tree-input--readonly">
+          <span class="json-tree-input json-tree-input--readonly">
             <HighlightText
               text={asStringValue(props.value)}
               query={query()}
@@ -53,7 +57,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
           </span>
         </Show>
         <Show when={kind() === 'number'}>
-          <span class="json-tree-input json-tree-input--number json-tree-input--readonly">
+          <span class="json-tree-input json-tree-input--readonly">
             <HighlightText
               text={String(props.value)}
               query={query()}
@@ -62,7 +66,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
           </span>
         </Show>
         <Show when={kind() === 'boolean'}>
-          <span class="json-tree-input json-tree-input--boolean json-tree-input--readonly">
+          <span class="json-tree-input json-tree-input--readonly">
             <HighlightText
               text={String(props.value)}
               query={query()}
@@ -116,7 +120,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
             when={showBooleanHighlight()}
             fallback={
               <select
-                class="json-tree-input json-tree-input--boolean"
+                class="json-tree-input"
                 part="input"
                 value={String(props.value)}
                 aria-label="Boolean value"
@@ -137,7 +141,8 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
             }
           >
             <span
-              class="json-tree-input json-tree-input--boolean json-tree-input--readonly json-tree-input--search-display"
+              class="json-tree-input json-tree-input--readonly json-tree-input--search-display"
+              part="input"
               role="button"
               tabindex={0}
               aria-label="Boolean value"

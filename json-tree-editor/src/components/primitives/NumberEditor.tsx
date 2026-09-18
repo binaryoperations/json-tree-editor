@@ -93,7 +93,7 @@ export const NumberEditor: Component<NumberEditorProps> = (props) => {
       when={showHighlight()}
       fallback={
         <input
-          class="json-tree-input json-tree-input--number"
+          class="json-tree-input"
           part="input"
           type="text"
           inputMode="decimal"
@@ -121,8 +121,8 @@ export const NumberEditor: Component<NumberEditorProps> = (props) => {
       }
     >
       <span
-        class="json-tree-input json-tree-input--number json-tree-input--readonly json-tree-input--search-display"
-        part="value"
+        class="json-tree-input json-tree-input--readonly json-tree-input--search-display"
+        part="input"
         role="textbox"
         tabindex={0}
         aria-label="Number value"
