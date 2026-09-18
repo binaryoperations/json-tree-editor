@@ -8,6 +8,9 @@
 /** Class carrying the ring animation (defined in the library stylesheet). */
 export const FLASH_CLASS = 'json-tree-flash-ring';
 
+/** `::part` token paired with `FLASH_CLASS` while the ring is on. */
+const FLASH_PART = 'flash-ring';
+
 /** One pulse of the ring. Must match the CSS animation duration. */
 export const FLASH_PULSE_MS = 450;
 
@@ -19,6 +22,33 @@ export const FLASH_MS = FLASH_PULSE_MS * FLASH_PULSES;
 
 /** Pending clears, keyed by the element wearing the ring. */
 type FlashTimers = Map<Element, number>;
+
+function partTokens(el: Element): string[] {
+  return (el.getAttribute('part') ?? '').trim().split(/\s+/).filter(Boolean);
+}
+
+function addFlashPart(el: Element) {
+  const tokens = partTokens(el);
+  if (tokens.includes(FLASH_PART)) return;
+  tokens.push(FLASH_PART);
+  el.setAttribute('part', tokens.join(' '));
+}
+
+function removeFlashPart(el: Element) {
+  const tokens = partTokens(el).filter((token) => token !== FLASH_PART);
+  if (tokens.length) el.setAttribute('part', tokens.join(' '));
+  else el.removeAttribute('part');
+}
+
+function startFlash(el: Element) {
+  el.classList.add(FLASH_CLASS);
+  addFlashPart(el);
+}
+
+function stopFlash(el: Element) {
+  el.classList.remove(FLASH_CLASS);
+  removeFlashPart(el);
+}
 
 export function createFlashRing(flashMs: number = FLASH_MS) {
   const timers: FlashTimers = new Map();
@@ -36,15 +66,15 @@ export function createFlashRing(flashMs: number = FLASH_MS) {
     const prior = timers.get(target);
     if (prior !== undefined) window.clearTimeout(prior);
 
-    target.classList.remove(FLASH_CLASS);
+    stopFlash(target);
     // Force a reflow so removing + re-adding restarts the animation.
     void target.offsetWidth;
-    target.classList.add(FLASH_CLASS);
+    startFlash(target);
 
     timers.set(
       target,
       window.setTimeout(() => {
-        target.classList.remove(FLASH_CLASS);
+        stopFlash(target);
         timers.delete(target);
       }, flashMs),
     );
@@ -54,7 +84,7 @@ export function createFlashRing(flashMs: number = FLASH_MS) {
   const dispose = () => {
     for (const [target, timer] of timers) {
       window.clearTimeout(timer);
-      target.classList.remove(FLASH_CLASS);
+      stopFlash(target);
     }
     timers.clear();
   };
