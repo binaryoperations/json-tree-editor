@@ -165,17 +165,9 @@
 }
 
 .json-tree__search-btn:hover:not(:disabled) {
-  color: color-mix(
-    in srgb,
-    var(--jte--json-tree--muted) 30%,
-    var(--jte--json-tree--color)
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--jte--json-tree--border) 70%,
-    var(--jte--json-tree--color)
-  );
-  background: var(--jte--json-tree--surface);
+  color: var(--jte--json-tree--color);
+  border-color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree-row--hover);
 }
 
 .json-tree__search-btn:focus-visible {
@@ -184,8 +176,11 @@
 }
 
 .json-tree__search-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: var(--jte--json-tree-action--disabled);
+  border-color: var(--jte--json-tree--border);
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .json-tree__search-btn--close {
@@ -715,7 +710,7 @@ mark.json-tree-mark--active {
   gap: 0.2rem;
   flex-shrink: 0;
   margin-left: auto;
-  opacity: 0.35;
+  opacity: var(--jte--json-tree-actions--idle);
   transition: opacity 0.1s ease;
 }
 
@@ -740,22 +735,17 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-action:hover:not(:disabled) {
-  color: color-mix(
-    in srgb,
-    var(--jte--json-tree--muted) 30%,
-    var(--jte--json-tree--color)
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--jte--json-tree--border) 70%,
-    var(--jte--json-tree--color)
-  );
-  background: var(--jte--json-tree--border);
+  color: var(--jte--json-tree--color);
+  border-color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree-row--hover);
 }
 
 .json-tree-action:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: var(--jte--json-tree-action--disabled);
+  border-color: var(--jte--json-tree--border);
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .json-tree-action:focus-visible {
@@ -825,18 +815,10 @@ mark.json-tree-mark--active {
   line-height: 1.2;
 }
 
-.json-tree-add-row__btn:hover {
-  color: color-mix(
-    in srgb,
-    var(--jte--json-tree--muted) 30%,
-    var(--jte--json-tree--color)
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--jte--json-tree--border) 70%,
-    var(--jte--json-tree--color)
-  );
-  background: var(--jte--json-tree--surface);
+.json-tree-add-row__btn:hover:not(:disabled) {
+  color: var(--jte--json-tree--color);
+  border-color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree-row--hover);
 }
 
 .json-tree-add-row__btn:focus-visible {
@@ -845,8 +827,11 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-add-row__btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: var(--jte--json-tree-action--disabled);
+  border-color: var(--jte--json-tree--border);
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .json-tree-add-row__btn--danger {

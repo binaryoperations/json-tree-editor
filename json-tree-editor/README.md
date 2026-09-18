@@ -390,7 +390,7 @@ Override any of these on `json-tree-editor` or `.json-tree`. Chip `-bg` / `-bord
 | --- | --- |
 | `--jte--json-tree--*` | `bg`, `color`, `border`, `muted`, `surface`, `font`, `font-mono`, `font-size`, `focus` |
 | Row | `--jte--json-tree-row--hover` / `--focus` / `--search-active` |
-| Action | `--jte--json-tree-action`, `--jte--json-tree-action--danger` |
+| Action | `--jte--json-tree-action`, `--jte--json-tree-action--danger`, `--jte--json-tree-action--disabled` |
 | Key | `--jte--json-tree-key`, `--root`, `--index` |
 | Type | `--jte--json-tree-type--{string\|number\|boolean\|null\|object\|array}` (+ optional `-bg` / `-border`) |
 | Value | `--jte--json-tree-value--{type}` (defaults to the matching type token) |

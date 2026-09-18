@@ -17,6 +17,8 @@ json-tree-editor,
   --jte--json-tree-row--search-active: light-dark(#f5edd6, #1c191755);
   --jte--json-tree-action: light-dark(#4b5563, #9aa3b2);
   --jte--json-tree-action--danger: light-dark(#b91c1c, #fca5a5);
+  --jte--json-tree-action--disabled: light-dark(#9aa3b2, #5c6575);
+  --jte--json-tree-actions--idle: 0.35;
 
   --jte--json-tree-key: light-dark(#1d4ed8, #93c5fd);
   --jte--json-tree-key--root: light-dark(#6d28d9, #c4b5fd);
