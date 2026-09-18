@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breadcrumbs plugin** (`@binaryoperations/json-tree-editor/breadcrumbs`) — path bar for the focused row plus the `selectPath` command (expand ancestors → scroll into view → flash a ring around the key). `selectPath` exists only while the plugin is loaded.  
   Docs: [breadcrumbs README](./src/breadcrumbs/README.md).
 - `pointerToJsonPath` / `jsonPathToPointer` — RFC 6901 JSON Pointer ↔ `JsonPath` helpers, exported from the package root.
+- **Theming presets** — default light/dark tokens via `color-scheme: light dark` + `light-dark()`, plus optional `@binaryoperations/json-tree-editor/themes/high-contrast.css`. Public tokens are BEM `--jte--{block}…` names. Complete `::part` map for the web component (search internals, action roles, crumbs, `flash-ring`).
 
 ### Fixed
 
@@ -38,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Events `expand`, `collapse`, `expand-progress`
   - Type `ExpandProgress`
 - Solid **`arrayReorder` default is off** (`undefined` / `false`). Pass a controller from `/dnd` to enable. Web component still enables HTML5 DnD by default.
+- **Removed 1.0.6 `--jte-*` theme names** (`--jte-bg`, `--jte-string`, `--jte-type-string`, …). No aliases — use `--jte--json-tree--bg`, `--jte--json-tree-value--string`, `--jte--json-tree-type--string`, and the other BEM groups.
+- **Default scheme follows OS preference** (`prefers-color-scheme`) instead of hardcoded `color-scheme: dark`. Force a side with `color-scheme: light` or `color-scheme: dark` on the host / `.json-tree`.
+- **Input type-color classes are gone.** `.json-tree-input--string` / `--number` / `--boolean` / `--null` no longer set primitive color; color comes from `.json-tree-value--{type}`.
 
 ### Refactor
 

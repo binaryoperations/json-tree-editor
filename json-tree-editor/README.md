@@ -39,7 +39,9 @@ npm install solid-js
 | `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, …) — **opt-in** |
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, lower-level primitives |
 | `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` (Solid bundled; DnD on by default) |
-| `@binaryoperations/json-tree-editor/styles.css` | Styles for the Solid path (WC embeds styles in shadow DOM) |
+| `@binaryoperations/json-tree-editor/styles.css` | Structure + default preset (WC embeds this in shadow DOM) |
+| `@binaryoperations/json-tree-editor/themes/default.css` | Default light/dark tokens (already imported by `styles.css`) |
+| `@binaryoperations/json-tree-editor/themes/high-contrast.css` | Optional high-contrast preset — import **after** `styles.css` |
 
 ---
 
@@ -350,18 +352,46 @@ Path helpers (`getAtPath`, `setAtPath`, `insertAtPath`, …), parse helpers (`pa
 
 ## Theming
 
-Defaults match a dark editor chrome. Override CSS variables on the web component host or on `.json-tree` (Solid light DOM).
+Import the stylesheet once. It includes the **default** preset (`color-scheme: light dark` + `light-dark()`), so the tree follows the OS `prefers-color-scheme`. High-contrast is a second file — load it **after** `styles.css`.
 
-| Variable group | Role |
+```ts
+import '@binaryoperations/json-tree-editor/styles.css';
+// optional:
+import '@binaryoperations/json-tree-editor/themes/high-contrast.css';
+```
+
+The web component already inlines `styles.css` in its open shadow. High-contrast is a **document** stylesheet:
+
+```css
+@import '@binaryoperations/json-tree-editor/themes/high-contrast.css';
+```
+
+Force a side on the host (or on `.json-tree` for Solid):
+
+```css
+json-tree-editor,
+.json-tree {
+  color-scheme: light; /* or dark; omit to keep system */
+}
+```
+
+Public tokens use `--jte--{block}[--{modifier}|__{element}]`. There are **no aliases** for the old `--jte-*` names (`--jte-bg`, `--jte-string`, …). Value color lives on `.json-tree-value--{type}` — `.json-tree-input--string` (and `--number` / `--boolean` / `--null`) are gone.
+
+### Token groups
+
+Override any of these on `json-tree-editor` or `.json-tree`. Chip `-bg` / `-border` tokens are optional; the default preset derives them with `color-mix`. High-contrast sets opaque fills.
+
+| Group | Tokens |
 | --- | --- |
-| `--jte-bg` / `--jte-fg` | Tree surface and default text |
-| `--jte-border` / `--jte-border-strong` | Nesting and control borders |
-| `--jte-row-hover` / `--jte-row-focus-bg` | Row chrome |
-| `--jte-key` / `--jte-key-root` / `--jte-key-index` | Property keys |
-| `--jte-string` / `--jte-number` / `--jte-boolean` / `--jte-null` | Primitive colors |
-| `--jte-type-*` | Type badge colors |
-| `--jte-focus-ring` / `--jte-focus-border` | Focus outlines |
-| `--jte-font` / `--jte-font-mono` / `--jte-font-size` | Typography |
+| `--jte--json-tree--*` | `bg`, `color`, `border`, `muted`, `surface`, `font`, `font-mono`, `font-size`, `focus` |
+| Row | `--jte--json-tree-row--hover` / `--focus` / `--search-active` |
+| Action | `--jte--json-tree-action`, `--jte--json-tree-action--danger` |
+| Key | `--jte--json-tree-key`, `--root`, `--index` |
+| Type | `--jte--json-tree-type--{string\|number\|boolean\|null\|object\|array}` (+ optional `-bg` / `-border`) |
+| Value | `--jte--json-tree-value--{type}` (defaults to the matching type token) |
+| Mark | `--jte--json-tree-mark`, `--mark-bg`, `--mark--active`, `--mark--active-bg` |
+| Flash | `--jte--json-tree-flash-ring` (fill is `color-mix(… 20%, transparent)`) |
+| Error | `--jte--json-tree__error`, `--error-bg`, `--error-border` |
 
 <details>
 <summary>Example token overrides</summary>
@@ -369,45 +399,60 @@ Defaults match a dark editor chrome. Override CSS variables on the web component
 ```css
 json-tree-editor,
 .json-tree {
-  --jte-bg: #0c0e12;
-  --jte-fg: #e6e8ec;
-  --jte-border: #232833;
-  --jte-key: #93c5fd;
-  --jte-string: #86efac;
-  --jte-number: #fcd34d;
-  --jte-boolean: #c4b5fd;
-  --jte-null: #9ca3af;
-  --jte-row-hover: #151922;
-  --jte-focus-ring: #60a5fa;
-  --jte-font-mono: ui-monospace, Menlo, Consolas, monospace;
-  --jte-font-size: 12.5px;
+  --jte--json-tree-type--string: light-dark(#0b3, #6f6);
+  --jte--json-tree--font-mono: ui-monospace, Menlo, Consolas, monospace;
+  --jte--json-tree--font-size: 12.5px;
+  color-scheme: light; /* optional force */
 }
 ```
 
 </details>
 
-<details>
-<summary>Web component <code>::part</code> hooks</summary>
+### Web component `::part` map
+
+Stems match BEM after `json-tree-` / `json-tree__`. Variants are extra space-separated names on the same node (`part="action delete"`). There is **no** `disabled` part.
+
+| Part | Node |
+| --- | --- |
+| `tree` | `.json-tree` |
+| `scroll` | `.json-tree__scroll` |
+| `error` | `.json-tree__error` |
+| `search` | Find bar |
+| `search-icon` | Find icon |
+| `search-input` | Find field |
+| `search-count` | Match count |
+| `action search-prev` / `search-next` / `search-close` | Find buttons |
+| `row` (+ `search-active` when that class is on) | Tree row |
+| `drag-handle` | Array reorder handle |
+| `chevron` (+ `open` or `leaf`) | Expand/collapse cue |
+| `key` (+ `root` and/or `index`) | Property key |
+| `type` + JSON type (`string`, …) | Type chip / select |
+| `value` + JSON type | Value wrapper |
+| `input` | Key / value input |
+| `null` | Null affordance |
+| `summary` | Container summary |
+| `actions` | Row action cluster |
+| `action duplicate` / `action delete` | Duplicate / delete |
+| `add-row` | Expand / add toolbar |
+| `action expand-children` / `collapse-children` | Expand / collapse children |
+| `action add-key` / `add-item` / `clear` | Add key / item / clear |
+| `children` | Nested group |
+| `mark` (+ `active`) | Search highlight |
+| `breadcrumbs` | Path bar |
+| `crumb` (+ `current` and/or `index`) | Path crumb |
+| `breadcrumb-sep` | Crumb separator |
+| `breadcrumb-ellipsis` | Truncation ellipsis |
+| `flash-ring` | Reveal ring (only while `.json-tree-flash-ring` is on) |
 
 ```css
-json-tree-editor::part(tree) { /* .json-tree root */ }
-json-tree-editor::part(scroll) { }
 json-tree-editor::part(row) { }
-json-tree-editor::part(key) { }
-json-tree-editor::part(value) { }
-json-tree-editor::part(type) { /* type <select> */ }
-json-tree-editor::part(chevron) { }
-json-tree-editor::part(actions) { }
-json-tree-editor::part(input) { }
 json-tree-editor::part(search) { }
-json-tree-editor::part(disabled) { /* invalid-JSON panel */ }
+json-tree-editor::part(action delete) { }
+json-tree-editor::part(type string) { }
+json-tree-editor::part(flash-ring) { }
 ```
 
-Also: `summary`, `action`, `null`.
-
-</details>
-
-On the Solid path, the same variables apply; you can also target BEM classes (`.json-tree-row`, …) after importing `styles.css`.
+On the Solid path, the same tokens apply; you can also target BEM classes (`.json-tree-row`, `.json-tree-value--string`, …) after importing `styles.css`.
 
 ---
 

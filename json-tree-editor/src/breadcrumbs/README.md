@@ -154,16 +154,26 @@ current segment. The ellipsis is labelled `path truncated`. The flash respects
 
 ### Styling
 
-Theme via the same CSS custom properties as the editor:
+Theme via the same CSS custom properties as the editor. Crumbs reuse
+`--jte--json-tree-key` / `--jte--json-tree-key--index`. The reveal ring uses one
+public token; fill is a 20% mix of that color.
 
-| Token | Default | Used for |
-| --- | --- | --- |
-| `--jte-flash-ring` | `#f59e0b` | Reveal ring color |
-| `--jte-flash-bg` | `#f59e0b33` | Reveal ring fill |
+| Token | Used for |
+| --- | --- |
+| `--jte--json-tree-flash-ring` | Reveal ring color |
+| `color-mix(in srgb, var(--jte--json-tree-flash-ring) 20%, transparent)` | Reveal ring fill (not a separate public token) |
 
 Classes: `.json-tree-breadcrumbs`, `__list`, `__item`, `__sep`, `__crumb`
 (`--current`, `--index`), `__ellipsis`, plus `.json-tree-flash-ring` for the reveal
-ring. Shadow DOM consumers can target `::part(breadcrumbs)`.
+ring (while that class is on, the node also exposes `::part(flash-ring)`).
+
+Shadow DOM consumers can target:
+
+- `::part(breadcrumbs)` — the path bar
+- `::part(crumb)` / `::part(crumb current)` / `::part(crumb index)` — crumbs
+- `::part(breadcrumb-sep)` — separators
+- `::part(breadcrumb-ellipsis)` — truncated-path ellipsis
+- `::part(flash-ring)` — the reveal ring, only while `.json-tree-flash-ring` is on
 
 The ring pulses **twice** (`450ms × 2`); under `prefers-reduced-motion` it is a single
 steady ring instead. Its timers live in this plugin (`flash-ring.ts`) and are cleared on
