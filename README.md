@@ -15,7 +15,8 @@ Install and use the publishable package from npm. Install steps, Solid and web-c
 | Entry | Use when |
 | --- | --- |
 | `@binaryoperations/json-tree-editor` | Solid `JsonTreeView` (peer `solid-js`, source import) |
-| `…/web-component` | React / Vue / Svelte / vanilla / CDN (`<json-tree-editor>`) |
+| `…/web-component` | Custom element class (no auto-register) |
+| `…/web-component/register` | Defines `<json-tree-editor>` on import (CDN / vanilla) |
 | `…/history` | Path-scoped undo/redo plugin |
 | `…/plugin` | Author plugins (`definePlugin`) |
 | `…/dnd` | Array drag-and-drop controller |
@@ -67,7 +68,7 @@ json-tree-editor/                 # monorepo root
       index.ts                    # Solid exports
       plugin.ts                   # definePlugin + contract types
       history/                    # path-scoped undo plugin (./history)
-      web-component.tsx           # <json-tree-editor>
+      web-component/              # class (index) + register.ts
       components/primitives/      # JsonTreeView + editors
       lib/
         editor-runtime/           # dispatch, plugins, command registry
@@ -94,11 +95,12 @@ json-tree-editor/                 # monorepo root
 | Entry | `solid-js` | Notes |
 | --- | --- | --- |
 | `.` | **External** peer; TS source | Solid apps with a Solid toolchain |
-| `./web-component` | **Bundled** in prebuilt JS | Any framework / CDN |
+| `./web-component` | **Bundled** in prebuilt JS | Class only (no `customElements.define`) |
+| `./web-component/register` | **Bundled** in prebuilt JS | Auto-defines `<json-tree-editor>` |
 | `./history` | Peer via Solid host, or with WC bundle | Opt-in undo/redo |
 | `./styles.css` | n/a | Solid light DOM |
 
-Only the **web component** is built for publish (`dist/web-component.js` + `.d.ts`). Solid and history/plugin/utils consumers import **source**.
+Only the **web component** is built for publish (`dist/web-component/index.js` + `register.js` + `.d.ts`). Solid and history/plugin/utils consumers import **source**.
 
 ## Publishing
 

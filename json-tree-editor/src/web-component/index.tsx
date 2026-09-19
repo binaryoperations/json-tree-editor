@@ -1,10 +1,8 @@
 /**
- * Web Component entry: `<json-tree-editor>`.
+ * `<json-tree-editor>` custom element class (does not auto-register).
  *
- * Solid is bundled into this build so React / Svelte / Vue / vanilla hosts do
- * not need solid-js. Import once:
- *
- *   import '@binaryoperations/json-tree-editor/web-component';
+ * To define the tag, import `@binaryoperations/json-tree-editor/web-component/register`
+ * or call `defineJsonTreeEditor()` from that module.
  *
  * API:
  *   - property `value` (string) — preferred source of truth (esp. large JSON)
@@ -27,12 +25,13 @@ import { render } from 'solid-js/web';
 import {
   JsonTreeView,
   type JsonTreeViewHandle,
-} from './components/primitives/JsonTreeView';
-import { HTML5_ARRAY_REORDER } from './dnd';
-import type { JsonTreeEditorPlugin } from './lib/editor-runtime/types';
-import styles from './styles.css?inline';
+} from '../components/primitives/JsonTreeView';
+import { HTML5_ARRAY_REORDER } from '../dnd';
+import type { JsonTreeEditorPlugin } from '../lib/editor-runtime/types';
+import styles from '../styles.css?inline';
 
-const TAG = 'json-tree-editor';
+export const TAG = 'json-tree-editor';
+export { TAG as JSON_TREE_EDITOR_TAG };
 /** Avoid reflecting multi-megabyte JSON into the live DOM attribute tree. */
 const MAX_REFLECT_ATTR_CHARS = 8_192;
 
@@ -60,7 +59,7 @@ function parseDepth(raw: unknown): number {
   return Math.max(0, Math.floor(n));
 }
 
-class JsonTreeEditor extends HTMLElement {
+export class JsonTreeEditor extends HTMLElement {
   static get observedAttributes(): string[] {
     return [
       'value',
@@ -498,17 +497,4 @@ class JsonTreeEditor extends HTMLElement {
   }
 }
 
-export function defineJsonTreeEditor(
-  tag: string = TAG,
-): typeof JsonTreeEditor {
-  if (typeof customElements !== 'undefined' && !customElements.get(tag)) {
-    customElements.define(tag, JsonTreeEditor);
-  }
-  return JsonTreeEditor;
-}
-
-// Auto-register on import (primary library surface for non-Solid hosts).
-defineJsonTreeEditor();
-
-export { JsonTreeEditor, TAG as JSON_TREE_EDITOR_TAG };
 export default JsonTreeEditor;

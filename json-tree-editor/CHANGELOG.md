@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- **Web component split:** `@binaryoperations/json-tree-editor/web-component` exports the custom element class only (no auto-register). Import `@binaryoperations/json-tree-editor/web-component/register` to define `<json-tree-editor>` on load, or call `defineJsonTreeEditor()`.
+
 ## [2.0.0] - 2026-09-19
 
 ### Added

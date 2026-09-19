@@ -95,7 +95,7 @@ export function Editor() {
 `;
 
 const WC_BOOTSTRAP = `<script type="module">
-  import '@binaryoperations/json-tree-editor/web-component';
+  import '@binaryoperations/json-tree-editor/web-component/register';
   import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
 
   const tree = document.querySelector('json-tree-editor');

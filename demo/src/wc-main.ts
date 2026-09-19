@@ -3,7 +3,7 @@
  * Requires WC build: `pnpm --filter @binaryoperations/json-tree-editor build`
  * (or root `pnpm build:lib` / demo `prebuild`).
  */
-import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component/register';
 import type { JsonTreeEditorPlugin } from '@binaryoperations/json-tree-editor/plugin';
 import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
 import defaultCss from '@binaryoperations/json-tree-editor/themes/default.css?inline';

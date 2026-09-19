@@ -38,7 +38,8 @@ npm install solid-js
 | `@binaryoperations/json-tree-editor/breadcrumbs` | Path bar + `selectPath` — **opt-in** ([breadcrumbs README](./src/breadcrumbs/README.md)) |
 | `@binaryoperations/json-tree-editor/dnd` | Array drag-and-drop (`HTML5_ARRAY_REORDER`, …) — **opt-in** |
 | `@binaryoperations/json-tree-editor/utils` | Parse helpers, path utilities, lower-level primitives |
-| `@binaryoperations/json-tree-editor/web-component` | Prebuilt `<json-tree-editor>` (Solid bundled; DnD on by default) |
+| `@binaryoperations/json-tree-editor/web-component` | Custom element class (no auto-register) |
+| `@binaryoperations/json-tree-editor/web-component/register` | Defines `<json-tree-editor>` on import (Solid bundled; DnD on by default) |
 | `@binaryoperations/json-tree-editor/styles.css` | Structure only (also inlined into the WC shadow) |
 | `@binaryoperations/json-tree-editor/themes/*.css` | A complete look — each file `@import`s structure. Import **exactly one**. |
 
@@ -73,7 +74,7 @@ export function JsonPanel() {
 
 ```html
 <script type="module">
-  import '@binaryoperations/json-tree-editor/web-component';
+  import '@binaryoperations/json-tree-editor/web-component/register';
   import '@binaryoperations/json-tree-editor/themes/default.css';
 
   const el = document.querySelector('json-tree-editor');
@@ -93,7 +94,7 @@ export function JsonPanel() {
 <summary>Web component (TypeScript host)</summary>
 
 ```ts
-import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component/register';
 import '@binaryoperations/json-tree-editor/themes/default.css';
 import type { JsonTreeEditorElement } from '@binaryoperations/json-tree-editor/web-component';
 
@@ -290,7 +291,7 @@ const plugins = [historyPlugin({ maxDepth: 50 })];
 <summary>Minimal web component wire-up</summary>
 
 ```ts
-import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component/register';
 import '@binaryoperations/json-tree-editor/themes/default.css';
 import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
 

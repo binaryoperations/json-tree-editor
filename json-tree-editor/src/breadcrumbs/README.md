@@ -61,7 +61,7 @@ export function EditorWithBreadcrumbs() {
 <summary>Web component</summary>
 
 ```ts
-import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component/register';
 import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
 
 const el = document.querySelector('json-tree-editor')!;

@@ -79,7 +79,7 @@ export function EditorWithHistory() {
 <summary>Web component</summary>
 
 ```ts
-import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component/register';
 import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
 
 const el = document.querySelector('json-tree-editor')!;

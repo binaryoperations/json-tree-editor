@@ -16,8 +16,8 @@
   },
   "sideEffects": [
     "*.css",
-    "./dist/web-component.js",
-    "./src/web-component.tsx"
+    "./src/web-component/register.ts",
+    "./dist/web-component/register.js"
   ],
   "main": "./src/index.ts",
   "module": "./src/index.ts",
@@ -60,9 +60,14 @@
       "default": "./src/history/index.ts"
     },
     "./web-component": {
-      "types": "./dist/web-component.d.ts",
-      "import": "./dist/web-component.js",
-      "default": "./dist/web-component.js"
+      "types": "./dist/web-component/index.d.ts",
+      "import": "./dist/web-component/index.js",
+      "default": "./dist/web-component/index.js"
+    },
+    "./web-component/register": {
+      "types": "./dist/web-component/register.d.ts",
+      "import": "./dist/web-component/register.js",
+      "default": "./dist/web-component/register.js"
     },
     "./styles.css": "./src/styles.css",
     "./themes/*.css": "./src/themes/*.css",

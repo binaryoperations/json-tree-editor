@@ -5,6 +5,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { JsonTreeEditorPlugin } from './lib/editor-runtime/types';
+import './web-component/register';
 import {
   JSON_TREE_EDITOR_TAG,
   type JsonTreeEditorElement,

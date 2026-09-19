@@ -2,14 +2,14 @@
  * Vanilla web component + historyPlugin demo — no Solid host app.
  * Requires WC source via Vite alias (or built dist for production consumers).
  */
-import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component/register';
 import '@binaryoperations/json-tree-editor/themes/default.css';
 import {
   historyPlugin,
   type HistoryEntryMeta,
   type HistoryReadSnapshot,
 } from '@binaryoperations/json-tree-editor/history';
-import type { JsonTreeEditorElement } from '../../json-tree-editor/src/web-component';
+import type { JsonTreeEditorElement } from '../../json-tree-editor/src/web-component/index';
 
 import { mountDemoHeader } from './shell/header';
 
@@ -34,7 +34,7 @@ const SAMPLE = `{
 }
 `;
 
-const WC_BOOTSTRAP = `import '@binaryoperations/json-tree-editor/web-component';
+const WC_BOOTSTRAP = `import '@binaryoperations/json-tree-editor/web-component/register';
 import { historyPlugin } from '@binaryoperations/json-tree-editor/history';
 
 const el = document.querySelector('json-tree-editor');
