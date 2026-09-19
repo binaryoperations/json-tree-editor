@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-19
+
 ### Added
 
 - **Plugin system** — opt-in plugins via Solid `plugins` / `use` and WC `plugins` / `use`, plus `callCommand` / `hasCommand`.  
@@ -151,6 +153,7 @@ From `@binaryoperations/json-tree-editor/utils`:
 
 ---
 
+[2.0.0]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.6...v2.0.0
 [1.0.6]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.3...v1.0.5
 [1.0.3]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.2...v1.0.3
