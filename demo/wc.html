@@ -121,28 +121,41 @@
         height: 100%;
         width: 100%;
       }
-      /* Example: host-level CSS variables (open shadow inherits on :host) */
-      json-tree-editor.light {
-        --jte-bg: #f8fafc;
-        --jte-fg: #0f172a;
-        --jte-muted: #64748b;
-        --jte-muted-2: #475569;
-        --jte-border: #e2e8f0;
-        --jte-border-strong: #cbd5e1;
-        --jte-border-hover: #94a3b8;
-        --jte-row-hover: #f1f5f9;
-        --jte-row-focus-bg: #e2e8f0;
-        --jte-surface: #ffffff;
-        --jte-surface-2: #f1f5f9;
-        --jte-surface-3: #e2e8f0;
-        --jte-surface-4: #cbd5e1;
-        --jte-key: #1d4ed8;
-        --jte-key-root: #6d28d9;
-        --jte-string: #15803d;
-        --jte-number: #b45309;
-        --jte-boolean: #6d28d9;
-        --jte-null: #64748b;
-        color-scheme: light;
+      .toolbar label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #9aa3b2;
+        white-space: nowrap;
+      }
+      .toolbar select {
+        appearance: none;
+        font: inherit;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #e6e8ec;
+        background: #1a1f2a;
+        border: 1px solid #2a2f3a;
+        border-radius: 6px;
+        padding: 0.35rem 0.65rem;
+        cursor: pointer;
+      }
+      .toolbar select:hover {
+        border-color: #4b5568;
+        background: #232833;
+      }
+      .toolbar select:focus-visible {
+        outline: 2px solid #60a5fa;
+        outline-offset: 2px;
+      }
+      /* Host ::part styling (open shadow). Tokens stay in the library presets. */
+      json-tree-editor.demo-parts::part(row) {
+        box-shadow: inset 0 -1px 0 #3b82f6;
+      }
+      json-tree-editor.demo-parts::part(search) {
+        outline: 2px solid #f59e0b;
       }
       .meta {
         font-size: 0.75rem;
@@ -184,7 +197,22 @@
         <span id="status">idle</span>
         <button type="button" id="btn-dnd" aria-pressed="true">DnD: on</button>
         <button type="button" id="btn-sample">Load sample</button>
-        <button type="button" id="btn-theme">Toggle light theme</button>
+        <label>
+          Scheme
+          <select id="sel-scheme" aria-label="Tree color scheme">
+            <option value="system" selected>System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <label>
+          <input type="checkbox" id="chk-hc" />
+          High contrast
+        </label>
+        <label title="json-tree-editor::part(row) / ::part(search)">
+          <input type="checkbox" id="chk-parts" />
+          ::part demo
+        </label>
         <button type="button" id="btn-readonly" aria-pressed="false">Editable</button>
         <span class="meta">vanilla · no Solid host required</span>
       </div>

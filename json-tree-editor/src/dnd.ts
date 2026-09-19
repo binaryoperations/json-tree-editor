@@ -17,6 +17,7 @@ export type {
   ArrayDragState,
   ArrayItemReorderUi,
   ArrayReorderBinding,
+  ArrayReorderCommitMeta,
   ArrayReorderController,
   ArrayReorderParent,
   ArrayReorderParentContext,

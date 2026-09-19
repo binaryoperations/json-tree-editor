@@ -58,7 +58,7 @@ export const NullEditor: Component<NullEditorProps> = (props) => {
       }
     >
       <input
-        class="json-tree-input json-tree-input--null"
+        class="json-tree-input"
         part="input"
         type="text"
         value={draft()}

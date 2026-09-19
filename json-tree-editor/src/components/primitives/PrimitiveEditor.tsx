@@ -6,9 +6,14 @@ import { NullEditor } from './NullEditor';
 import { NumberEditor } from './NumberEditor';
 import { StringEditor } from './StringEditor';
 
+export type PrimitiveEditorCommitOpts = {
+  /** String/number focus-session id for history coalesce. */
+  sessionId?: string;
+};
+
 export type PrimitiveEditorProps = {
   value: unknown;
-  onCommit: (next: unknown) => void;
+  onCommit: (next: unknown, opts?: PrimitiveEditorCommitOpts) => void;
   /** Display value only — no inputs. */
   readOnly?: boolean;
   /** Debounced search query for `<mark>` highlights. */
@@ -36,10 +41,14 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
     query().trim().length > 0;
 
   return (
-    <span class="json-tree-value" part="value">
+    <span
+      class="json-tree-value"
+      classList={{ [`json-tree-value--${kind()}`]: true }}
+      part={`value ${kind()}`}
+    >
       <Show when={props.readOnly}>
         <Show when={kind() === 'string'}>
-          <span class="json-tree-input json-tree-input--string json-tree-input--readonly">
+          <span class="json-tree-input json-tree-input--readonly">
             <HighlightText
               text={asStringValue(props.value)}
               query={query()}
@@ -48,7 +57,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
           </span>
         </Show>
         <Show when={kind() === 'number'}>
-          <span class="json-tree-input json-tree-input--number json-tree-input--readonly">
+          <span class="json-tree-input json-tree-input--readonly">
             <HighlightText
               text={String(props.value)}
               query={query()}
@@ -57,7 +66,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
           </span>
         </Show>
         <Show when={kind() === 'boolean'}>
-          <span class="json-tree-input json-tree-input--boolean json-tree-input--readonly">
+          <span class="json-tree-input json-tree-input--readonly">
             <HighlightText
               text={String(props.value)}
               query={query()}
@@ -76,9 +85,14 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
         <Show when={kind() === 'string'}>
           <StringEditor
             value={asStringValue(props.value)}
-            onCommit={(next) => {
+            onCommit={(next, opts) => {
               // Always store plain string (never leave a Date instance in the tree).
-              props.onCommit(next);
+              props.onCommit(
+                next,
+                opts?.sessionId != null
+                  ? { sessionId: opts.sessionId }
+                  : undefined,
+              );
             }}
             highlightQuery={query()}
             activeHighlight={active()}
@@ -88,7 +102,14 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
         <Show when={kind() === 'number'}>
           <NumberEditor
             value={props.value as number}
-            onCommit={props.onCommit}
+            onCommit={(next, opts) => {
+              props.onCommit(
+                next,
+                opts?.sessionId != null
+                  ? { sessionId: opts.sessionId }
+                  : undefined,
+              );
+            }}
             highlightQuery={query()}
             activeHighlight={active()}
           />
@@ -99,7 +120,7 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
             when={showBooleanHighlight()}
             fallback={
               <select
-                class="json-tree-input json-tree-input--boolean"
+                class="json-tree-input"
                 part="input"
                 value={String(props.value)}
                 aria-label="Boolean value"
@@ -120,7 +141,8 @@ export const PrimitiveEditor: Component<PrimitiveEditorProps> = (props) => {
             }
           >
             <span
-              class="json-tree-input json-tree-input--boolean json-tree-input--readonly json-tree-input--search-display"
+              class="json-tree-input json-tree-input--readonly json-tree-input--search-display"
+              part="input"
               role="button"
               tabindex={0}
               aria-label="Boolean value"

@@ -1,4 +1,5 @@
 import { JsonTreeView } from '../../json-tree-editor/src';
+import { breadcrumbsPlugin } from '../../json-tree-editor/src/breadcrumbs';
 import { HTML5_ARRAY_REORDER } from '../../json-tree-editor/src/dnd';
 import {
   parseJsonSource,
@@ -22,6 +23,9 @@ import {
   generateLargeJson,
   stringifyGenerated,
 } from './lib/generate-large-json';
+
+/** Stable plugin instance — identity is by object across re-renders. */
+const TREE_PLUGINS = [breadcrumbsPlugin()];
 
 const TARGET_NODES = 5000;
 const ADD_NODES = 1000;
@@ -202,6 +206,7 @@ export const LargeApp: Component = () => {
           </div>
           <div class="pane-body">
             <JsonTreeView
+              plugins={TREE_PLUGINS}
               value={source()}
               onChange={onTreeChange}
               readOnly={treeReadOnly()}

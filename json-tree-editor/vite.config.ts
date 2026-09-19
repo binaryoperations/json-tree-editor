@@ -11,7 +11,8 @@ const root = fileURLToPath(new URL('.', import.meta.url));
  * Web-component-only library build.
  *
  * Solid consumers import TypeScript source via package exports (no dist/index.js).
- * This build bundles solid-js into dist/web-component.js for framework-agnostic hosts.
+ * This build bundles solid-js into dist/web-component/{index,register}.js for
+ * framework-agnostic hosts.
  */
 export default defineConfig((): UserConfig => {
   return {
@@ -19,7 +20,11 @@ export default defineConfig((): UserConfig => {
       solid(),
       dts({
         // Only emit types for the WC public surface (not the Solid source entry).
-        include: ['src/web-component.tsx', 'src/vite-env.d.ts'],
+        include: [
+          'src/web-component/index.tsx',
+          'src/web-component/register.ts',
+          'src/vite-env.d.ts',
+        ],
         exclude: ['src/**/*.css'],
         entryRoot: 'src',
         outDir: 'dist',
@@ -35,9 +40,18 @@ export default defineConfig((): UserConfig => {
       sourcemap: true,
       minify: 'esbuild',
       lib: {
-        entry: resolve(root, 'src/web-component.tsx'),
+        entry: {
+          'web-component/index': resolve(
+            root,
+            'src/web-component/index.tsx',
+          ),
+          'web-component/register': resolve(
+            root,
+            'src/web-component/register.ts',
+          ),
+        },
         formats: ['es'],
-        fileName: () => 'web-component.js',
+        fileName: (_format, entryName) => `${entryName}.js`,
       },
       rollupOptions: {
         // Bundle solid-js (and everything else) into the WC artifact.

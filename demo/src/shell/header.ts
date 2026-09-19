@@ -3,7 +3,7 @@
  * Used by the web-component demo (no Solid host).
  */
 import {
-  DEMO_NAV,
+  DEMO_NAV_SECTIONS,
   DEMO_PAGE_LABEL,
   DRAWER_ID,
   type DemoPage,
@@ -100,25 +100,39 @@ export function mountDemoHeader(options: MountDemoHeaderOptions): void {
   nav.className = 'demo-drawer__nav';
   nav.setAttribute('aria-label', 'Demo pages');
 
-  for (const item of DEMO_NAV) {
-    const link = document.createElement('a');
-    link.className = 'demo-drawer__link';
-    if (item.id === page) {
-      link.classList.add('demo-drawer__link--current');
-      link.setAttribute('aria-current', 'page');
+  for (const section of DEMO_NAV_SECTIONS) {
+    const sectionEl = document.createElement('div');
+    sectionEl.className = 'demo-drawer__section';
+
+    if (section.label) {
+      const sectionLabel = document.createElement('p');
+      sectionLabel.className = 'demo-drawer__section-label';
+      sectionLabel.textContent = section.label;
+      sectionEl.appendChild(sectionLabel);
     }
-    link.href = item.href;
 
-    const label = document.createElement('span');
-    label.className = 'demo-drawer__link-label';
-    label.textContent = item.label;
+    for (const item of section.items) {
+      const link = document.createElement('a');
+      link.className = 'demo-drawer__link';
+      if (item.id === page) {
+        link.classList.add('demo-drawer__link--current');
+        link.setAttribute('aria-current', 'page');
+      }
+      link.href = item.href;
 
-    const desc = document.createElement('span');
-    desc.className = 'demo-drawer__link-desc';
-    desc.textContent = item.description;
+      const label = document.createElement('span');
+      label.className = 'demo-drawer__link-label';
+      label.textContent = item.label;
 
-    link.append(label, desc);
-    nav.appendChild(link);
+      const desc = document.createElement('span');
+      desc.className = 'demo-drawer__link-desc';
+      desc.textContent = item.description;
+
+      link.append(label, desc);
+      sectionEl.appendChild(link);
+    }
+
+    nav.appendChild(sectionEl);
   }
 
   const footer = document.createElement('p');

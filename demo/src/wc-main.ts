@@ -3,7 +3,11 @@
  * Requires WC build: `pnpm --filter @binaryoperations/json-tree-editor build`
  * (or root `pnpm build:lib` / demo `prebuild`).
  */
-import '@binaryoperations/json-tree-editor/web-component';
+import '@binaryoperations/json-tree-editor/web-component/register';
+import type { JsonTreeEditorPlugin } from '@binaryoperations/json-tree-editor/plugin';
+import { breadcrumbsPlugin } from '@binaryoperations/json-tree-editor/breadcrumbs';
+import defaultCss from '@binaryoperations/json-tree-editor/themes/default.css?inline';
+import highContrastCss from '@binaryoperations/json-tree-editor/themes/high-contrast.css?inline';
 
 import { mountDemoHeader } from './shell/header';
 
@@ -39,8 +43,13 @@ const tree = document.querySelector<
     value: string;
     readOnly: boolean;
     arrayReorder: boolean;
+    plugins: JsonTreeEditorPlugin[];
   }
 >('#tree')!;
+
+// Breadcrumb path bar — a plugin, so the web component takes it the same way
+// a Solid host does. Renders inside the shadow root, above the tree.
+tree.plugins = [breadcrumbsPlugin()];
 const status = document.querySelector<HTMLElement>('#status')!;
 const btnDnd = document.querySelector<HTMLButtonElement>('#btn-dnd')!;
 
@@ -87,9 +96,40 @@ document.querySelector('#btn-sample')!.addEventListener('click', () => {
   setStatus('sample loaded');
 });
 
-document.querySelector('#btn-theme')!.addEventListener('click', () => {
-  tree.classList.toggle('light');
-  setStatus(tree.classList.contains('light') ? 'light theme' : 'dark theme');
+const SCHEME: Record<string, string> = {
+  light: 'light',
+  dark: 'dark',
+  system: 'light dark',
+};
+
+const schemeSelect = document.querySelector<HTMLSelectElement>('#sel-scheme')!;
+function applyScheme(value: string) {
+  tree.style.colorScheme = SCHEME[value] ?? 'light dark';
+}
+applyScheme(schemeSelect.value);
+schemeSelect.addEventListener('change', () => {
+  applyScheme(schemeSelect.value);
+  setStatus(`color-scheme: ${tree.style.colorScheme}`);
+});
+
+const themeEl = document.createElement('style');
+themeEl.id = 'jte-theme';
+themeEl.setAttribute('data-jte-theme', '');
+document.head.appendChild(themeEl);
+const applyTheme = (hc: boolean) => {
+  themeEl.textContent = hc ? highContrastCss : defaultCss;
+};
+applyTheme(false);
+const chkHc = document.querySelector<HTMLInputElement>('#chk-hc')!;
+chkHc.addEventListener('change', () => {
+  applyTheme(chkHc.checked);
+  setStatus(chkHc.checked ? 'theme: high-contrast' : 'theme: default');
+});
+
+const chkParts = document.querySelector<HTMLInputElement>('#chk-parts')!;
+chkParts.addEventListener('change', () => {
+  tree.classList.toggle('demo-parts', chkParts.checked);
+  setStatus(chkParts.checked ? '::part(row)/::part(search) on' : '::part demo off');
 });
 
 const btnReadOnly = document.querySelector<HTMLButtonElement>('#btn-readonly')!;

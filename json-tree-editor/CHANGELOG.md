@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-09-19
+
+### Breaking Changes
+
+- **Web component split:** `@binaryoperations/json-tree-editor/web-component` exports the custom element class only (no auto-register). Import `@binaryoperations/json-tree-editor/web-component/register` to define `<json-tree-editor>` on load, or call `defineJsonTreeEditor()`.
+
+## [2.0.0] - 2026-09-19
+
+### Added
+
+- **Plugin system** — opt-in plugins via Solid `plugins` / `use` and WC `plugins` / `use`, plus `callCommand` / `hasCommand`.  
+  Docs: [PRD / architecture](../plans/PRD-plugin-system.md), types `@binaryoperations/json-tree-editor/plugin`.
+- **History plugin** (`@binaryoperations/json-tree-editor/history`) — path-scoped undo/redo (`undo`, `redo`, `canUndo`, `canRedo`, `readHistory`, `clearHistory`).  
+  Docs: [history README](./src/history/README.md), [history PRD](../plans/PRD-history-plugin.md).
+- **Plugin UI** — plugins may contribute chrome via an optional `render(stage, ctx)` and a `stage: 'head' | 'tail'` config. Called once per plugin, in its own slot; a throwing `render` is isolated.  
+  View primitives published as commands for plugin authors: `json-tree.expandPath`, `json-tree.revealPath` (resolves the revealed row element, so plugins can decorate it), `json-tree.getFocusedPath`, `json-tree.onFocusedPathChange`. Plugin `setup` runs untracked, so state read during setup does not reinstall the plugin set when it changes.
+- **Breadcrumbs plugin** (`@binaryoperations/json-tree-editor/breadcrumbs`) — path bar for the focused row plus the `selectPath` command (expand ancestors → scroll into view → flash a ring around the key). `selectPath` exists only while the plugin is loaded.  
+  Docs: [breadcrumbs README](./src/breadcrumbs/README.md).
+- `pointerToJsonPath` / `jsonPathToPointer` — RFC 6901 JSON Pointer ↔ `JsonPath` helpers, exported from the package root.
+- **Theming presets** — import **one** of `themes/default.css` or `themes/high-contrast.css` (each `@import`s structure). `light-dark()` + `color-scheme: light dark`. Do not stack presets. Public tokens are BEM `--jte--{block}…` names. Complete `::part` map for the web component (search internals, action roles, crumbs, `flash-ring`). Disabled expand/collapse toolbar buttons are omitted instead of shown greyed-out.
+
+### Fixed
+
+- **Reveal scrolled to the wrong place for expanded containers.** `scrollTreeItemIntoView` measured the `.json-tree-row`, which is `position: sticky; top: 0` — once scrolled past, an expanded container's row reported itself pinned at the top of the scroller and looked "already visible" from any depth. Revealing it (a breadcrumb click on a shallow ancestor, search, or keyboard navigation) moved by the sticky-inset difference and stranded the viewport mid-subtree. It now positions by the node box, which stays in normal flow, and only requires the header row to fit rather than the whole subtree. `scrollTop` is also clamped at 0.
+
 ### Breaking Changes
 
 - **Moved** these exports from `@binaryoperations/json-tree-editor/utils` to `@binaryoperations/json-tree-editor/dnd`:
@@ -22,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Events `expand`, `collapse`, `expand-progress`
   - Type `ExpandProgress`
 - Solid **`arrayReorder` default is off** (`undefined` / `false`). Pass a controller from `/dnd` to enable. Web component still enables HTML5 DnD by default.
+- **Removed 1.0.6 `--jte-*` theme names** (`--jte-bg`, `--jte-string`, `--jte-type-string`, …). No aliases — use `--jte--json-tree--bg`, `--jte--json-tree-value--string`, `--jte--json-tree-type--string`, and the other BEM groups.
+- **Default scheme follows OS preference** (`prefers-color-scheme`) instead of hardcoded `color-scheme: dark`. Force a side with `color-scheme: light` or `color-scheme: dark` on the host / `.json-tree`.
+- **Input type-color classes are gone.** `.json-tree-input--string` / `--number` / `--boolean` / `--null` no longer set primitive color; color comes from `.json-tree-value--{type}`.
 
 ### Refactor
 
@@ -131,6 +159,8 @@ From `@binaryoperations/json-tree-editor/utils`:
 
 ---
 
+[2.0.1]: https://github.com/binaryoperations/json-tree-editor/compare/v2.0.0...v2.0.1
+[2.0.0]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.6...v2.0.0
 [1.0.6]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.3...v1.0.5
 [1.0.3]: https://github.com/binaryoperations/json-tree-editor/compare/v1.0.2...v1.0.3

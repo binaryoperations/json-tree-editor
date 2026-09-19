@@ -1,7 +1,7 @@
-import { For, type ParentComponent } from 'solid-js';
+import { For, Show, type ParentComponent } from 'solid-js';
 
 import {
-  DEMO_NAV,
+  DEMO_NAV_SECTIONS,
   DEMO_PAGE_LABEL,
   DRAWER_ID,
   type DemoPage,
@@ -31,7 +31,7 @@ export const DemoHeader: ParentComponent<DemoHeaderProps> = (props) => {
           <button
             type="button"
             class="demo-header__menu"
-            attr:popovertarget={DRAWER_ID}
+            popovertarget={DRAWER_ID}
             aria-haspopup="dialog"
             aria-label="Open navigation menu"
           >
@@ -50,7 +50,7 @@ export const DemoHeader: ParentComponent<DemoHeaderProps> = (props) => {
       <div
         id={DRAWER_ID}
         class="demo-drawer"
-        attr:popover="auto"
+        popover="auto"
         role="dialog"
         aria-label="Demo navigation"
         ref={(el) => {
@@ -70,19 +70,34 @@ export const DemoHeader: ParentComponent<DemoHeaderProps> = (props) => {
             </button>
           </div>
           <nav class="demo-drawer__nav" aria-label="Demo pages">
-            <For each={[...DEMO_NAV]}>
-              {(item) => (
-                <a
-                  class="demo-drawer__link"
-                  classList={{
-                    'demo-drawer__link--current': item.id === props.page,
-                  }}
-                  href={item.href}
-                  aria-current={item.id === props.page ? 'page' : undefined}
-                >
-                  <span class="demo-drawer__link-label">{item.label}</span>
-                  <span class="demo-drawer__link-desc">{item.description}</span>
-                </a>
+            <For each={[...DEMO_NAV_SECTIONS]}>
+              {(section) => (
+                <div class="demo-drawer__section">
+                  <Show when={section.label}>
+                    {(label) => (
+                      <p class="demo-drawer__section-label">{label()}</p>
+                    )}
+                  </Show>
+                  <For each={[...section.items]}>
+                    {(item) => (
+                      <a
+                        class="demo-drawer__link"
+                        classList={{
+                          'demo-drawer__link--current': item.id === props.page,
+                        }}
+                        href={item.href}
+                        aria-current={
+                          item.id === props.page ? 'page' : undefined
+                        }
+                      >
+                        <span class="demo-drawer__link-label">{item.label}</span>
+                        <span class="demo-drawer__link-desc">
+                          {item.description}
+                        </span>
+                      </a>
+                    )}
+                  </For>
+                </div>
               )}
             </For>
           </nav>

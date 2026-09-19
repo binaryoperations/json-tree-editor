@@ -1,87 +1,60 @@
 # Future features
 
-Ideas to take up as a separate project later. Captured from product notes (2026-03-11) and refined for a plugin-first architecture.
+Backlog only — work not yet done. Shipped capabilities live in package READMEs and `CHANGELOG.md`.
 
-## Highest priority — foundation
+New product features should prefer the **plugin** model (`plugins` / `use`, command registry, master/subordinate) rather than growing core props. See [plans/PRD-plugin-system.md](./plans/PRD-plugin-system.md).
 
-### 1. Plugin system + editor state
+---
 
-The editor needs a **plugin system**. Features should not be hard-wired into the core tree; they register as plugins and **manage their own state**.
+## Next
 
-Architectural direction:
+### 1. Array DnD as a plugin
 
-- **Editor state** — central surface the core owns (document, focus path, expand set, read-only, …) plus a transaction/update path.
-- **Plugins** own private state; core does not know about undo stacks or CRDT docs.
-- Register on Solid `JsonTreeView` and the web component (`use(plugin)` / `plugins` API).
-- **Commands** are a shared registry. Overlapping registrations follow the **master / subordinate** rule below.
+**Today:** array reorder is a first-class editor concern:
 
-→ Notes: [plans/plugin-system.md](./plans/plugin-system.md)
+- Solid: `arrayReorder={HTML5_ARRAY_REORDER}` from `@binaryoperations/json-tree-editor/dnd`
+- Web component: `arrayReorder` / `array-reorder` (default **on**)
+- Controllers under `/dnd`; commits via tree meta (`kind: 'reorder'`, indices)
 
-### 2. Conflict rule (general): master / subordinate
+**Target:** DnD as a **plugin** (same model as history), not core props:
 
-**First registrant** for a named capability or command is the **master**. The master owns the public API callers use.
+- e.g. `arrayReorderPlugin()` / `dndPlugin({ controller })` via `plugins` / `use()`
+- Core exposes hooks (reorder commit path, handles, a11y) without shipping HTML5 DnD by default
+- WC default-on DnD becomes “install the DnD plugin” (or a documented default plugin set)
+- Keep `/dnd` as controller implementation; avoid duplicating HTML5 logic
+- History already records `reorder` via commit meta — keep that when DnD is a plugin
 
-**Later registrants** for the same name are **subordinates**. They do **not** replace the master. They may:
+**Migration sketch:**
 
-- Attach as a backend or delegate **if the master allows it**, or
-- Stay passive (loaded but not serving that command).
+1. Plugin API + lifecycle (bind/unbind, readOnly).  
+2. Deprecate Solid `arrayReorder` and WC `array-reorder` in favor of the plugin.  
+3. Update demos and README bootstrap snippets.  
+4. Changelog: soft deprecation or breaking, per release policy.
 
-This rule applies to **any** overlapping plugins — history, collab, clipboard, go-to, and so on — not only history. Prefer this over last-wins (silent breakage) or throw-on-second (hostile to composition).
-
-→ Full rationale and API sketch: [plans/plugin-system.md](./plans/plugin-system.md)
-
-### 3. History
-
-Undo/redo for tree edits. **Separate concern** from collaboration.
-
-History is a **plugin** exposing commands:
-
-| Command | Role |
-|---|---|
-| `undo` | Revert one step |
-| `redo` | Re-apply one step |
-| `canUndo` | Whether undo is available |
-| `canRedo` | Whether redo is available |
-| `readHistory` | Inspect history (for UI / debugging) |
-
-Prefer a **history master** with a **pluggable backend** (`LocalStack` vs CRDT undo such as Yjs/Loro). Collab may package history and/or load as a **subordinate** that supplies a CRDT backend when the history master allows it. **First registrant is master** if both history and collab register the same commands.
-
-→ Plan: [plans/history.md](./plans/history.md)
-
-### 4. Collab + follow-user
+### 2. Collab + follow-user
 
 - CRDT multiplayer via **Yjs** and **Loro** adapters as plugins.
-- Collab is a **separate concern** from history; composition uses the master/subordinate rule (package history, or subordinate + supply backend).
-- **Follow user** / presence via awareness (peer path, color, follow mode).
+- Separate concern from history; compose via master/subordinate (or collab packages history).
+- **Follow user** / presence (peer path, color, follow mode).
 
 → Notes: [plans/collaboration-plugins.md](./plans/collaboration-plugins.md)
 
-### 5. Breadcrumb / path bar
+---
 
-Show current node path; click segments to navigate.
+## Later
 
-→ Plan: [plans/breadcrumb.md](./plans/breadcrumb.md)
+3. **Copy as code** — node/subtree as JSON, JS, TypeScript, etc.  
+4. **"Go to" / quick open** — jump to key or path.  
+5. **Diff view** — compare two JSONs.  
+6. **Table / grid view** — arrays of objects as rows/columns.  
+7. **URL / image preview** — detect URLs/images; preview.  
+8. **JSON5 / comments** — comments, trailing commas (lower priority).
 
-## High interest (after foundation)
+---
 
-6. **Copy as code** — Copy node/subtree as JSON, JS, TypeScript, etc.
-7. **"Go to" / quick open** — Filter-style jump to key or path.
-8. **Diff view** — Compare two JSONs.
-9. **Table / grid view** — Arrays of objects as rows/columns.
-10. **URL / image preview** — Detect URLs/images; preview.
-11. **JSON5 / comments** — Lower priority; comments, trailing commas.
+## Suggested order
 
-## Suggested build order
-
-1. **Plugin API + command registry** (master / subordinate)
-2. **History plugin** (`undo` / `redo` / `canUndo` / `canRedo` / `readHistory`)
-3. **Breadcrumb**
-4. **Collab packages** (Yjs + Loro adapters; history composition)
-5. **Presence + follow user**
-6. Remaining features as plugins where useful
-
-## Already in place
-
-- Collapse on every collapsible node (expands all children under that node).
-- Auto-repair / “fix JSON” via `new Function()` wrapping the object string.
-- In-tree search (Cmd/Ctrl+F).
+1. **DnD as plugin** — migrate from `arrayReorder` prop / WC attribute  
+2. **Collab** (Yjs + Loro) + history composition  
+3. **Presence + follow user**  
+4. Remaining items as plugins where useful  

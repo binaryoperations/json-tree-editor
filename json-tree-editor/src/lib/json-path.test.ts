@@ -21,6 +21,7 @@ import {
   duplicateAtPath,
   duplicateKeyAtPath,
   getAtPath,
+  insertAtPath,
   arrayDropTargetIndex,
   moveArrayItemAtPath,
   moveArrayItemByDelta,
@@ -297,6 +298,51 @@ describe('addPropertyAtPath / addItemAtPath', () => {
     const root = { list: [1] };
     expect(addItemAtPath(root, ['list'], 2)).toEqual({ list: [1, 2] });
     expect(addItemAtPath(root, [], 2)).toBe(root);
+  });
+});
+
+describe('insertAtPath', () => {
+  it('splices into arrays at mid index (undo-delete must not overwrite)', () => {
+    const root = { list: ['a', 'b', 'c'] };
+    const next = insertAtPath(root, ['list', 1], 'X') as typeof root;
+    expect(next.list).toEqual(['a', 'X', 'b', 'c']);
+    expect(root.list).toEqual(['a', 'b', 'c']);
+  });
+
+  it('inserts at array start and end (clamped)', () => {
+    const root = [1, 2];
+    expect(insertAtPath(root, [0], 0)).toEqual([0, 1, 2]);
+    expect(insertAtPath(root, [2], 3)).toEqual([1, 2, 3]);
+    expect(insertAtPath(root, [99], 9)).toEqual([1, 2, 9]);
+  });
+
+  it('inserts object keys at keyIndex and preserves order', () => {
+    const root = { a: 1, c: 3 };
+    const mid = insertAtPath(root, ['b'], 2, { keyIndex: 1 }) as Record<
+      string,
+      unknown
+    >;
+    expect(Object.keys(mid)).toEqual(['a', 'b', 'c']);
+    expect(mid).toEqual({ a: 1, b: 2, c: 3 });
+
+    const append = insertAtPath(root, ['d'], 4) as Record<string, unknown>;
+    expect(Object.keys(append)).toEqual(['a', 'c', 'd']);
+  });
+
+  it('inserts nested object keys with order', () => {
+    const root = { nest: { x: 1, z: 3 } };
+    const next = insertAtPath(root, ['nest', 'y'], 2, {
+      keyIndex: 1,
+    }) as typeof root;
+    expect(Object.keys(next.nest)).toEqual(['x', 'y', 'z']);
+    expect(next.nest).toEqual({ x: 1, y: 2, z: 3 });
+  });
+
+  it('no-ops on empty path, collision, or wrong parent type', () => {
+    const root = { a: 1 };
+    expect(insertAtPath(root, [], 9)).toBe(root);
+    expect(insertAtPath(root, ['a'], 2)).toBe(root);
+    expect(insertAtPath([1], ['x'], 2)).toEqual([1]);
   });
 });
 

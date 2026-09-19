@@ -1,6 +1,6 @@
 {
   "name": "@binaryoperations/json-tree-editor",
-  "version": "1.0.6",
+  "version": "2.0.1",
   "description": "Interactive JSON tree editor — Solid components + framework-agnostic web component",
   "type": "module",
   "license": "MIT",
@@ -16,8 +16,8 @@
   },
   "sideEffects": [
     "*.css",
-    "./dist/web-component.js",
-    "./src/web-component.tsx"
+    "./src/web-component/register.ts",
+    "./dist/web-component/register.js"
   ],
   "main": "./src/index.ts",
   "module": "./src/index.ts",
@@ -41,12 +41,36 @@
       "import": "./src/dnd.ts",
       "default": "./src/dnd.ts"
     },
+    "./plugin": {
+      "types": "./src/plugin.ts",
+      "solid": "./src/plugin.ts",
+      "import": "./src/plugin.ts",
+      "default": "./src/plugin.ts"
+    },
+    "./breadcrumbs": {
+      "types": "./src/breadcrumbs/index.ts",
+      "solid": "./src/breadcrumbs/index.ts",
+      "import": "./src/breadcrumbs/index.ts",
+      "default": "./src/breadcrumbs/index.ts"
+    },
+    "./history": {
+      "types": "./src/history/index.ts",
+      "solid": "./src/history/index.ts",
+      "import": "./src/history/index.ts",
+      "default": "./src/history/index.ts"
+    },
     "./web-component": {
-      "types": "./dist/web-component.d.ts",
-      "import": "./dist/web-component.js",
-      "default": "./dist/web-component.js"
+      "types": "./dist/web-component/index.d.ts",
+      "import": "./dist/web-component/index.js",
+      "default": "./dist/web-component/index.js"
+    },
+    "./web-component/register": {
+      "types": "./dist/web-component/register.d.ts",
+      "import": "./dist/web-component/register.js",
+      "default": "./dist/web-component/register.js"
     },
     "./styles.css": "./src/styles.css",
+    "./themes/*.css": "./src/themes/*.css",
     "./package.json": "./package.json"
   },
   "scripts": {

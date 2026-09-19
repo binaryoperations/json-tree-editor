@@ -1,4 +1,3 @@
-import '@binaryoperations/json-tree-editor/styles.css';
 import './styles.css';
 
 import { render } from 'solid-js/web';

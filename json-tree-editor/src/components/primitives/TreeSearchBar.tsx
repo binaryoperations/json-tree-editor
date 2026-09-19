@@ -20,11 +20,12 @@ export const TreeSearchBar: Component<TreeSearchBarProps> = (props) => {
   return (
     <div class="json-tree__search" part="search" role="search">
       <label class="json-tree__search-label">
-        <span class="json-tree__search-icon" aria-hidden="true">
+        <span class="json-tree__search-icon" part="search-icon" aria-hidden="true">
           ⌕
         </span>
         <input
           class="json-tree__search-input"
+          part="search-input"
           type="search"
           role="searchbox"
           aria-label="Search keys and values"
@@ -49,7 +50,7 @@ export const TreeSearchBar: Component<TreeSearchBarProps> = (props) => {
         />
       </label>
 
-      <span class="json-tree__search-count" aria-live="polite">
+      <span class="json-tree__search-count" part="search-count" aria-live="polite">
         {props.matchCount === 0
           ? '0 / 0'
           : `${props.activeIndex} / ${props.matchCount}`}
@@ -58,7 +59,7 @@ export const TreeSearchBar: Component<TreeSearchBarProps> = (props) => {
       <button
         type="button"
         class="json-tree__search-btn"
-        part="action"
+        part="action search-prev"
         title="Previous match"
         aria-label="Previous match"
         disabled={props.matchCount === 0}
@@ -69,7 +70,7 @@ export const TreeSearchBar: Component<TreeSearchBarProps> = (props) => {
       <button
         type="button"
         class="json-tree__search-btn"
-        part="action"
+        part="action search-next"
         title="Next match"
         aria-label="Next match"
         disabled={props.matchCount === 0}
@@ -80,7 +81,7 @@ export const TreeSearchBar: Component<TreeSearchBarProps> = (props) => {
       <button
         type="button"
         class="json-tree__search-btn json-tree__search-btn--close"
-        part="action"
+        part="action search-close"
         title="Close search"
         aria-label="Close search"
         onClick={() => props.onClose()}

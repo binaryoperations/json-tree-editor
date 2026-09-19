@@ -1,100 +1,16 @@
-/* JSON tree editor styles (library)
+/* JSON tree editor styles (library) — structure only, no palette.
  *
- * Theme via CSS custom properties on `.json-tree` (Solid) or `:host` (web component).
+ * Prefer importing a theme (`themes/default.css` or `themes/high-contrast.css`);
+ * each theme `@import`s this file. Do not load two themes.
  *
- *   .json-tree { --jte-bg: #fff; --jte-fg: #111; }
- *   <json-tree-editor style="--jte-bg: #fff; --jte-fg: #111;"></json-tree-editor>
- *
- * Shadow DOM consumers can also style via ::part(tree|row|key|value|…).
- *
- * Defaults live on `:host` (WC) and as `var(--token, fallback)` so light-DOM
- * Solid usage works without a host, and host-level overrides inherit correctly.
+ * `json-tree-editor { display: block }` is a document type selector so the
+ * page/theme sizes the custom element. This sheet does not use `:host`
+ * (that would style the WC from inside its shadow).
  */
 
-:host {
+json-tree-editor {
   display: block;
-  height: 100%;
-  width: 100%;
   box-sizing: border-box;
-  color-scheme: dark;
-
-  /* Surfaces */
-  --jte-bg: #0c0e12;
-  --jte-fg: #e6e8ec;
-  --jte-muted: #5c6575;
-  --jte-muted-2: #7d8696;
-  --jte-border: #232833;
-  --jte-border-strong: #2a2f3a;
-  --jte-border-hover: #3a4254;
-  --jte-row-hover: #151922;
-  --jte-row-focus-bg: #151a24;
-  --jte-surface: #12151c;
-  --jte-surface-2: #1a1f2a;
-  --jte-surface-3: #161a22;
-  --jte-surface-4: #232833;
-
-  /* Syntax / tokens */
-  --jte-key: #93c5fd;
-  --jte-key-root: #c4b5fd;
-  --jte-key-index: #a5b4c8;
-  --jte-string: #86efac;
-  --jte-number: #fcd34d;
-  --jte-boolean: #c4b5fd;
-  --jte-null: #9ca3af;
-
-  /* Type badge colors + translucent backgrounds */
-  --jte-type-string: #86efac;
-  --jte-type-string-bg: #14532d55;
-  --jte-type-string-border: #16653488;
-  --jte-type-number: #fcd34d;
-  --jte-type-number-bg: #713f1255;
-  --jte-type-number-border: #a1620788;
-  --jte-type-boolean: #c4b5fd;
-  --jte-type-boolean-bg: #4c1d9555;
-  --jte-type-boolean-border: #6d28d988;
-  --jte-type-null: #9ca3af;
-  --jte-type-null-bg: #37415155;
-  --jte-type-null-border: #4b556388;
-  --jte-type-object: #7dd3fc;
-  --jte-type-object-bg: #0c4a6e55;
-  --jte-type-object-border: #0369a188;
-  --jte-type-array: #f9a8d4;
-  --jte-type-array-bg: #83184355;
-  --jte-type-array-border: #be185d88;
-
-  /* Controls */
-  --jte-focus-ring: #60a5fa;
-  --jte-focus-border: #3b82f6;
-  --jte-focus-glow: rgba(59, 130, 246, 0.35);
-  --jte-focus-glow-soft: rgba(59, 130, 246, 0.25);
-
-  /* Search / find highlights */
-  --jte-mark-bg: #fbbf2488;
-  --jte-mark-fg: #fef3c7;
-  --jte-mark-active-bg: #f59e0bcc;
-  --jte-mark-active-fg: #fffbeb;
-  --jte-search-active-row: #1c191755;
-  --jte-danger: #fca5a5;
-  --jte-danger-strong: #fecaca;
-  --jte-danger-border: #991b1b;
-  --jte-danger-bg: #7f1d1d55;
-  --jte-error-border: #7f1d1d;
-  --jte-error-bg: #1c0f0f;
-  --jte-error-fg: #fecaca;
-  --jte-error-title: #fca5a5;
-  --jte-error-body: #fca5a5;
-  --jte-hint: #9aa3b2;
-  --jte-action-fg: #9aa3b2;
-  --jte-select-fg: #8b93a3;
-  --jte-select-fg-hover: #c8d0dc;
-
-  /* Typography */
-  --jte-font: inherit;
-  --jte-font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
-  --jte-font-size: 12.5px;
-  --jte-line-height: 1.45;
 }
 
 /* readOnly = browseable read-only tree; do not dim or block pointer (expand still works). */
@@ -103,13 +19,12 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: var(--jte-bg, #0c0e12);
-  color: var(--jte-fg, #e6e8ec);
+  background: var(--jte--json-tree--bg);
+  color: var(--jte--json-tree--color);
   display: flex;
   flex-direction: column;
-  font-family: var(--jte-font, inherit);
+  font-family: var(--jte--json-tree--font);
   box-sizing: border-box;
-  color-scheme: dark;
 }
 
 .json-tree__scroll {
@@ -119,20 +34,10 @@
   /* No padding here — it fights position:sticky on container rows.
    * Inset lives on the root node instead (see .json-tree-node--root). */
   padding: 0;
-  font-family: var(
-    --jte-font-mono,
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    'Liberation Mono',
-    'Courier New',
-    monospace
-  );
-  font-size: var(--jte-font-size, 12.5px);
-  line-height: var(--jte-line-height, 1.45);
-  color: var(--jte-fg, #e6e8ec);
+  font-family: var(--jte--json-tree--font-mono);
+  font-size: var(--jte--json-tree--font-size);
+  line-height: 1.45;
+  color: var(--jte--json-tree--color);
 }
 
 /* Error banner above a still-visible tree (empty/primitive root or syntax). */
@@ -142,9 +47,9 @@
   margin: 0.55rem 0.55rem 0;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
-  border: 1px solid var(--jte-error-border, #7f1d1d);
-  background: var(--jte-error-bg, #1c0f0f);
-  color: var(--jte-error-fg, #fecaca);
+  border: 1px solid var(--jte--json-tree__error-border);
+  background: var(--jte--json-tree__error-bg);
+  color: var(--jte--json-tree__error);
 }
 
 .json-tree__error strong,
@@ -154,31 +59,23 @@
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--jte-error-title, #fca5a5);
+  color: var(--jte--json-tree__error);
 }
 
 .json-tree__error p,
 .json-tree__disabled p {
   margin: 0 0 0.25rem;
-  font-family: var(
-    --jte-font-mono,
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    monospace
-  );
+  font-family: var(--jte--json-tree--font-mono);
   font-size: 0.78rem;
   line-height: 1.45;
-  color: var(--jte-error-body, #fca5a5);
+  color: var(--jte--json-tree__error);
   word-break: break-word;
 }
 
 .json-tree__hint {
   margin-top: 0.4rem !important;
   margin-bottom: 0 !important;
-  color: var(--jte-hint, #9aa3b2) !important;
+  color: var(--jte--json-tree--muted) !important;
   font-family: inherit !important;
   font-size: 0.75rem !important;
 }
@@ -193,8 +90,8 @@
   margin: 0.45rem 0.55rem 0;
   padding: 0.35rem 0.45rem;
   border-radius: 8px;
-  border: 1px solid var(--jte-border-strong, #2a2f3a);
-  background: var(--jte-surface, #12151c);
+  border: 1px solid var(--jte--json-tree--border);
+  background: var(--jte--json-tree--surface);
   box-sizing: border-box;
 }
 
@@ -208,7 +105,7 @@
 
 .json-tree__search-icon {
   flex-shrink: 0;
-  color: var(--jte-muted-2, #7d8696);
+  color: var(--jte--json-tree--muted);
   font-size: 0.85rem;
   line-height: 1;
 }
@@ -217,40 +114,31 @@
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: var(--jte-font-size, 12.5px);
-  font-family: var(
-    --jte-font-mono,
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    'Liberation Mono',
-    'Courier New',
-    monospace
-  );
-  color: var(--jte-fg, #e6e8ec);
-  background: var(--jte-surface-2, #1a1f2a);
-  border: 1px solid var(--jte-border, #232833);
+  font-size: var(--jte--json-tree--font-size);
+  font-family: var(--jte--json-tree--font-mono);
+  color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree--surface);
+  border: 1px solid var(--jte--json-tree--border);
   border-radius: 4px;
   padding: 0.2rem 0.4rem;
 }
 
 .json-tree__search-input:focus {
   outline: none;
-  border-color: var(--jte-focus-border, #3b82f6);
-  box-shadow: 0 0 0 2px var(--jte-focus-glow-soft, rgba(59, 130, 246, 0.25));
+  border-color: var(--jte--json-tree--focus);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--jte--json-tree--focus) 35%, transparent);
 }
 
 .json-tree__search-input::placeholder {
-  color: var(--jte-muted, #5c6575);
+  color: var(--jte--json-tree--muted);
 }
 
 .json-tree__search-count {
   flex-shrink: 0;
   font-size: 0.7rem;
   font-variant-numeric: tabular-nums;
-  color: var(--jte-muted-2, #7d8696);
+  color: var(--jte--json-tree--muted);
   min-width: 3.25rem;
   text-align: center;
 }
@@ -261,9 +149,9 @@
   font: inherit;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--jte-action-fg, #9aa3b2);
+  color: var(--jte--json-tree-action);
   background: transparent;
-  border: 1px solid var(--jte-border-strong, #2a2f3a);
+  border: 1px solid var(--jte--json-tree--border);
   border-radius: 4px;
   padding: 0.12rem 0.4rem;
   cursor: pointer;
@@ -271,19 +159,22 @@
 }
 
 .json-tree__search-btn:hover:not(:disabled) {
-  color: var(--jte-fg, #e6e8ec);
-  border-color: var(--jte-border-hover, #3a4254);
-  background: var(--jte-surface-2, #1a1f2a);
+  color: var(--jte--json-tree--color);
+  border-color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree-row--hover);
 }
 
 .json-tree__search-btn:focus-visible {
-  outline: 2px solid var(--jte-focus-ring, #60a5fa);
+  outline: 2px solid var(--jte--json-tree--focus);
   outline-offset: 1px;
 }
 
 .json-tree__search-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: var(--jte--json-tree-action--disabled);
+  border-color: var(--jte--json-tree--border);
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .json-tree__search-btn--close {
@@ -293,22 +184,22 @@
 
 /* Match highlights */
 mark.json-tree-mark {
-  background: var(--jte-mark-bg, #fbbf2488);
-  color: var(--jte-mark-fg, #fef3c7);
+  background: var(--jte--json-tree-mark-bg);
+  color: var(--jte--json-tree-mark);
   border-radius: 2px;
   padding: 0 0.05em;
   font: inherit;
 }
 
 mark.json-tree-mark--active {
-  background: var(--jte-mark-active-bg, #f59e0bcc);
-  color: var(--jte-mark-active-fg, #fffbeb);
-  box-shadow: 0 0 0 1px var(--jte-mark-active-bg, #f59e0bcc);
+  background: var(--jte--json-tree-mark--active-bg);
+  color: var(--jte--json-tree-mark--active);
+  box-shadow: 0 0 0 1px var(--jte--json-tree-mark--active-bg);
 }
 
 .json-tree-row--search-active {
-  background: var(--jte-search-active-row, #1c191755);
-  box-shadow: inset 0 0 0 1px var(--jte-mark-active-bg, #f59e0bcc);
+  background: var(--jte--json-tree-row--search-active);
+  box-shadow: inset 0 0 0 1px var(--jte--json-tree-mark--active-bg);
 }
 
 .json-tree-node {
@@ -324,8 +215,8 @@ mark.json-tree-mark--active {
 
 /* Roving tabindex row focus (keyboard arrow navigation). */
 .json-tree-node:focus-visible > .json-tree-row {
-  background: var(--jte-row-focus-bg, #151a24);
-  box-shadow: inset 0 0 0 1px var(--jte-focus-border, #3b82f6);
+  background: var(--jte--json-tree-row--focus);
+  box-shadow: inset 0 0 0 var(--jte--json-tree--focus-width) var(--jte--json-tree--focus);
 }
 
 /* Scroll inset lives on the root node (not the scroller) so sticky
@@ -349,7 +240,7 @@ mark.json-tree-mark--active {
   position: sticky;
   top: 0;
   z-index: calc(5 + var(--jte-depth, 0));
-  background: var(--jte-bg, #0c0e12);
+  background: var(--jte--json-tree--bg);
   border-radius: 0;
 }
 
@@ -364,12 +255,12 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-row:hover {
-  background: var(--jte-row-hover, #151922);
+  background: var(--jte--json-tree-row--hover);
 }
 
 /* Sticky rows need an opaque hover fill (not just the transparent default). */
 .json-tree-node--container[aria-expanded='true'] > .json-tree-row:hover {
-  background: var(--jte-row-hover, #151922);
+  background: var(--jte--json-tree-row--hover);
 }
 
 .json-tree-row:hover .json-tree-actions {
@@ -389,7 +280,7 @@ mark.json-tree-mark--active {
   border: none;
   border-radius: 3px;
   background: transparent;
-  color: var(--jte-muted, #5c6575);
+  color: var(--jte--json-tree--muted);
   font-size: 0.7rem;
   line-height: 1;
   letter-spacing: -0.18em;
@@ -400,8 +291,12 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-drag-handle:hover {
-  color: var(--jte-fg, #e6e8ec);
-  background: var(--jte-surface-4, #232833);
+  color: color-mix(
+    in srgb,
+    var(--jte--json-tree--muted) 30%,
+    var(--jte--json-tree--color)
+  );
+  background: var(--jte--json-tree--border);
 }
 
 .json-tree-drag-handle:active {
@@ -410,19 +305,19 @@ mark.json-tree-mark--active {
 
 .json-tree-node--dragging > .json-tree-row {
   opacity: 0.45;
-  background: var(--jte-surface-2, #1a1f2a);
+  background: var(--jte--json-tree--surface);
 }
 
 .json-tree-node--drop-before > .json-tree-row,
 .json-tree-node--container[aria-expanded='true'].json-tree-node--drop-before
   > .json-tree-row {
-  box-shadow: inset 0 2px 0 0 var(--jte-focus-border, #3b82f6);
+  box-shadow: inset 0 2px 0 0 var(--jte--json-tree--focus);
 }
 
 .json-tree-node--drop-after > .json-tree-row,
 .json-tree-node--container[aria-expanded='true'].json-tree-node--drop-after
   > .json-tree-row {
-  box-shadow: inset 0 -2px 0 0 var(--jte-focus-border, #3b82f6);
+  box-shadow: inset 0 -2px 0 0 var(--jte--json-tree--focus);
 }
 
 .json-tree-chevron {
@@ -434,7 +329,7 @@ mark.json-tree-mark--active {
   margin: 0;
   border: none;
   background: transparent;
-  color: var(--jte-muted-2, #7d8696);
+  color: var(--jte--json-tree--muted);
   font-size: 0.55rem;
   line-height: 1;
   cursor: pointer;
@@ -447,8 +342,12 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-chevron:hover {
-  color: var(--jte-fg, #e6e8ec);
-  background: var(--jte-surface-4, #232833);
+  color: color-mix(
+    in srgb,
+    var(--jte--json-tree--muted) 30%,
+    var(--jte--json-tree--color)
+  );
+  background: var(--jte--json-tree--border);
 }
 
 .json-tree-chevron--open {
@@ -466,12 +365,12 @@ mark.json-tree-mark--active {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--jte-key, #93c5fd);
+  color: var(--jte--json-tree-key);
   font-weight: 500;
 }
 
 .json-tree-key--root {
-  color: var(--jte-key-root, #c4b5fd);
+  color: var(--jte--json-tree-key--root);
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.68rem;
@@ -479,7 +378,7 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-key--index {
-  color: var(--jte-key-index, #a5b4c8);
+  color: var(--jte--json-tree-key--index);
   font-variant-numeric: tabular-nums;
 }
 
@@ -491,7 +390,7 @@ mark.json-tree-mark--active {
   margin: 0;
   border-radius: 4px;
   font: inherit;
-  color: var(--jte-key, #93c5fd);
+  color: var(--jte--json-tree-key);
   font-weight: 500;
   cursor: text;
   max-width: 12rem;
@@ -502,12 +401,16 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-key--editable:hover {
-  border-color: var(--jte-border-hover, #3a4254);
-  background: var(--jte-surface-2, #1a1f2a);
+  border-color: color-mix(
+    in srgb,
+    var(--jte--json-tree--border) 70%,
+    var(--jte--json-tree--color)
+  );
+  background: var(--jte--json-tree--surface);
 }
 
 .json-tree-key--editable:focus-visible {
-  outline: 2px solid var(--jte-focus-ring, #60a5fa);
+  outline: 2px solid var(--jte--json-tree--focus);
   outline-offset: 1px;
 }
 
@@ -516,17 +419,18 @@ mark.json-tree-mark--active {
   width: 7.5rem;
   max-width: 12rem;
   font: inherit;
-  font-size: var(--jte-font-size, 12.5px);
-  color: var(--jte-fg, #e6e8ec);
-  background: var(--jte-surface-2, #1a1f2a);
-  border: 1px solid var(--jte-focus-border, #3b82f6);
+  font-size: var(--jte--json-tree--font-size);
+  color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree--surface);
+  border: 1px solid var(--jte--json-tree--focus);
   border-radius: 4px;
   padding: 0.12rem 0.3rem;
 }
 
 .json-tree-key-input:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--jte-focus-glow, rgba(59, 130, 246, 0.35));
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--jte--json-tree--focus) 35%, transparent);
 }
 
 .json-tree-type {
@@ -542,44 +446,80 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-type--string {
-  color: var(--jte-type-string, #86efac);
-  background: var(--jte-type-string-bg, #14532d55);
-  border-color: var(--jte-type-string-border, #16653488);
+  color: var(--jte--json-tree-type--string);
+  background: var(
+    --jte--json-tree-type--string-bg,
+    color-mix(in srgb, var(--jte--json-tree-type--string) 18%, transparent)
+  );
+  border-color: var(
+    --jte--json-tree-type--string-border,
+    color-mix(in srgb, var(--jte--json-tree-type--string) 40%, transparent)
+  );
 }
 
 .json-tree-type--number {
-  color: var(--jte-type-number, #fcd34d);
-  background: var(--jte-type-number-bg, #713f1255);
-  border-color: var(--jte-type-number-border, #a1620788);
+  color: var(--jte--json-tree-type--number);
+  background: var(
+    --jte--json-tree-type--number-bg,
+    color-mix(in srgb, var(--jte--json-tree-type--number) 18%, transparent)
+  );
+  border-color: var(
+    --jte--json-tree-type--number-border,
+    color-mix(in srgb, var(--jte--json-tree-type--number) 40%, transparent)
+  );
 }
 
 .json-tree-type--boolean {
-  color: var(--jte-type-boolean, #c4b5fd);
-  background: var(--jte-type-boolean-bg, #4c1d9555);
-  border-color: var(--jte-type-boolean-border, #6d28d988);
+  color: var(--jte--json-tree-type--boolean);
+  background: var(
+    --jte--json-tree-type--boolean-bg,
+    color-mix(in srgb, var(--jte--json-tree-type--boolean) 18%, transparent)
+  );
+  border-color: var(
+    --jte--json-tree-type--boolean-border,
+    color-mix(in srgb, var(--jte--json-tree-type--boolean) 40%, transparent)
+  );
 }
 
 .json-tree-type--null {
-  color: var(--jte-type-null, #9ca3af);
-  background: var(--jte-type-null-bg, #37415155);
-  border-color: var(--jte-type-null-border, #4b556388);
+  color: var(--jte--json-tree-type--null);
+  background: var(
+    --jte--json-tree-type--null-bg,
+    color-mix(in srgb, var(--jte--json-tree-type--null) 18%, transparent)
+  );
+  border-color: var(
+    --jte--json-tree-type--null-border,
+    color-mix(in srgb, var(--jte--json-tree-type--null) 40%, transparent)
+  );
 }
 
 .json-tree-type--object {
-  color: var(--jte-type-object, #7dd3fc);
-  background: var(--jte-type-object-bg, #0c4a6e55);
-  border-color: var(--jte-type-object-border, #0369a188);
+  color: var(--jte--json-tree-type--object);
+  background: var(
+    --jte--json-tree-type--object-bg,
+    color-mix(in srgb, var(--jte--json-tree-type--object) 18%, transparent)
+  );
+  border-color: var(
+    --jte--json-tree-type--object-border,
+    color-mix(in srgb, var(--jte--json-tree-type--object) 40%, transparent)
+  );
 }
 
 .json-tree-type--array {
-  color: var(--jte-type-array, #f9a8d4);
-  background: var(--jte-type-array-bg, #83184355);
-  border-color: var(--jte-type-array-border, #be185d88);
+  color: var(--jte--json-tree-type--array);
+  background: var(
+    --jte--json-tree-type--array-bg,
+    color-mix(in srgb, var(--jte--json-tree-type--array) 18%, transparent)
+  );
+  border-color: var(
+    --jte--json-tree-type--array-border,
+    color-mix(in srgb, var(--jte--json-tree-type--array) 40%, transparent)
+  );
 }
 
 .json-tree-summary {
   flex-shrink: 0;
-  color: var(--jte-muted, #5c6575);
+  color: var(--jte--json-tree--muted);
   font-size: 0.72rem;
 }
 
@@ -590,44 +530,74 @@ mark.json-tree-mark--active {
   align-items: center;
 }
 
+.json-tree-value--string {
+  color: var(--jte--json-tree-value--string);
+}
+
+.json-tree-value--number {
+  color: var(--jte--json-tree-value--number);
+}
+
+.json-tree-value--boolean {
+  color: var(--jte--json-tree-value--boolean);
+}
+
+.json-tree-value--null {
+  color: var(--jte--json-tree-value--null);
+}
+
+.json-tree-value--object {
+  color: var(--jte--json-tree-value--object);
+}
+
+.json-tree-value--array {
+  color: var(--jte--json-tree-value--array);
+}
+
 .json-tree-input {
   width: 100%;
   min-width: 4rem;
   max-width: 100%;
   font: inherit;
-  font-size: var(--jte-font-size, 12.5px);
-  color: var(--jte-fg, #e6e8ec);
-  background: var(--jte-surface, #12151c);
-  border: 1px solid var(--jte-border-strong, #2a2f3a);
+  font-size: var(--jte--json-tree--font-size);
+  color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree--surface);
+  border: 1px solid var(--jte--json-tree--border);
   border-radius: 4px;
   padding: 0.15rem 0.4rem;
 }
 
-.json-tree-input:hover:not(.json-tree-input--readonly):not(:disabled) {
-  border-color: var(--jte-border-hover, #3a4254);
+.json-tree-value--string .json-tree-input,
+.json-tree-value--number .json-tree-input,
+.json-tree-value--boolean .json-tree-input,
+.json-tree-value--null .json-tree-input {
+  color: inherit;
 }
 
-.json-tree-input:focus:not(.json-tree-input--readonly) {
-  outline: none;
-  border-color: var(--jte-focus-border, #3b82f6);
-  box-shadow: 0 0 0 2px var(--jte-focus-glow-soft, rgba(59, 130, 246, 0.25));
-}
-
-.json-tree-input--string {
-  color: var(--jte-string, #86efac);
-}
-
-.json-tree-input--number {
-  color: var(--jte-number, #fcd34d);
+.json-tree-value--number .json-tree-input {
   font-variant-numeric: tabular-nums;
   max-width: 10rem;
 }
 
-.json-tree-input--boolean {
-  color: var(--jte-boolean, #c4b5fd);
+.json-tree-value--boolean .json-tree-input {
   width: auto;
   max-width: 6rem;
   cursor: pointer;
+}
+
+.json-tree-input:hover:not(.json-tree-input--readonly):not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--jte--json-tree--border) 70%,
+    var(--jte--json-tree--color)
+  );
+}
+
+.json-tree-input:focus:not(.json-tree-input--readonly) {
+  outline: none;
+  border-color: var(--jte--json-tree--focus);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--jte--json-tree--focus) 35%, transparent);
 }
 
 .json-tree-input--readonly {
@@ -645,7 +615,7 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-null {
-  color: var(--jte-null, #9ca3af);
+  color: inherit;
   font-style: italic;
   padding: 0 0.25rem;
 }
@@ -658,18 +628,22 @@ mark.json-tree-mark--active {
   border-radius: 4px;
   font: inherit;
   font-style: italic;
-  color: var(--jte-null, #9ca3af);
+  color: inherit;
   cursor: text;
   text-align: left;
 }
 
 .json-tree-null--editable:hover {
-  border-color: var(--jte-border-hover, #3a4254);
-  background: var(--jte-surface-2, #1a1f2a);
+  border-color: color-mix(
+    in srgb,
+    var(--jte--json-tree--border) 70%,
+    var(--jte--json-tree--color)
+  );
+  background: var(--jte--json-tree--surface);
 }
 
 .json-tree-null--editable:focus-visible {
-  outline: 2px solid var(--jte-focus-ring, #60a5fa);
+  outline: 2px solid var(--jte--json-tree--focus);
   outline-offset: 1px;
 }
 
@@ -712,7 +686,7 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-type-select:focus-visible {
-  outline: 2px solid var(--jte-focus-ring, #60a5fa);
+  outline: 2px solid var(--jte--json-tree--focus);
   outline-offset: 1px;
 }
 
@@ -720,8 +694,8 @@ mark.json-tree-mark--active {
   text-transform: none;
   font-weight: 500;
   letter-spacing: normal;
-  color: var(--jte-fg, #e6e8ec);
-  background: var(--jte-surface, #12151c);
+  color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree--surface);
 }
 
 .json-tree-actions {
@@ -730,11 +704,12 @@ mark.json-tree-mark--active {
   gap: 0.2rem;
   flex-shrink: 0;
   margin-left: auto;
-  opacity: 0.35;
+  opacity: var(--jte--json-tree-actions--idle);
   transition: opacity 0.1s ease;
 }
 
-.json-tree-row:focus-within .json-tree-actions {
+.json-tree-row:focus-within .json-tree-actions,
+.json-tree-actions:hover {
   opacity: 1;
 }
 
@@ -744,9 +719,9 @@ mark.json-tree-mark--active {
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--jte-action-fg, #9aa3b2);
-  background: var(--jte-surface-2, #1a1f2a);
-  border: 1px solid var(--jte-border-strong, #2a2f3a);
+  color: var(--jte--json-tree-action);
+  background: var(--jte--json-tree--surface);
+  border: 1px solid var(--jte--json-tree--border);
   border-radius: 4px;
   padding: 0.12rem 0.35rem;
   cursor: pointer;
@@ -755,38 +730,42 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-action:hover:not(:disabled) {
-  color: var(--jte-fg, #e6e8ec);
-  border-color: #4b5568;
-  background: var(--jte-surface-4, #232833);
+  opacity: 1;
+  color: var(--jte--json-tree--color);
+  border-color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree-row--hover);
 }
 
 .json-tree-action:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: var(--jte--json-tree-action--disabled);
+  border-color: var(--jte--json-tree--border);
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .json-tree-action:focus-visible {
-  outline: 2px solid var(--jte-focus-ring, #60a5fa);
+  outline: 2px solid var(--jte--json-tree--focus);
   outline-offset: 1px;
 }
 
 .json-tree-action--danger {
-  color: var(--jte-danger, #fca5a5);
+  color: var(--jte--json-tree-action--danger);
   min-width: 1.4rem;
   padding-left: 0.3rem;
   padding-right: 0.3rem;
 }
 
 .json-tree-action--danger:hover:not(:disabled) {
-  color: var(--jte-danger-strong, #fecaca);
-  border-color: var(--jte-danger-border, #991b1b);
-  background: var(--jte-danger-bg, #7f1d1d55);
+  color: var(--jte--json-tree-action--danger);
+  border-color: var(--jte--json-tree__error-border);
+  background: var(--jte--json-tree__error-bg);
 }
 
 .json-tree-children {
   margin-left: 0.55rem;
   padding-left: 0.55rem;
-  border-left: 1px solid var(--jte-border, #232833);
+  border-left: 1px solid var(--jte--json-tree--border);
 }
 
 /* First row inside an expanded object/array: expand … | + key / clear */
@@ -813,7 +792,12 @@ mark.json-tree-mark--active {
 }
 
 .json-tree-add-row:hover {
-  background: var(--jte-row-hover, #151922);
+  background: var(--jte--json-tree-row--hover);
+}
+
+.json-tree-add-row .json-tree-action {
+  opacity: var(--jte--json-tree-actions--idle);
+  transition: opacity 0.1s ease;
 }
 
 .json-tree-add-row__btn {
@@ -822,9 +806,9 @@ mark.json-tree-mark--active {
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--jte-action-fg, #9aa3b2);
+  color: var(--jte--json-tree-action);
   background: transparent;
-  border: 1px dashed var(--jte-border-strong, #2a2f3a);
+  border: 1px dashed var(--jte--json-tree--border);
   border-radius: 4px;
   padding: 0.12rem 0.45rem;
   cursor: pointer;
@@ -832,34 +816,37 @@ mark.json-tree-mark--active {
   line-height: 1.2;
 }
 
-.json-tree-add-row__btn:hover {
-  color: var(--jte-fg, #e6e8ec);
-  border-color: var(--jte-border-hover, #3a4254);
-  background: var(--jte-surface-2, #1a1f2a);
+.json-tree-add-row__btn:hover:not(:disabled) {
+  color: var(--jte--json-tree--color);
+  border-color: var(--jte--json-tree--color);
+  background: var(--jte--json-tree-row--hover);
 }
 
 .json-tree-add-row__btn:focus-visible {
-  outline: 2px solid var(--jte-focus-ring, #60a5fa);
+  outline: 2px solid var(--jte--json-tree--focus);
   outline-offset: 1px;
 }
 
 .json-tree-add-row__btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: var(--jte--json-tree-action--disabled);
+  border-color: var(--jte--json-tree--border);
+  background: transparent;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .json-tree-add-row__btn--danger {
-  color: var(--jte-danger, #fca5a5);
+  color: var(--jte--json-tree-action--danger);
 }
 
 .json-tree-add-row__btn--danger:hover:not(:disabled) {
-  color: var(--jte-danger-strong, #fecaca);
-  border-color: var(--jte-danger-border, #991b1b);
-  background: var(--jte-danger-bg, #7f1d1d55);
+  color: var(--jte--json-tree-action--danger);
+  border-color: var(--jte--json-tree__error-border);
+  background: var(--jte--json-tree__error-bg);
 }
 
 .json-tree-empty {
-  color: var(--jte-muted, #5c6575);
+  color: var(--jte--json-tree--muted);
   font-size: 0.72rem;
   font-style: italic;
   padding: 0.25rem 0.5rem;
@@ -874,4 +861,132 @@ mark.json-tree-mark--active {
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
+}
+
+/* ── Breadcrumbs plugin ─────────────────────────────────────────────────
+   Rendered by `breadcrumbsPlugin()` in the head (default) or tail slot. */
+
+.json-tree-breadcrumbs {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--jte--json-tree--border);
+  background: var(--jte--json-tree--surface);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.json-tree-breadcrumbs__list {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.json-tree-breadcrumbs__item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.json-tree-breadcrumbs__sep {
+  color: var(--jte--json-tree--muted);
+  padding: 0 0.15rem;
+  font-size: 0.7rem;
+}
+
+.json-tree-breadcrumbs__ellipsis {
+  color: var(--jte--json-tree--muted);
+  padding: 0.1rem 0.25rem;
+  font-size: 0.72rem;
+}
+
+.json-tree-breadcrumbs__crumb {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  margin: 0;
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--jte--json-tree-key);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.json-tree-breadcrumbs__crumb--index {
+  color: var(--jte--json-tree-key--index);
+  font-variant-numeric: tabular-nums;
+}
+
+button.json-tree-breadcrumbs__crumb {
+  cursor: pointer;
+}
+
+button.json-tree-breadcrumbs__crumb:hover {
+  background: var(--jte--json-tree-row--hover);
+  border-color: color-mix(
+    in srgb,
+    var(--jte--json-tree--border) 70%,
+    var(--jte--json-tree--color)
+  );
+}
+
+button.json-tree-breadcrumbs__crumb:focus-visible {
+  outline: none;
+  border-color: var(--jte--json-tree--focus);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--jte--json-tree--focus) 35%, transparent);
+}
+
+.json-tree-breadcrumbs__crumb--current {
+  color: var(--jte--json-tree--color);
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Reveal ring — owned by the breadcrumbs plugin (`json-tree.revealPath` hands
+   it the row; the ring is applied to that row's key). Lives in this stylesheet
+   because the web component inlines exactly one sheet into its shadow root. */
+.json-tree-flash-ring {
+  border-radius: 4px;
+  /* Two pulses — duration × iterations must equal FLASH_MS in flash-ring.ts. */
+  animation: jte-flash-ring 450ms ease-out 2;
+}
+
+@keyframes jte-flash-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--jte--json-tree-flash-ring);
+    background: color-mix(
+      in srgb,
+      var(--jte--json-tree-flash-ring) 20%,
+      transparent
+    );
+  }
+  35% {
+    box-shadow: 0 0 0 2px var(--jte--json-tree-flash-ring);
+    background: color-mix(
+      in srgb,
+      var(--jte--json-tree-flash-ring) 20%,
+      transparent
+    );
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .json-tree-flash-ring {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--jte--json-tree-flash-ring);
+  }
 }
